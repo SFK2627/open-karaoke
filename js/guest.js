@@ -7,20 +7,27 @@ import {
   remove,
   onValue,
   onDisconnect,
-  serverTimestamp,
-  runTransaction
+  serverTimestamp
 } from "./firebase.js";
 import {
   extractYouTubeVideoId,
-  makeQueueItemId,
   youtubeThumbnail,
   sortQueueEntries,
   escapeHtml
-} from "./queue.js";
+} from "./queue.js?v=20260909-repeat-audio2";
 import {
   isYouTubeSearchConfigured,
   searchYouTubeVideos
 } from "./youtube.js";
+
+const GUEST_BUILD = "20260909-repeat-audio2";
+
+function uniqueReservationId(guestId, videoId) {
+  const randomPart = globalThis.crypto?.randomUUID
+    ? globalThis.crypto.randomUUID().replaceAll("-", "")
+    : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 14)}`;
+  return `${guestId}_${Date.now().toString(36)}_${randomPart}_${videoId}`;
+}
 
 const joinPanel = document.querySelector("#joinPanel");
 const roomPanel = document.querySelector("#roomPanel");
@@ -364,24 +371,20 @@ async function reserveSongById(title, videoId, thumbnail = "") {
     throw new Error("This YouTube video ID is invalid.");
   }
 
-  const itemId = makeQueueItemId(user.uid, videoId);
+  // Every reservation gets its own unique queue ID. This intentionally allows
+  // the same YouTube song to be reserved again by the same or another singer,
+  // even when an earlier reservation still exists or was already completed.
+  const itemId = uniqueReservationId(user.uid, videoId);
   const itemRef = ref(db, `sessions/${activeSessionId}/queue/${itemId}`);
-  const result = await runTransaction(itemRef, current => {
-    if (current !== null) return;
-    return {
-      youtubeVideoId: videoId,
-      title: cleanTitle,
-      thumbnail: thumbnail || youtubeThumbnail(videoId),
-      singerName: activeName,
-      guestId: user.uid,
-      addedAt: Date.now(),
-      status: "waiting"
-    };
-  }, { applyLocally: false });
-
-  if (!result.committed) {
-    throw new Error("You already reserved this YouTube video.");
-  }
+  await set(itemRef, {
+    youtubeVideoId: videoId,
+    title: cleanTitle,
+    thumbnail: thumbnail || youtubeThumbnail(videoId),
+    singerName: activeName,
+    guestId: user.uid,
+    addedAt: Date.now(),
+    status: "waiting"
+  });
 }
 
 async function reserveSongFromInput(title, rawYoutubeValue) {

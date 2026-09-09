@@ -1,3 +1,4 @@
+// Build: 20260909-repeat-audio2
 export function extractYouTubeVideoId(value) {
   const input = String(value || "").trim();
   if (!input) return null;
@@ -33,7 +34,10 @@ export function extractYouTubeVideoId(value) {
 }
 
 export function makeQueueItemId(guestId, videoId) {
-  return `${guestId}_${videoId}`;
+  const uuid = globalThis.crypto?.randomUUID
+    ? globalThis.crypto.randomUUID().replaceAll("-", "")
+    : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
+  return `${guestId}_${uuid}_${videoId}`;
 }
 
 export function youtubeThumbnail(videoId) {

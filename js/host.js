@@ -159,6 +159,7 @@ function buildGuestUrl(sessionId) {
   const url = new URL("./guest.html", window.location.href);
   url.search = "";
   url.searchParams.set("session", sessionId);
+  url.searchParams.set("v", "20260909-repeat-audio2");
   return url.toString();
 }
 
@@ -432,8 +433,23 @@ async function autoStartFirstWaitingSong() {
 }
 
 function currentVolume() {
-  const value = Number(volumeSlider.value || 80);
+  const value = Number(volumeSlider.value || 100);
   return Math.min(100, Math.max(0, value));
+}
+
+function makePlayerAudible({ resetIfSilent = false } = {}) {
+  if (!playerReady || !player) return;
+
+  let volume = currentVolume();
+  if (resetIfSilent && volume <= 0) {
+    volume = 100;
+    volumeSlider.value = "100";
+    volumeValue.textContent = "100%";
+    localStorage.setItem("openKaraokeVolume", "100");
+  }
+
+  try { player.unMute?.(); } catch {}
+  try { player.setVolume?.(volume); } catch {}
 }
 
 async function ensurePlayer() {
@@ -443,7 +459,8 @@ async function ensurePlayer() {
     player = await createYouTubePlayer("youtubePlayer", {
       onReady: event => {
         playerReady = true;
-        event.target.setVolume(currentVolume());
+        try { event.target.unMute?.(); } catch {}
+        event.target.setVolume(currentVolume() || 100);
         try {
           event.target.getIframe()?.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture; fullscreen");
         } catch {}
@@ -479,10 +496,17 @@ async function syncPlayerToFirebase(previousVideoId) {
   if (videoChanged) {
     loadedVideoId = currentSong.youtubeVideoId;
     if (desiredState === "playing") {
+      makePlayerAudible({ resetIfSilent: true });
       player.loadVideoById(currentSong.youtubeVideoId);
       window.setTimeout(() => {
-        try { player?.playVideo?.(); } catch {}
+        try {
+          makePlayerAudible({ resetIfSilent: true });
+          player?.playVideo?.();
+        } catch {}
       }, 220);
+      window.setTimeout(() => {
+        try { makePlayerAudible({ resetIfSilent: true }); } catch {}
+      }, 900);
     } else {
       player.cueVideoById(currentSong.youtubeVideoId);
     }
@@ -490,7 +514,7 @@ async function syncPlayerToFirebase(previousVideoId) {
 
   if (!videoChanged) {
     try {
-      if (desiredState === "playing") player.playVideo();
+      if (desiredState === "playing") { makePlayerAudible({ resetIfSilent: true }); player.playVideo(); }
       if (desiredState === "paused") player.pauseVideo();
       if (desiredState === "stopped") {
         suppressPlayerEventsUntil = Date.now() + 900;
@@ -529,6 +553,7 @@ function handlePlayerStateChange(event) {
   if (Date.now() < suppressPlayerEventsUntil) return;
 
   if (state === window.YT.PlayerState.PLAYING) {
+    makePlayerAudible({ resetIfSilent: true });
     renderPlaybackState("playing");
     if (currentSong.playbackState !== "playing") updateCurrentPlaybackState("playing");
   } else if (state === window.YT.PlayerState.PAUSED) {
@@ -617,9 +642,12 @@ async function startOrResume() {
   if (currentSong.playbackState === "stopped" || currentSong.playbackState === "error") {
     if (playerReady && player) {
       loadedVideoId = currentSong.youtubeVideoId;
+      makePlayerAudible({ resetIfSilent: true });
       player.loadVideoById(currentSong.youtubeVideoId);
+      window.setTimeout(() => makePlayerAudible({ resetIfSilent: true }), 250);
     }
   } else if (playerReady && player) {
+    makePlayerAudible({ resetIfSilent: true });
     player.playVideo();
   }
 
@@ -669,6 +697,7 @@ async function playPrevious() {
     }
     suppressPlayerEventsUntil = Date.now() + 700;
     try {
+      makePlayerAudible({ resetIfSilent: true });
       player.seekTo(0, true);
       player.playVideo();
       await updateCurrentPlaybackState("playing");
@@ -865,9 +894,13 @@ async function endSession() {
 
 async function init() {
   const savedVolume = Number(localStorage.getItem("openKaraokeVolume"));
-  if (Number.isFinite(savedVolume) && savedVolume >= 0 && savedVolume <= 100) {
+  if (Number.isFinite(savedVolume) && savedVolume > 0 && savedVolume <= 100) {
     volumeSlider.value = String(savedVolume);
     volumeValue.textContent = `${savedVolume}%`;
+  } else {
+    volumeSlider.value = "100";
+    volumeValue.textContent = "100%";
+    localStorage.setItem("openKaraokeVolume", "100");
   }
 
   if (!isFirebaseConfigured()) {
@@ -1001,7 +1034,13 @@ volumeSlider.addEventListener("input", () => {
   const volume = currentVolume();
   volumeValue.textContent = `${volume}%`;
   localStorage.setItem("openKaraokeVolume", String(volume));
-  if (playerReady && player) player.setVolume(volume);
+  if (playerReady && player) {
+    try {
+      if (volume <= 0) player.mute?.();
+      else player.unMute?.();
+      player.setVolume(volume);
+    } catch {}
+  }
 });
 
 lockReservationsBtn.addEventListener("click", async () => {

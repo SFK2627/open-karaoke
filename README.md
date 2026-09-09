@@ -2,6 +2,11 @@
 
 A free, browser-based karaoke MVP built with plain HTML, CSS, vanilla JavaScript, Firebase Realtime Database, Firebase Anonymous Authentication, the official YouTube IFrame Player API, and QRCode.js.
 
+
+## Repeat-song reservations
+
+The queue intentionally allows the same YouTube video to be reserved more than once, including by the same singer. Each reservation has a unique queue ID, so a song can be repeated while an earlier copy is waiting, playing, completed, or skipped.
+
 ## No-install architecture
 
 Normal use does **not** require npm, Node.js, a local server, a paid domain, or a paid backend.
@@ -439,3 +444,24 @@ open-karaoke-final/
 - [ ] End & Delete Session removes room after the event
 
 This is the final static-web MVP architecture: GitHub Pages + Firebase + official YouTube web APIs, with no npm/build/server requirement for normal deployment or use.
+
+## Karaoke TV Mode (TV1)
+
+The Host screen now behaves more like a dedicated videoke display:
+
+- The first waiting reservation starts automatically when there is no current song.
+- Next/Skip immediately promotes and plays the next waiting song.
+- A finished YouTube video automatically promotes and plays the next song.
+- TV Mode uses page fullscreen, while the YouTube player stays in a large 16:9 video box.
+- The top of TV Mode shows a horizontal Up Next strip.
+- The QR button in the top-right toggles a large guest QR overlay.
+- Keyboard shortcuts when the Host page has focus:
+  - Space: Play/Pause
+  - N or Right Arrow: Next/Skip
+  - P or Left Arrow: Previous
+  - S: Stop
+  - Q: Toggle QR
+  - F: Enter/exit TV Mode
+  - Escape: Close QR / exit TV Mode
+
+Browser autoplay rules still apply. The Host normally clicks Create/Unlock/TV Mode before playback, which gives the page user interaction; if a browser nevertheless blocks sound autoplay, press Space once on the Host page.
