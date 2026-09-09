@@ -395,8 +395,8 @@ joinForm.addEventListener("submit", async event => {
   const sessionId = normalizeSession(sessionInput.value);
   const singerName = nameInput.value.trim();
 
-  if (!/^KARAOKE-[A-Z2-9]{4}$/.test(sessionId)) {
-    setMessage(guestMessage, "Enter a valid session code such as KARAOKE-AB12.", "error");
+  if (!/^KARAOKE-[A-Z2-9]{4,8}$/.test(sessionId)) {
+    setMessage(guestMessage, "Enter a valid session code such as KARAOKE-AB12CD.", "error");
     return;
   }
   if (singerName.length < 1 || singerName.length > 30) {
