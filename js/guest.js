@@ -20,7 +20,7 @@ import {
   searchYouTubeVideos
 } from "./youtube.js";
 
-const GUEST_BUILD = "20260909-singerremote1";
+const GUEST_BUILD = "20260909-realtimesync1";
 
 function uniqueReservationId(guestId, videoId) {
   const randomPart = globalThis.crypto?.randomUUID
@@ -78,6 +78,7 @@ let db;
 let user;
 let activeSessionId = null;
 let activeName = null;
+let activeJoinedAt = null;
 let guestRef = null;
 let reservationsLocked = false;
 let currentQueue = [];
@@ -92,6 +93,10 @@ let unsubscribeSettings = null;
 let unsubscribeQueue = null;
 let unsubscribeCurrentSong = null;
 let singerControlBusy = false;
+let guestDisconnectAction = null;
+let roomResyncTimer = null;
+let roomResyncInFlight = false;
+let roomListenerGeneration = 0;
 
 function normalizeSession(value) {
   let raw = String(value || "").trim();
@@ -204,6 +209,7 @@ function renderQueue() {
 function renderSingerControls(state = "idle") {
   const ownsCurrentSong = Boolean(currentSong && user?.uid && currentSong.guestId === user.uid);
   guestOwnControls.hidden = !ownsCurrentSong;
+
   if (!ownsCurrentSong) {
     singerControlBusy = false;
     guestPlayPauseBtn.disabled = false;
@@ -212,12 +218,13 @@ function renderSingerControls(state = "idle") {
     return;
   }
 
-  guestSkipBtn.textContent = "⏭ Skip My Song";
   const isPlaying = state === "playing";
   guestPlayPauseBtn.textContent = isPlaying ? "⏸ Pause" : "▶ Play";
   guestPlayPauseBtn.dataset.action = isPlaying ? "pause" : "play";
+  guestPlayPauseBtn.disabled = singerControlBusy;
+  guestSkipBtn.disabled = singerControlBusy;
+  guestSkipBtn.textContent = singerControlBusy ? "Please wait…" : "⏭ Skip My Song";
 }
-
 function singerRequestId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID().replaceAll("-", "");
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
@@ -245,7 +252,13 @@ async function sendSingerControl(action) {
 }
 
 function renderCurrentSong(song) {
+  const previousQueueItemId = currentSong?.queueItemId || null;
   currentSong = song || null;
+  const nextQueueItemId = currentSong?.queueItemId || null;
+
+  if (previousQueueItemId !== nextQueueItemId) {
+    singerControlBusy = false;
+  }
 
   if (!currentSong) {
     guestNowTitle.textContent = "Nothing playing yet";
@@ -299,21 +312,21 @@ function setYouTubeSearchState() {
 }
 
 async function registerDisconnectCleanup(reference) {
-  // Presence cleanup is helpful but must never block a guest from joining.
-  // Some mobile browsers can fail while registering onDisconnect during a
-  // connection transition, so treat it as a best-effort enhancement.
+  // Keep the guest record during temporary mobile disconnects so Firebase
+  // read permissions remain valid. Only flip online=false on disconnect.
   try {
+    try { await guestDisconnectAction?.cancel?.(); } catch {}
     const disconnect = onDisconnect(reference);
-    await disconnect.remove();
+    await disconnect.update({
+      online: false,
+      lastSeen: serverTimestamp()
+    });
+    guestDisconnectAction = disconnect;
   } catch (error) {
-    console.warn("Guest disconnect cleanup could not be registered.", error);
+    console.warn("Guest disconnect presence could not be registered.", error);
   }
 }
-
 async function joinSession(sessionId, singerName) {
-  // Always obtain a fresh, explicit Firebase context for the join action.
-  // This avoids relying on a mutable page-level Database reference during
-  // mobile reconnects / cached module reloads.
   const context = await initFirebase();
   const database = context?.db;
   const currentUser = context?.user;
@@ -335,32 +348,21 @@ async function joinSession(sessionId, singerName) {
   await set(thisGuestRef, {
     name: singerName,
     joinedAt: now,
-    lastSeen: now
+    lastSeen: now,
+    online: true
   });
 
-  // Install listeners using the same explicit Database instance that was used
-  // for the successful read/write above. If a listener cannot be created, the
-  // join stays on the form instead of entering a half-connected state.
-  const subscriptions = watchRoom(sessionId, database, currentUser);
-
+  // Assign the active room context BEFORE listeners are attached. This avoids
+  // first-snapshot races where Queue/My Songs render before user/session state.
   db = database;
   user = currentUser;
   activeSessionId = sessionId;
   activeName = singerName;
+  activeJoinedAt = now;
   guestRef = thisGuestRef;
 
-  unsubscribeHost = subscriptions.unsubscribeHost;
-  unsubscribeGuestCount = subscriptions.unsubscribeGuestCount;
-  unsubscribeSettings = subscriptions.unsubscribeSettings;
-  unsubscribeQueue = subscriptions.unsubscribeQueue;
-  unsubscribeCurrentSong = subscriptions.unsubscribeCurrentSong;
-
-  // Re-evaluate ownership after the page-level auth user is assigned. This
-  // ensures the mini remote appears immediately even if the first realtime
-  // current-song snapshot arrived during listener setup.
-  renderCurrentSong(currentSong);
-
-  registerDisconnectCleanup(thisGuestRef);
+  restartRoomListeners();
+  await registerDisconnectCleanup(thisGuestRef);
 
   localStorage.setItem("openKaraokeSingerName", singerName);
   localStorage.setItem("openKaraokeGuestSession", sessionId);
@@ -370,56 +372,76 @@ async function joinSession(sessionId, singerName) {
   joinPanel.hidden = true;
   roomPanel.hidden = false;
   setGuestTab("search");
-
   setYouTubeSearchState();
 }
-
-function watchRoom(sessionId, database, currentUser) {
+function unsubscribeRoomListeners() {
   unsubscribeHost?.();
   unsubscribeGuestCount?.();
   unsubscribeSettings?.();
   unsubscribeQueue?.();
   unsubscribeCurrentSong?.();
+  unsubscribeHost = null;
+  unsubscribeGuestCount = null;
+  unsubscribeSettings = null;
+  unsubscribeQueue = null;
+  unsubscribeCurrentSong = null;
+}
 
-  if (!database || !currentUser?.uid) {
-    throw new Error("Firebase connection is not ready.");
-  }
+function scheduleRoomResync(delay = 120) {
+  if (!activeSessionId || !db || !user?.uid) return;
+  window.clearTimeout(roomResyncTimer);
+  roomResyncTimer = window.setTimeout(() => {
+    resyncRoomState().catch(error => console.error("Guest realtime resync failed:", error));
+  }, delay);
+}
 
-  const hostRef = ref(database, `sessions/${sessionId}/meta/hostOnline`);
-  const guestsRef = ref(database, `sessions/${sessionId}/guests`);
-  const settingsRef = ref(database, `sessions/${sessionId}/settings/reservationsLocked`);
-  const queueRef = ref(database, `sessions/${sessionId}/queue`);
-  const currentSongRef = ref(database, `sessions/${sessionId}/currentSong`);
+function roomListenerError(scope, generation) {
+  return error => {
+    console.error(`Guest ${scope} realtime listener stopped:`, error);
+    if (generation !== roomListenerGeneration) return;
+    scheduleRoomResync(350);
+  };
+}
 
-  const nextUnsubscribeHost = onValue(hostRef, snapshot => {
+function restartRoomListeners() {
+  if (!activeSessionId || !db || !user?.uid) return;
+  unsubscribeRoomListeners();
+  const generation = ++roomListenerGeneration;
+  const sessionId = activeSessionId;
+
+  const hostRef = ref(db, `sessions/${sessionId}/meta/hostOnline`);
+  const guestsRef = ref(db, `sessions/${sessionId}/guests`);
+  const settingsRef = ref(db, `sessions/${sessionId}/settings/reservationsLocked`);
+  const queueRef = ref(db, `sessions/${sessionId}/queue`);
+  const currentSongRef = ref(db, `sessions/${sessionId}/currentSong`);
+
+  unsubscribeHost = onValue(hostRef, snapshot => {
+    if (generation !== roomListenerGeneration) return;
     roomHostStatus.textContent = snapshot.val() === true ? "Online" : "Offline";
-  });
+  }, roomListenerError("host", generation));
 
-  const nextUnsubscribeGuestCount = onValue(guestsRef, snapshot => {
+  unsubscribeGuestCount = onValue(guestsRef, snapshot => {
+    if (generation !== roomListenerGeneration) return;
     const guests = snapshot.val() || {};
-    roomGuestCount.textContent = String(Object.keys(guests).length);
-  });
+    const onlineGuests = Object.values(guests).filter(guest => guest?.online === true);
+    roomGuestCount.textContent = String(onlineGuests.length);
+  }, roomListenerError("guest-count", generation));
 
-  const nextUnsubscribeSettings = onValue(settingsRef, snapshot => {
+  unsubscribeSettings = onValue(settingsRef, snapshot => {
+    if (generation !== roomListenerGeneration) return;
     setReservationLockState(snapshot.val() === true);
-  });
+  }, roomListenerError("settings", generation));
 
-  const nextUnsubscribeQueue = onValue(queueRef, snapshot => {
+  unsubscribeQueue = onValue(queueRef, snapshot => {
+    if (generation !== roomListenerGeneration) return;
     currentQueue = sortQueueEntries(snapshot.val());
     renderQueue();
-  });
+  }, roomListenerError("queue", generation));
 
-  const nextUnsubscribeCurrentSong = onValue(currentSongRef, snapshot => {
+  unsubscribeCurrentSong = onValue(currentSongRef, snapshot => {
+    if (generation !== roomListenerGeneration) return;
     renderCurrentSong(snapshot.val());
-  });
-
-  return {
-    unsubscribeHost: nextUnsubscribeHost,
-    unsubscribeGuestCount: nextUnsubscribeGuestCount,
-    unsubscribeSettings: nextUnsubscribeSettings,
-    unsubscribeQueue: nextUnsubscribeQueue,
-    unsubscribeCurrentSong: nextUnsubscribeCurrentSong
-  };
+  }, roomListenerError("current-song", generation));
 }
 
 async function refreshGuestPresence() {
@@ -427,12 +449,25 @@ async function refreshGuestPresence() {
   const now = Date.now();
   await set(guestRef, {
     name: activeName,
-    joinedAt: now,
-    lastSeen: now
+    joinedAt: activeJoinedAt || now,
+    lastSeen: now,
+    online: true
   });
-  registerDisconnectCleanup(guestRef);
+  await registerDisconnectCleanup(guestRef);
 }
 
+async function resyncRoomState() {
+  if (!activeSessionId || !db || !user?.uid || roomResyncInFlight) return;
+  roomResyncInFlight = true;
+  try {
+    // Restore presence first because room read permission is tied to this UID's
+    // guest record. Then recreate all realtime listeners from a clean state.
+    await refreshGuestPresence();
+    restartRoomListeners();
+  } finally {
+    roomResyncInFlight = false;
+  }
+}
 async function reserveSongById(title, videoId, thumbnail = "") {
   if (!activeSessionId || !user) throw new Error("Join a karaoke session first.");
   if (reservationsLocked) throw new Error("Reservations are currently locked by the Host.");
@@ -546,7 +581,7 @@ async function init() {
       const connected = snapshot.val() === true;
       setConnection(connected);
       if (connected && activeSessionId) {
-        try { await refreshGuestPresence(); } catch (error) { console.error(error); }
+        scheduleRoomResync(40);
       }
     });
   } catch (error) {
@@ -702,35 +737,44 @@ guestPlayPauseBtn?.addEventListener("click", async () => {
   } finally {
     window.setTimeout(() => {
       singerControlBusy = false;
-      if (!guestOwnControls.hidden) {
-        guestPlayPauseBtn.disabled = false;
-        guestSkipBtn.disabled = false;
-      }
-    }, 450);
+      renderSingerControls(currentSong?.playbackState || "idle");
+    }, 500);
   }
 });
 
 guestSkipBtn?.addEventListener("click", async () => {
   if (singerControlBusy || guestOwnControls.hidden) return;
+  const requestedQueueItemId = currentSong?.queueItemId || null;
   singerControlBusy = true;
-  guestPlayPauseBtn.disabled = true;
-  guestSkipBtn.disabled = true;
-  guestSkipBtn.textContent = "Skipping…";
+  renderSingerControls(currentSong?.playbackState || "playing");
+
   try {
     await sendSingerControl("skip");
+    // If the Host is slow/offline, never leave the phone controls permanently
+    // disabled. A successful song change will reset busy immediately.
+    window.setTimeout(() => {
+      if (singerControlBusy && currentSong?.queueItemId === requestedQueueItemId) {
+        singerControlBusy = false;
+        renderSingerControls(currentSong?.playbackState || "idle");
+        setMessage(reserveMessage, "Skip request sent. Waiting for the Host…");
+      }
+    }, 2200);
   } catch (error) {
     console.error(error);
-    setMessage(reserveMessage, error.message || "Could not skip your song.", "error");
     singerControlBusy = false;
-    guestPlayPauseBtn.disabled = false;
-    guestSkipBtn.disabled = false;
-    guestSkipBtn.textContent = "⏭ Skip My Song";
+    renderSingerControls(currentSong?.playbackState || "idle");
+    setMessage(reserveMessage, error.message || "Could not skip your song.", "error");
   }
 });
 
 leaveBtn.addEventListener("click", async () => {
   leaveBtn.disabled = true;
   closePreview();
+  window.clearTimeout(roomResyncTimer);
+  unsubscribeRoomListeners();
+  roomListenerGeneration += 1;
+  try { await guestDisconnectAction?.cancel?.(); } catch {}
+  guestDisconnectAction = null;
   try {
     if (guestRef) await remove(guestRef);
   } catch (error) {
@@ -738,14 +782,10 @@ leaveBtn.addEventListener("click", async () => {
   }
   activeSessionId = null;
   activeName = null;
+  activeJoinedAt = null;
   guestRef = null;
   currentQueue = [];
   currentSong = null;
-  unsubscribeHost?.();
-  unsubscribeGuestCount?.();
-  unsubscribeSettings?.();
-  unsubscribeQueue?.();
-  unsubscribeCurrentSong?.();
   roomPanel.hidden = true;
   joinPanel.hidden = false;
   setGuestTab("search");
@@ -753,5 +793,21 @@ leaveBtn.addEventListener("click", async () => {
   leaveBtn.disabled = false;
   setMessage(guestMessage, "You left the session. Your waiting reservations remain in the queue until you cancel them or the Host removes them.", "success");
 });
+
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && activeSessionId) {
+    scheduleRoomResync(60);
+  }
+});
+
+window.addEventListener("pageshow", () => {
+  if (activeSessionId) scheduleRoomResync(60);
+});
+
+window.addEventListener("online", () => {
+  if (activeSessionId) scheduleRoomResync(40);
+});
+
 
 init();

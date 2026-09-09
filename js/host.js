@@ -330,7 +330,7 @@ function buildGuestUrl(sessionId) {
   const url = new URL("./guest.html", window.location.href);
   url.search = "";
   url.searchParams.set("session", sessionId);
-  url.searchParams.set("v", "20260909-singerremote1");
+  url.searchParams.set("v", "20260909-realtimesync1");
   return url.toString();
 }
 
@@ -378,7 +378,7 @@ function validPin(pin) {
 }
 
 function renderGuests(guests) {
-  const entries = Object.entries(guests || {});
+  const entries = Object.entries(guests || {}).filter(([, guest]) => guest?.online === true);
   guestCountEl.textContent = String(entries.length);
 
   if (!entries.length) {
