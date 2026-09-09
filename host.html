@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Host</title>
-  <link rel="stylesheet" href="./css/style.css?v=20260909-repeat-audio2">
+  <link rel="stylesheet" href="./css/style.css?v=20260909-ambilight1">
 </head>
 <body class="host-page">
   <header class="topbar">
@@ -72,12 +72,20 @@
           </div>
         </div>
 
-        <div class="player-shell">
-          <div id="youtubePlayer"></div>
-          <div class="player-empty" id="playerEmpty">
-            <div class="placeholder-icon">▶</div>
-            <strong>No song playing</strong>
-            <span>The first reserved song starts automatically.</span>
+        <div class="player-shell" data-ambient-state="idle">
+          <div class="player-ambilight" aria-hidden="true">
+            <span class="ambient-glow glow-top"></span>
+            <span class="ambient-glow glow-right"></span>
+            <span class="ambient-glow glow-bottom"></span>
+            <span class="ambient-glow glow-left"></span>
+          </div>
+          <div class="player-stage">
+            <div id="youtubePlayer"></div>
+            <div class="player-empty" id="playerEmpty">
+              <div class="placeholder-icon">▶</div>
+              <strong>No song playing</strong>
+              <span>The first reserved song starts automatically.</span>
+            </div>
           </div>
         </div>
 
@@ -207,6 +215,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module" src="./js/host.js?v=20260909-repeat-audio2"></script>
+  <script type="module" src="./js/host.js?v=20260909-ambilight1"></script>
 </body>
 </html>

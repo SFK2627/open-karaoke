@@ -53,6 +53,7 @@ const lockHostBtn = document.querySelector("#lockHostBtn");
 const fullscreenBtn = document.querySelector("#fullscreenBtn");
 const copyCodeBtn = document.querySelector("#copyCodeBtn");
 const copyLinkBtn = document.querySelector("#copyLinkBtn");
+const playerShell = document.querySelector(".player-shell");
 const playerEmpty = document.querySelector("#playerEmpty");
 const nowPlayingTitle = document.querySelector("#nowPlayingTitle");
 const nowPlayingSinger = document.querySelector("#nowPlayingSinger");
@@ -94,6 +95,173 @@ let unsubscribeSettings = null;
 let unsubscribeCurrentSong = null;
 let autoStartTimer = null;
 let autoStartInFlight = false;
+
+const DEFAULT_AMBILIGHT_COLORS = [
+  "rgba(139, 92, 246, .46)",
+  "rgba(34, 211, 238, .34)",
+  "rgba(236, 72, 153, .30)",
+  "rgba(251, 191, 36, .22)"
+];
+let ambilightLoadToken = 0;
+
+function hslToCss(h, s, l, a = 0.4) {
+  return `hsla(${Math.round(h)}, ${Math.round(s)}%, ${Math.round(l)}%, ${a})`;
+}
+
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (delta !== 0) {
+    s = delta / (1 - Math.abs(2 * l - 1));
+    switch (max) {
+      case r: h = 60 * (((g - b) / delta) % 6); break;
+      case g: h = 60 * (((b - r) / delta) + 2); break;
+      default: h = 60 * (((r - g) / delta) + 4); break;
+    }
+  }
+
+  if (h < 0) h += 360;
+  return { h, s: s * 100, l: l * 100 };
+}
+
+function paletteFromSeed(seed = "") {
+  const value = Array.from(String(seed)).reduce((acc, char) => ((acc * 33) + char.charCodeAt(0)) >>> 0, 7);
+  const hue = value % 360;
+  return [
+    hslToCss(hue, 88, 63, 0.46),
+    hslToCss((hue + 48) % 360, 84, 58, 0.34),
+    hslToCss((hue + 210) % 360, 80, 60, 0.30),
+    hslToCss((hue + 300) % 360, 78, 54, 0.22)
+  ];
+}
+
+function setAmbilightPalette(colors = DEFAULT_AMBILIGHT_COLORS, state = "idle") {
+  if (!playerShell) return;
+  const palette = [...colors, ...DEFAULT_AMBILIGHT_COLORS].slice(0, 4);
+  playerShell.style.setProperty("--amb1", palette[0]);
+  playerShell.style.setProperty("--amb2", palette[1]);
+  playerShell.style.setProperty("--amb3", palette[2]);
+  playerShell.style.setProperty("--amb4", palette[3]);
+  playerShell.dataset.ambientState = state;
+}
+
+function loadPaletteImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.referrerPolicy = "no-referrer";
+    image.decoding = "async";
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Thumbnail could not be loaded."));
+    image.src = src;
+  });
+}
+
+function pickDistinctColors(hslColors) {
+  const selected = [];
+  for (const item of hslColors) {
+    const uniqueEnough = selected.every(choice => {
+      const hueDelta = Math.min(Math.abs(choice.h - item.h), 360 - Math.abs(choice.h - item.h));
+      return hueDelta > 22 || Math.abs(choice.l - item.l) > 16;
+    });
+    if (uniqueEnough) selected.push(item);
+    if (selected.length === 4) break;
+  }
+  return selected;
+}
+
+async function extractThumbnailPalette(src) {
+  const image = await loadPaletteImage(src);
+  const canvas = document.createElement("canvas");
+  canvas.width = 32;
+  canvas.height = 18;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+  const buckets = new Map();
+
+  for (let i = 0; i < data.length; i += 4) {
+    const alpha = data[i + 3];
+    if (alpha < 180) continue;
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const brightness = (r + g + b) / 3;
+    const saturation = max === 0 ? 0 : (max - min) / max;
+
+    if (brightness < 18) continue;
+
+    const qr = Math.min(255, Math.round(r / 32) * 32);
+    const qg = Math.min(255, Math.round(g / 32) * 32);
+    const qb = Math.min(255, Math.round(b / 32) * 32);
+    const key = `${qr},${qg},${qb}`;
+    const bucket = buckets.get(key) || { r: 0, g: 0, b: 0, count: 0, score: 0 };
+    bucket.r += r;
+    bucket.g += g;
+    bucket.b += b;
+    bucket.count += 1;
+    bucket.score += 1 + saturation * 2.2 + brightness / 255;
+    buckets.set(key, bucket);
+  }
+
+  const ranked = [...buckets.values()]
+    .filter(bucket => bucket.count > 0)
+    .map(bucket => {
+      const r = bucket.r / bucket.count;
+      const g = bucket.g / bucket.count;
+      const b = bucket.b / bucket.count;
+      return {
+        ...rgbToHsl(r, g, b),
+        score: bucket.score
+      };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const chosen = pickDistinctColors(ranked);
+  if (!chosen.length) return [];
+
+  const a = chosen[0];
+  const b = chosen[1] || chosen[0];
+  const c = chosen[2] || chosen[0];
+  const d = chosen[3] || chosen[1] || chosen[0];
+
+  return [
+    hslToCss(a.h, Math.min(100, a.s + 12), Math.min(82, a.l + 10), 0.50),
+    hslToCss(b.h, Math.min(100, b.s + 12), Math.min(80, b.l + 8), 0.36),
+    hslToCss(c.h, Math.min(100, c.s + 10), Math.min(78, c.l + 8), 0.31),
+    hslToCss(d.h, Math.min(100, d.s + 8), Math.min(76, d.l + 10), 0.24)
+  ];
+}
+
+async function updateAmbilightForSong(song) {
+  const token = ++ambilightLoadToken;
+
+  if (!song) {
+    setAmbilightPalette(DEFAULT_AMBILIGHT_COLORS, "idle");
+    return;
+  }
+
+  const fallback = paletteFromSeed(`${song.youtubeVideoId || ""}|${song.title || ""}`);
+  setAmbilightPalette(fallback, "active");
+
+  if (!song.thumbnail) return;
+
+  try {
+    const palette = await extractThumbnailPalette(song.thumbnail);
+    if (token !== ambilightLoadToken || !palette.length) return;
+    setAmbilightPalette(palette, "active");
+  } catch (error) {
+    console.debug("Ambilight palette fallback:", error?.message || error);
+  }
+}
 
 function setMessage(text, type = "") {
   hostMessage.textContent = text;
@@ -334,6 +502,7 @@ function renderCurrentSong(song) {
     nowPlayingSinger.textContent = "Queue is ready when guests add songs.";
     playerEmpty.hidden = false;
     renderPlaybackState("idle");
+    updateAmbilightForSong(null);
     renderHistory();
     return;
   }
@@ -342,6 +511,7 @@ function renderCurrentSong(song) {
   nowPlayingSinger.textContent = `👤 ${currentSong.singerName || "Guest"}`;
   playerEmpty.hidden = true;
   renderPlaybackState(currentSong.playbackState || "playing");
+  updateAmbilightForSong(currentSong);
   renderHistory();
 }
 
@@ -1191,5 +1361,7 @@ document.addEventListener("keydown", event => {
     toggleTvMode().catch(error => console.error(error));
   }
 });
+
+setAmbilightPalette(DEFAULT_AMBILIGHT_COLORS, "idle");
 
 init();
