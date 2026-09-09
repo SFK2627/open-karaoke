@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Guest</title>
-  <link rel="stylesheet" href="./css/style.css?v=20260909-guestcompact1">
+  <link rel="stylesheet" href="./css/style.css?v=20260909-guestjoincompact2">
 </head>
 <body class="guest-page">
   <header class="topbar compact-topbar">
@@ -15,22 +15,31 @@
 
   <main class="page-shell guest-shell">
     <section class="panel guest-join-card" id="joinPanel">
-      <p class="eyebrow">GUEST CONTROLLER</p>
-      <h1>Join the karaoke</h1>
-      <p class="muted">Enter your name. If you scanned the host QR code, the session code is already filled in.</p>
+      <div class="guest-join-heading">
+        <div>
+          <p class="eyebrow">GUEST CONTROLLER</p>
+          <h1>Join Karaoke</h1>
+        </div>
+        <span class="guest-join-mic" aria-hidden="true">🎤</span>
+      </div>
+      <p class="muted guest-join-help">Scan QR? Your room code is already filled in.</p>
 
       <div class="notice warning" id="configWarning" hidden>
         Firebase is not configured yet. The host must finish the Firebase setup first.
       </div>
 
-      <form id="joinForm" class="stack-form">
-        <label class="field-label" for="sessionInput">Session Code</label>
-        <input id="sessionInput" class="text-input uppercase" maxlength="16" autocomplete="off" placeholder="KARAOKE-AB12CD" required>
+      <form id="joinForm" class="stack-form guest-join-form">
+        <div class="guest-join-field">
+          <label class="field-label" for="sessionInput">Room</label>
+          <input id="sessionInput" class="text-input uppercase" maxlength="16" autocomplete="off" placeholder="KARAOKE-AB12CD" required>
+        </div>
 
-        <label class="field-label" for="nameInput">Singer / Nickname</label>
-        <input id="nameInput" class="text-input" maxlength="30" autocomplete="nickname" placeholder="Juan" required>
+        <div class="guest-join-field">
+          <label class="field-label" for="nameInput">Singer name</label>
+          <input id="nameInput" class="text-input" maxlength="30" autocomplete="nickname" placeholder="Your name" required>
+        </div>
 
-        <button class="btn btn-primary btn-large" type="submit">Join Session</button>
+        <button class="btn btn-primary guest-join-button" type="submit">Join Session</button>
       </form>
       <p class="form-message" id="guestMessage" aria-live="polite"></p>
     </section>
@@ -153,6 +162,6 @@
     </section>
   </div>
 
-  <script type="module" src="./js/guest.js?v=20260909-guestcompact1"></script>
+  <script type="module" src="./js/guest.js?v=20260909-guestjoincompact2"></script>
 </body>
 </html>

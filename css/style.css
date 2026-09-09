@@ -2214,3 +2214,148 @@ body.tv-mode .player-stage::before {
     max-width: 210px;
   }
 }
+
+
+/* =========================================================
+   GUEST MOBILE JOIN v2 - ULTRA COMPACT
+   The pre-join screen should feel like a controller sign-in,
+   not a large hero card. Host/TV layouts remain untouched.
+   ========================================================= */
+@media (max-width: 620px) {
+  body.guest-page .topbar {
+    min-height: 38px;
+    height: 38px;
+    padding: 3px 8px;
+  }
+
+  body.guest-page .brand {
+    gap: 5px;
+    font-size: .76rem;
+  }
+
+  body.guest-page .brand span {
+    font-size: .7rem;
+  }
+
+  body.guest-page .guest-status-pill {
+    min-height: 24px;
+    padding: 3px 7px;
+    font-size: .61rem;
+  }
+
+  body.guest-page .page-shell.guest-shell {
+    width: min(100% - 10px, 650px);
+    padding-top: 5px;
+  }
+
+  body.guest-page .guest-join-card {
+    margin: 0 auto;
+    padding: 10px;
+    border-radius: 12px;
+    border-color: rgba(255,255,255,.08);
+    background: rgba(15,23,44,.76);
+    box-shadow: 0 7px 22px rgba(0,0,0,.18);
+  }
+
+  body.guest-page .guest-join-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 2px;
+  }
+
+  body.guest-page .guest-join-heading .eyebrow {
+    margin: 0 0 1px;
+    font-size: .5rem;
+    letter-spacing: .12em;
+  }
+
+  body.guest-page .guest-join-card h1 {
+    margin: 0;
+    font-size: 1.08rem;
+    line-height: 1.05;
+    letter-spacing: -.02em;
+  }
+
+  body.guest-page .guest-join-mic {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    border: 1px solid rgba(167,139,250,.17);
+    background: rgba(139,92,246,.11);
+    font-size: .86rem;
+  }
+
+  body.guest-page .guest-join-card > .guest-join-help {
+    margin: 4px 0 7px;
+    font-size: .66rem;
+    line-height: 1.25;
+    color: #8f9bb8;
+  }
+
+  body.guest-page .guest-join-form {
+    display: grid;
+    gap: 6px;
+    margin-top: 0;
+  }
+
+  body.guest-page .guest-join-field {
+    display: grid;
+    grid-template-columns: 68px minmax(0,1fr);
+    align-items: center;
+    gap: 7px;
+  }
+
+  body.guest-page .guest-join-field .field-label {
+    margin: 0;
+    font-size: .63rem;
+    color: #aeb7d0;
+  }
+
+  body.guest-page .guest-join-field .text-input {
+    min-height: 38px;
+    height: 38px;
+    padding: 7px 9px;
+    border-radius: 9px;
+    font-size: .82rem;
+  }
+
+  body.guest-page .guest-join-button {
+    min-height: 39px;
+    height: 39px;
+    margin-top: 1px;
+    padding: 6px 10px;
+    border-radius: 9px;
+    font-size: .75rem;
+  }
+
+  body.guest-page #joinPanel .form-message {
+    margin-top: 4px;
+    font-size: .66rem;
+  }
+
+  body.guest-page #joinPanel .notice {
+    margin: 5px 0;
+    padding: 7px 8px;
+    font-size: .65rem;
+  }
+}
+
+@media (max-width: 380px) {
+  body.guest-page .guest-join-card > .guest-join-help {
+    display: none;
+  }
+
+  body.guest-page .guest-join-card {
+    padding: 8px;
+  }
+
+  body.guest-page .guest-join-field {
+    grid-template-columns: 58px minmax(0,1fr);
+    gap: 6px;
+  }
+}
