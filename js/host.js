@@ -149,9 +149,6 @@ function buildGuestUrl(sessionId) {
   const url = new URL("./guest.html", window.location.href);
   url.search = "";
   url.searchParams.set("session", sessionId);
-  // Cache-buster is intentional: QR phones must receive the current Guest code
-  // after GitHub Pages updates instead of a previously cached guest.html.
-  url.searchParams.set("v", "20260909-guestfix2");
   return url.toString();
 }
 

@@ -83,8 +83,7 @@ function normalizeSession(value) {
   let raw = String(value || "").trim();
   if (!raw) return "";
 
-  // QR scanners and messaging apps can hand us either the code itself,
-  // a full URL, or a URL-encoded copy of either. Normalize all of them.
+  // QR scanners can pass either the room code, a full URL, or an encoded URL.
   for (let i = 0; i < 2; i += 1) {
     try {
       const decoded = decodeURIComponent(raw);
@@ -95,53 +94,27 @@ function normalizeSession(value) {
     }
   }
 
-  // Parse a complete URL before changing letter case so query-parameter
-  // names such as ?session= remain intact.
   try {
-    const maybeUrl = new URL(raw);
-    raw = maybeUrl.searchParams.get("session")
-      || maybeUrl.searchParams.get("room")
-      || maybeUrl.searchParams.get("code")
-      || raw;
+    if (/^https?:\/\//i.test(raw)) {
+      const parsed = new URL(raw);
+      raw = parsed.searchParams.get("session") || raw;
+    }
   } catch {
-    // Not a URL; continue as a normal room code.
+    // Keep the original value and normalize it below.
   }
 
-  raw = String(raw)
+  let code = raw
+    .trim()
     .toUpperCase()
     .replace(/[\u2010-\u2015\u2212]/g, "-")
-    .trim();
+    .replace(/\s+/g, "");
 
-  const embedded = raw.match(/KARAOKE[\s_-]*([A-Z0-9]{4,12})/);
-  if (embedded) return `KARAOKE-${embedded[1]}`;
-
-  const compact = raw.replace(/[^A-Z0-9]/g, "");
-  if (compact.startsWith("KARAOKE")) {
-    const suffix = compact.slice(7);
-    return suffix ? `KARAOKE-${suffix}` : "KARAOKE-";
-  }
-
-  return compact ? `KARAOKE-${compact}` : "";
+  if (code && !code.startsWith("KARAOKE-")) code = `KARAOKE-${code}`;
+  return code;
 }
 
-function sessionFromLocation() {
-  const params = new URLSearchParams(window.location.search);
-  const direct = params.get("session") || params.get("room") || params.get("code");
-  if (direct) return normalizeSession(direct);
-
-  // Some QR/browser combinations preserve the URL in the hash instead.
-  const hash = String(window.location.hash || "").replace(/^#/, "");
-  if (hash) {
-    try {
-      const hashParams = new URLSearchParams(hash);
-      const fromHash = hashParams.get("session") || hashParams.get("room") || hashParams.get("code");
-      if (fromHash) return normalizeSession(fromHash);
-    } catch { /* ignore */ }
-    const extracted = normalizeSession(hash);
-    if (/^KARAOKE-[A-Z0-9]{4,12}$/.test(extracted)) return extracted;
-  }
-
-  return "";
+function isValidSessionCode(value) {
+  return /^KARAOKE-[A-Z0-9]{4,12}$/.test(String(value || ""));
 }
 
 function setMessage(element, text, type = "") {
@@ -250,25 +223,65 @@ function setYouTubeSearchState() {
   }
 }
 
+async function registerDisconnectCleanup(reference) {
+  // Presence cleanup is helpful but must never block a guest from joining.
+  // Some mobile browsers can fail while registering onDisconnect during a
+  // connection transition, so treat it as a best-effort enhancement.
+  try {
+    const disconnect = onDisconnect(reference);
+    await disconnect.remove();
+  } catch (error) {
+    console.warn("Guest disconnect cleanup could not be registered.", error);
+  }
+}
+
 async function joinSession(sessionId, singerName) {
-  const sessionMetaRef = ref(db, `sessions/${sessionId}/meta`);
+  // Always obtain a fresh, explicit Firebase context for the join action.
+  // This avoids relying on a mutable page-level Database reference during
+  // mobile reconnects / cached module reloads.
+  const context = await initFirebase();
+  const database = context?.db;
+  const currentUser = context?.user;
+
+  if (!database || !currentUser?.uid) {
+    throw new Error("Firebase is not ready yet. Refresh the page and try again.");
+  }
+
+  const sessionMetaRef = ref(database, `sessions/${sessionId}/meta`);
   const sessionSnapshot = await get(sessionMetaRef);
 
   if (!sessionSnapshot.exists()) {
     throw new Error("Session not found. Check the code or ask the host for a new QR code.");
   }
 
-  activeSessionId = sessionId;
-  activeName = singerName;
-  guestRef = ref(db, `sessions/${sessionId}/guests/${user.uid}`);
+  const thisGuestRef = ref(database, `sessions/${sessionId}/guests/${currentUser.uid}`);
+  const now = Date.now();
 
-  await set(guestRef, {
+  await set(thisGuestRef, {
     name: singerName,
-    joinedAt: serverTimestamp(),
-    lastSeen: serverTimestamp()
+    joinedAt: now,
+    lastSeen: now
   });
 
-  await onDisconnect(guestRef).remove();
+  // Install listeners using the same explicit Database instance that was used
+  // for the successful read/write above. If a listener cannot be created, the
+  // join stays on the form instead of entering a half-connected state.
+  const subscriptions = watchRoom(sessionId, database, currentUser);
+
+  db = database;
+  user = currentUser;
+  activeSessionId = sessionId;
+  activeName = singerName;
+  guestRef = thisGuestRef;
+
+  unsubscribeHost = subscriptions.unsubscribeHost;
+  unsubscribeGuestCount = subscriptions.unsubscribeGuestCount;
+  unsubscribeSettings = subscriptions.unsubscribeSettings;
+  unsubscribeQueue = subscriptions.unsubscribeQueue;
+  unsubscribeCurrentSong = subscriptions.unsubscribeCurrentSong;
+
+  registerDisconnectCleanup(thisGuestRef);
+
   localStorage.setItem("openKaraokeSingerName", singerName);
   localStorage.setItem("openKaraokeGuestSession", sessionId);
 
@@ -278,46 +291,65 @@ async function joinSession(sessionId, singerName) {
   roomPanel.hidden = false;
 
   setYouTubeSearchState();
-  watchRoom(sessionId);
 }
 
-function watchRoom(sessionId) {
+function watchRoom(sessionId, database, currentUser) {
   unsubscribeHost?.();
   unsubscribeGuestCount?.();
   unsubscribeSettings?.();
   unsubscribeQueue?.();
   unsubscribeCurrentSong?.();
 
-  unsubscribeHost = onValue(ref(db, `sessions/${sessionId}/meta/hostOnline`), snapshot => {
+  if (!database || !currentUser?.uid) {
+    throw new Error("Firebase connection is not ready.");
+  }
+
+  const hostRef = ref(database, `sessions/${sessionId}/meta/hostOnline`);
+  const guestsRef = ref(database, `sessions/${sessionId}/guests`);
+  const settingsRef = ref(database, `sessions/${sessionId}/settings/reservationsLocked`);
+  const queueRef = ref(database, `sessions/${sessionId}/queue`);
+  const currentSongRef = ref(database, `sessions/${sessionId}/currentSong`);
+
+  const nextUnsubscribeHost = onValue(hostRef, snapshot => {
     roomHostStatus.textContent = snapshot.val() === true ? "Online" : "Offline";
   });
 
-  unsubscribeGuestCount = onValue(ref(db, `sessions/${sessionId}/guests`), snapshot => {
-    roomGuestCount.textContent = String(snapshot.exists() ? snapshot.size : 0);
+  const nextUnsubscribeGuestCount = onValue(guestsRef, snapshot => {
+    const guests = snapshot.val() || {};
+    roomGuestCount.textContent = String(Object.keys(guests).length);
   });
 
-  unsubscribeSettings = onValue(ref(db, `sessions/${sessionId}/settings/reservationsLocked`), snapshot => {
+  const nextUnsubscribeSettings = onValue(settingsRef, snapshot => {
     setReservationLockState(snapshot.val() === true);
   });
 
-  unsubscribeQueue = onValue(ref(db, `sessions/${sessionId}/queue`), snapshot => {
+  const nextUnsubscribeQueue = onValue(queueRef, snapshot => {
     currentQueue = sortQueueEntries(snapshot.val());
     renderQueue();
   });
 
-  unsubscribeCurrentSong = onValue(ref(db, `sessions/${sessionId}/currentSong`), snapshot => {
+  const nextUnsubscribeCurrentSong = onValue(currentSongRef, snapshot => {
     renderCurrentSong(snapshot.val());
   });
+
+  return {
+    unsubscribeHost: nextUnsubscribeHost,
+    unsubscribeGuestCount: nextUnsubscribeGuestCount,
+    unsubscribeSettings: nextUnsubscribeSettings,
+    unsubscribeQueue: nextUnsubscribeQueue,
+    unsubscribeCurrentSong: nextUnsubscribeCurrentSong
+  };
 }
 
 async function refreshGuestPresence() {
   if (!guestRef || !activeName) return;
+  const now = Date.now();
   await set(guestRef, {
     name: activeName,
-    joinedAt: serverTimestamp(),
-    lastSeen: serverTimestamp()
+    joinedAt: now,
+    lastSeen: now
   });
-  await onDisconnect(guestRef).remove();
+  registerDisconnectCleanup(guestRef);
 }
 
 async function reserveSongById(title, videoId, thumbnail = "") {
@@ -342,7 +374,7 @@ async function reserveSongById(title, videoId, thumbnail = "") {
       thumbnail: thumbnail || youtubeThumbnail(videoId),
       singerName: activeName,
       guestId: user.uid,
-      addedAt: serverTimestamp(),
+      addedAt: Date.now(),
       status: "waiting"
     };
   }, { applyLocally: false });
@@ -416,8 +448,8 @@ async function reserveSearchResult(item, button = null) {
 }
 
 async function init() {
-  const urlSession = sessionFromLocation();
-  if (urlSession) sessionInput.value = urlSession;
+  const urlSession = new URLSearchParams(window.location.search).get("session");
+  if (urlSession) sessionInput.value = normalizeSession(urlSession);
 
   const savedName = localStorage.getItem("openKaraokeSingerName");
   if (savedName) nameInput.value = savedName;
@@ -454,7 +486,7 @@ joinForm.addEventListener("submit", async event => {
   const sessionId = normalizeSession(sessionInput.value);
   const singerName = nameInput.value.trim();
 
-  if (!/^KARAOKE-[A-Z0-9]{4,12}$/.test(sessionId)) {
+  if (!isValidSessionCode(sessionId)) {
     setMessage(guestMessage, "Enter a valid session code such as KARAOKE-AB12CD.", "error");
     return;
   }
@@ -470,8 +502,12 @@ joinForm.addEventListener("submit", async event => {
     await joinSession(sessionId, singerName);
     setMessage(guestMessage, "");
   } catch (error) {
-    console.error(error);
-    setMessage(guestMessage, error.message || "Could not join this session.", "error");
+    console.error("Guest join failed:", error);
+    const rawMessage = String(error?.message || "");
+    const friendlyMessage = rawMessage.includes("_checkNotDeleted")
+      ? "Firebase connection refreshed unexpectedly. Reload this page once, then tap Join Session again."
+      : (rawMessage || "Could not join this session.");
+    setMessage(guestMessage, friendlyMessage, "error");
     button.disabled = false;
   }
 });
