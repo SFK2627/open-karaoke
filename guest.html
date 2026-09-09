@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1020">
+  <title>Open Karaoke - Guest</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="guest-page">
+  <header class="topbar compact-topbar">
+    <a class="brand" href="./index.html">🎤 <span>Open Karaoke</span></a>
+    <div class="status-pill" id="connectionStatus" data-state="loading">Connecting…</div>
+  </header>
+
+  <main class="page-shell guest-shell">
+    <section class="panel guest-join-card" id="joinPanel">
+      <p class="eyebrow">GUEST CONTROLLER</p>
+      <h1>Join the karaoke</h1>
+      <p class="muted">Enter your name. If you scanned the host QR code, the session code is already filled in.</p>
+
+      <div class="notice warning" id="configWarning" hidden>
+        Firebase is not configured yet. The host must finish the Firebase setup first.
+      </div>
+
+      <form id="joinForm" class="stack-form">
+        <label class="field-label" for="sessionInput">Session Code</label>
+        <input id="sessionInput" class="text-input uppercase" maxlength="16" autocomplete="off" placeholder="KARAOKE-AB12CD" required>
+
+        <label class="field-label" for="nameInput">Singer / Nickname</label>
+        <input id="nameInput" class="text-input" maxlength="30" autocomplete="nickname" placeholder="Juan" required>
+
+        <button class="btn btn-primary btn-large" type="submit">Join Session</button>
+      </form>
+      <p class="form-message" id="guestMessage" aria-live="polite"></p>
+    </section>
+
+    <section class="guest-room" id="roomPanel" hidden>
+      <article class="panel welcome-card compact-panel">
+        <div class="guest-welcome-row">
+          <div>
+            <p class="eyebrow">CONNECTED</p>
+            <h1>Hello, <span id="displayName">Guest</span>!</h1>
+          </div>
+          <div class="session-badge">Session <strong id="displaySession">—</strong></div>
+        </div>
+        <div class="room-status-row">
+          <div>
+            <span class="stat-label">Host</span>
+            <strong id="roomHostStatus">Checking…</strong>
+          </div>
+          <div>
+            <span class="stat-label">Guests</span>
+            <strong id="roomGuestCount">—</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel guest-now-playing-card">
+        <div class="section-heading guest-now-heading">
+          <div>
+            <p class="eyebrow">NOW PLAYING</p>
+            <h2 id="guestNowTitle">Nothing playing yet</h2>
+          </div>
+          <span class="playback-chip" id="guestPlaybackState" data-state="idle">IDLE</span>
+        </div>
+        <div class="guest-now-body" id="guestNowBody">
+          <div class="guest-now-placeholder">The current song will appear here when the Host starts playback.</div>
+        </div>
+      </article>
+
+      <article class="panel reserve-card">
+        <div class="section-heading mobile-stack-heading">
+          <div>
+            <p class="eyebrow">FIND A KARAOKE SONG</p>
+            <h2>YouTube Search</h2>
+          </div>
+          <span class="lock-chip" id="reservationState" data-locked="false">Open</span>
+        </div>
+
+        <div class="notice warning" id="reservationLockedNotice" hidden>
+          🔒 Reservations are temporarily closed by the Host. You can still search and view the queue.
+        </div>
+
+        <div class="notice warning" id="youtubeSearchWarning" hidden>
+          YouTube Search is not configured yet. You can still reserve using a YouTube link below.
+        </div>
+
+        <form id="searchForm" class="search-form">
+          <input id="searchInput" class="text-input" maxlength="100" autocomplete="off" placeholder="BINI Pantropiko karaoke" aria-label="Search YouTube">
+          <button class="btn btn-primary" id="searchBtn" type="submit">🔎 Search</button>
+        </form>
+        <p class="mini-note">Search runs only when you tap Search to reduce free API usage.</p>
+        <p class="form-message" id="searchMessage" aria-live="polite"></p>
+        <div id="searchResults" class="search-results empty-state">Search for a karaoke song.</div>
+
+        <details class="manual-reserve">
+          <summary>Have a YouTube link already?</summary>
+          <form id="reserveForm" class="stack-form manual-reserve-form">
+            <label class="field-label" for="songTitleInput">Song Title</label>
+            <input id="songTitleInput" class="text-input" maxlength="120" placeholder="Example: Pantropiko Karaoke" required>
+
+            <label class="field-label" for="youtubeInput">YouTube Link or Video ID</label>
+            <input id="youtubeInput" class="text-input" maxlength="300" inputmode="url" placeholder="https://youtu.be/..." required>
+
+            <button class="btn btn-secondary btn-large full-width" id="reserveBtn" type="submit">＋ Reserve From Link</button>
+          </form>
+        </details>
+        <p class="form-message" id="reserveMessage" aria-live="polite"></p>
+      </article>
+
+      <article class="panel queue-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">SHARED QUEUE</p>
+            <h2>Up Next</h2>
+          </div>
+          <span class="queue-count" id="queueCount">0 songs</span>
+        </div>
+        <div id="guestQueue" class="song-list empty-state">No songs reserved yet.</div>
+      </article>
+
+      <article class="panel queue-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">YOUR RESERVATIONS</p>
+            <h2>My Songs</h2>
+          </div>
+        </div>
+        <div id="mySongs" class="song-list empty-state">You have no waiting songs.</div>
+      </article>
+
+      <button class="btn btn-danger btn-large full-width" id="leaveBtn">Leave Session</button>
+    </section>
+  </main>
+
+  <div class="preview-modal" id="previewModal" hidden>
+    <div class="preview-backdrop" data-close-preview></div>
+    <section class="preview-dialog" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+      <div class="preview-header">
+        <div>
+          <p class="eyebrow">PREVIEW</p>
+          <h2 id="previewTitle">YouTube Preview</h2>
+        </div>
+        <button class="icon-btn" id="closePreviewBtn" type="button" aria-label="Close preview">×</button>
+      </div>
+      <div class="preview-frame-wrap">
+        <iframe id="previewFrame" title="YouTube preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      </div>
+      <p class="muted preview-channel" id="previewChannel"></p>
+      <button class="btn btn-primary btn-large full-width" id="previewReserveBtn" type="button">＋ Reserve This Song</button>
+    </section>
+  </div>
+
+  <script type="module" src="./js/guest.js"></script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1020">
+  <title>Open Karaoke - Host</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="host-page">
+  <header class="topbar">
+    <a class="brand" href="./index.html">🎤 <span>Open Karaoke</span></a>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-small" id="fullscreenBtn" type="button" hidden>⛶ Fullscreen</button>
+      <div class="status-pill" id="connectionStatus" data-state="loading">Connecting…</div>
+    </div>
+  </header>
+
+  <main class="page-shell host-shell">
+    <section class="panel host-create-panel" id="createPanel">
+      <p class="eyebrow">HOST SCREEN</p>
+      <h1>Create a karaoke session</h1>
+      <p class="muted">This browser becomes the owner of the room. Set a Host PIN, then guests can join using the QR code.</p>
+      <div class="notice warning" id="configWarning" hidden>
+        Firebase is not configured yet. Add your Firebase values in <code>js/firebase-config.js</code> first.
+      </div>
+      <form id="createSessionForm" class="pin-form" autocomplete="off">
+        <label class="field-label" for="createPinInput">Host PIN</label>
+        <input id="createPinInput" class="text-input pin-input" type="password" inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8" placeholder="4-8 digit PIN" required>
+        <p class="mini-note no-top-margin">The PIN is stored only in this Host browser as a salted hash. It is not hard-coded in the site.</p>
+        <button class="btn btn-primary btn-large full-width" id="createSessionBtn" type="submit">Create Karaoke Session</button>
+      </form>
+      <p class="form-message" id="hostMessage" aria-live="polite"></p>
+    </section>
+
+    <section class="panel host-create-panel host-unlock-panel" id="unlockPanel" hidden>
+      <p class="eyebrow">HOST LOCKED</p>
+      <h1>Unlock Host Controls</h1>
+      <p class="muted">Recovered session <strong id="unlockSessionCode">—</strong>. Enter the Host PIN to continue.</p>
+      <form id="unlockForm" class="pin-form" autocomplete="off">
+        <label class="field-label" for="unlockPinInput">Host PIN</label>
+        <input id="unlockPinInput" class="text-input pin-input" type="password" inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8" placeholder="Enter PIN" required>
+        <button class="btn btn-primary btn-large full-width" id="unlockBtn" type="submit">Unlock Host</button>
+      </form>
+      <p class="form-message" id="unlockMessage" aria-live="polite"></p>
+      <button class="btn btn-ghost full-width" id="forgetRecoveredBtn" type="button">Forget This Saved Session</button>
+    </section>
+
+    <section class="host-grid" id="sessionPanel" hidden>
+      <article class="panel session-card player-card">
+        <div class="section-heading session-heading-final">
+          <div>
+            <p class="eyebrow">ACTIVE SESSION</p>
+            <h2 id="sessionCode">—</h2>
+          </div>
+          <div class="session-actions-final">
+            <button class="btn btn-ghost btn-small" id="copyCodeBtn" type="button">Copy Code</button>
+            <button class="btn btn-secondary btn-small" id="lockHostBtn" type="button">🔐 Lock Host</button>
+          </div>
+        </div>
+
+        <div class="player-shell">
+          <div id="youtubePlayer"></div>
+          <div class="player-empty" id="playerEmpty">
+            <div class="placeholder-icon">▶</div>
+            <strong>No song playing</strong>
+            <span>Press Play or Next when a guest has reserved a song.</span>
+          </div>
+        </div>
+
+        <div class="now-playing-host">
+          <div class="now-playing-copy">
+            <p class="eyebrow">NOW PLAYING</p>
+            <h3 id="nowPlayingTitle">Waiting for a song…</h3>
+            <p id="nowPlayingSinger" class="muted now-playing-singer">Queue is ready when guests add songs.</p>
+          </div>
+          <span class="playback-chip" id="playbackState" data-state="idle">IDLE</span>
+        </div>
+
+        <div class="host-player-controls host-player-controls-final">
+          <button class="btn btn-secondary" id="previousBtn" type="button">⏮ Previous</button>
+          <button class="btn btn-primary" id="playBtn" type="button">▶ Play / Resume</button>
+          <button class="btn btn-secondary" id="pauseBtn" type="button">⏸ Pause</button>
+          <button class="btn btn-secondary" id="stopBtn" type="button">⏹ Stop</button>
+          <button class="btn btn-primary" id="nextBtn" type="button">⏭ Next / Skip</button>
+        </div>
+
+        <div class="volume-row">
+          <label for="volumeSlider">Volume</label>
+          <input id="volumeSlider" type="range" min="0" max="100" value="80">
+          <strong id="volumeValue">80%</strong>
+        </div>
+
+        <div class="notice warning player-error" id="playerError" hidden></div>
+        <p class="form-message player-message" id="playerMessage" aria-live="polite"></p>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <span class="stat-label">Connected Guests</span>
+            <strong id="guestCount">0</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Waiting Songs</span>
+            <strong id="hostQueueCount">0</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Host Status</span>
+            <strong id="hostStatusText">Online</strong>
+          </div>
+        </div>
+      </article>
+
+      <aside class="panel qr-card">
+        <p class="eyebrow">SCAN TO JOIN</p>
+        <h2>Guest QR Code</h2>
+        <div class="qr-wrap"><div id="qrCode"></div></div>
+        <label class="field-label" for="guestLink">Guest link</label>
+        <div class="copy-row">
+          <input id="guestLink" type="text" readonly>
+          <button class="btn btn-secondary" id="copyLinkBtn" type="button">Copy</button>
+        </div>
+        <p class="mini-note">Multiple Android/iPhone guests can use this same session link simultaneously.</p>
+      </aside>
+
+      <article class="panel queue-panel host-queue-panel">
+        <div class="section-heading host-queue-heading">
+          <div>
+            <p class="eyebrow">REAL-TIME QUEUE</p>
+            <h2>Up Next</h2>
+          </div>
+          <div class="host-queue-actions">
+            <button class="btn btn-secondary" id="lockReservationsBtn" type="button">🔒 Lock Reservations</button>
+            <button class="btn btn-danger" id="clearQueueBtn" type="button">Clear Waiting Queue</button>
+          </div>
+        </div>
+        <div class="notice warning" id="hostQueueNotice" hidden></div>
+        <div id="hostQueue" class="song-list empty-state">No songs reserved yet.</div>
+      </article>
+
+      <article class="panel history-panel">
+        <div class="section-heading host-queue-heading">
+          <div>
+            <p class="eyebrow">RECENT SONGS</p>
+            <h2>History</h2>
+          </div>
+          <button class="btn btn-ghost btn-small" id="clearHistoryBtn" type="button">Clear Finished</button>
+        </div>
+        <p class="mini-note no-top-margin">Previous uses the most recently completed or skipped song.</p>
+        <div id="historyList" class="song-list empty-state">No finished songs yet.</div>
+      </article>
+
+      <article class="panel guest-list-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">CONNECTED NOW</p>
+            <h2>Guests</h2>
+          </div>
+        </div>
+        <div id="guestList" class="guest-list empty-state">No guests connected yet.</div>
+      </article>
+
+      <article class="panel danger-zone-panel">
+        <p class="eyebrow">SESSION MANAGEMENT</p>
+        <h2>End this karaoke room</h2>
+        <p class="muted">Deletes this session's queue, history, guests, settings, and current-song data from Firebase. Use this when the event is finished.</p>
+        <button class="btn btn-danger" id="endSessionBtn" type="button">End & Delete Session</button>
+      </article>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script type="module" src="./js/host.js"></script>
+</body>
+</html>

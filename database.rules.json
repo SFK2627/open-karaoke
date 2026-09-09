@@ -1,0 +1,38 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "sessions": {
+      "$sessionId": {
+        ".write": "auth != null && ((!data.exists() && newData.child('meta/hostUid').val() === auth.uid) || (data.exists() && data.child('meta/hostUid').val() === auth.uid))",
+        "meta": {
+          ".read": "auth != null",
+          ".validate": "newData.hasChildren(['sessionId','hostUid','hostOnline','createdAt','hostLastSeen']) && newData.child('sessionId').val() === $sessionId && newData.child('hostUid').isString() && newData.child('hostOnline').isBoolean() && newData.child('createdAt').isNumber() && newData.child('hostLastSeen').isNumber()"
+        },
+        "guests": {
+          ".read": "auth != null && (root.child('sessions').child($sessionId).child('meta').child('hostUid').val() === auth.uid || root.child('sessions').child($sessionId).child('guests').child(auth.uid).exists())",
+          "$uid": {
+            ".write": "auth != null && (auth.uid === $uid || root.child('sessions').child($sessionId).child('meta').child('hostUid').val() === auth.uid)",
+            ".validate": "!newData.exists() || (newData.hasChildren(['name','joinedAt','lastSeen']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 30 && newData.child('joinedAt').isNumber() && newData.child('lastSeen').isNumber())"
+          }
+        },
+        "queue": {
+          ".read": "auth != null && (root.child('sessions').child($sessionId).child('meta').child('hostUid').val() === auth.uid || root.child('sessions').child($sessionId).child('guests').child(auth.uid).exists())",
+          "$itemId": {
+            ".write": "auth != null && ((!data.exists() && newData.exists() && root.child('sessions').child($sessionId).child('settings').child('reservationsLocked').val() !== true && root.child('sessions').child($sessionId).child('guests').child(auth.uid).exists() && newData.child('guestId').val() === auth.uid && newData.child('status').val() === 'waiting' && $itemId === auth.uid + '_' + newData.child('youtubeVideoId').val()) || (data.exists() && !newData.exists() && data.child('guestId').val() === auth.uid && data.child('status').val() === 'waiting'))",
+            ".validate": "!newData.exists() || (newData.hasChildren(['youtubeVideoId','title','thumbnail','singerName','guestId','addedAt','status']) && newData.child('youtubeVideoId').isString() && newData.child('youtubeVideoId').val().length >= 6 && newData.child('youtubeVideoId').val().length <= 20 && newData.child('title').isString() && newData.child('title').val().length > 0 && newData.child('title').val().length <= 120 && newData.child('thumbnail').isString() && newData.child('singerName').isString() && newData.child('guestId').isString() && ((!data.exists() && newData.child('singerName').val() === root.child('sessions').child($sessionId).child('guests').child(newData.child('guestId').val()).child('name').val()) || (data.exists() && newData.child('guestId').val() === data.child('guestId').val() && newData.child('singerName').val() === data.child('singerName').val() && newData.child('youtubeVideoId').val() === data.child('youtubeVideoId').val())) && newData.child('addedAt').isNumber() && (!newData.child('order').exists() || newData.child('order').isNumber()) && (!newData.child('startedAt').exists() || newData.child('startedAt').isNumber()) && (!newData.child('finishedAt').exists() || newData.child('finishedAt').isNumber()) && (newData.child('status').val() === 'waiting' || newData.child('status').val() === 'playing' || newData.child('status').val() === 'completed' || newData.child('status').val() === 'skipped'))"
+          }
+        },
+        "currentSong": {
+          ".read": "auth != null && (root.child('sessions').child($sessionId).child('meta').child('hostUid').val() === auth.uid || root.child('sessions').child($sessionId).child('guests').child(auth.uid).exists())",
+          ".write": "auth != null && root.child('sessions').child($sessionId).child('meta').child('hostUid').val() === auth.uid",
+          ".validate": "!newData.exists() || (newData.hasChildren(['queueItemId','youtubeVideoId','title','thumbnail','singerName','guestId','startedAt','playbackState']) && newData.child('queueItemId').isString() && newData.child('youtubeVideoId').isString() && newData.child('youtubeVideoId').val().length >= 6 && newData.child('youtubeVideoId').val().length <= 20 && newData.child('title').isString() && newData.child('title').val().length > 0 && newData.child('title').val().length <= 120 && newData.child('thumbnail').isString() && newData.child('singerName').isString() && newData.child('guestId').isString() && newData.child('startedAt').isNumber() && (newData.child('playbackState').val() === 'playing' || newData.child('playbackState').val() === 'paused' || newData.child('playbackState').val() === 'stopped' || newData.child('playbackState').val() === 'error'))"
+        },
+        "settings": {
+          ".read": "auth != null && (root.child('sessions').child($sessionId).child('meta').child('hostUid').val() === auth.uid || root.child('sessions').child($sessionId).child('guests').child(auth.uid).exists())",
+          ".validate": "newData.hasChild('reservationsLocked') && newData.child('reservationsLocked').isBoolean()"
+        }
+      }
+    }
+  }
+}
