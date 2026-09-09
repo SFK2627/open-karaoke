@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Guest</title>
-  <link rel="stylesheet" href="./css/style.css?v=20260909-repeat-audio2">
+  <link rel="stylesheet" href="./css/style.css?v=20260909-guestcompact1">
 </head>
 <body class="guest-page">
   <header class="topbar compact-topbar">
     <a class="brand" href="./index.html">🎤 <span>Open Karaoke</span></a>
-    <div class="status-pill" id="connectionStatus" data-state="loading">Connecting…</div>
+    <div class="status-pill guest-status-pill" id="connectionStatus" data-state="loading">…</div>
   </header>
 
   <main class="page-shell guest-shell">
@@ -36,23 +36,18 @@
     </section>
 
     <section class="guest-room" id="roomPanel" hidden>
-      <article class="panel welcome-card compact-panel">
-        <div class="guest-welcome-row">
-          <div>
-            <p class="eyebrow">CONNECTED</p>
-            <h1>Hello, <span id="displayName">Guest</span>!</h1>
+      <article class="panel welcome-card compact-panel guest-summary-card">
+        <div class="guest-summary-main">
+          <span class="guest-summary-icon" aria-hidden="true">🎤</span>
+          <div class="guest-summary-copy">
+            <span class="guest-summary-label">Singer</span>
+            <strong>Hello, <span id="displayName">Guest</span>!</strong>
           </div>
-          <div class="session-badge">Session <strong id="displaySession">—</strong></div>
         </div>
-        <div class="room-status-row">
-          <div>
-            <span class="stat-label">Host</span>
-            <strong id="roomHostStatus">Checking…</strong>
-          </div>
-          <div>
-            <span class="stat-label">Guests</span>
-            <strong id="roomGuestCount">—</strong>
-          </div>
+        <div class="guest-summary-meta">
+          <div class="session-badge"><span>Room</span> <strong id="displaySession">—</strong></div>
+          <div class="guest-mini-stat"><span>Host</span><strong id="roomHostStatus">Checking…</strong></div>
+          <div class="guest-mini-stat"><span>Guests</span><strong id="roomGuestCount">—</strong></div>
         </div>
       </article>
 
@@ -69,7 +64,13 @@
         </div>
       </article>
 
-      <article class="panel reserve-card">
+      <nav class="guest-mobile-tabs" id="guestMobileTabs" aria-label="Guest controller sections">
+        <button class="guest-tab-btn is-active" type="button" data-guest-tab="search">🔎 <span>Search</span></button>
+        <button class="guest-tab-btn" type="button" data-guest-tab="queue">≡ <span>Queue</span></button>
+        <button class="guest-tab-btn" type="button" data-guest-tab="mine">♪ <span>My Songs</span></button>
+      </nav>
+
+      <article class="panel reserve-card guest-tab-panel is-active" data-guest-panel="search">
         <div class="section-heading mobile-stack-heading">
           <div>
             <p class="eyebrow">FIND A KARAOKE SONG</p>
@@ -109,7 +110,7 @@
         <p class="form-message" id="reserveMessage" aria-live="polite"></p>
       </article>
 
-      <article class="panel queue-panel">
+      <article class="panel queue-panel guest-tab-panel" data-guest-panel="queue">
         <div class="section-heading">
           <div>
             <p class="eyebrow">SHARED QUEUE</p>
@@ -120,7 +121,7 @@
         <div id="guestQueue" class="song-list empty-state">No songs reserved yet.</div>
       </article>
 
-      <article class="panel queue-panel">
+      <article class="panel queue-panel guest-tab-panel" data-guest-panel="mine">
         <div class="section-heading">
           <div>
             <p class="eyebrow">YOUR RESERVATIONS</p>
@@ -130,7 +131,7 @@
         <div id="mySongs" class="song-list empty-state">You have no waiting songs.</div>
       </article>
 
-      <button class="btn btn-danger btn-large full-width" id="leaveBtn">Leave Session</button>
+      <button class="btn btn-danger guest-leave-btn" id="leaveBtn">Leave Session</button>
     </section>
   </main>
 
@@ -152,6 +153,6 @@
     </section>
   </div>
 
-  <script type="module" src="./js/guest.js?v=20260909-repeat-audio2"></script>
+  <script type="module" src="./js/guest.js?v=20260909-guestcompact1"></script>
 </body>
 </html>

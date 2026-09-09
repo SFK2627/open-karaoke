@@ -14,13 +14,13 @@ import {
   youtubeThumbnail,
   sortQueueEntries,
   escapeHtml
-} from "./queue.js?v=20260909-repeat-audio2";
+} from "./queue.js?v=20260909-guestcompact1";
 import {
   isYouTubeSearchConfigured,
   searchYouTubeVideos
 } from "./youtube.js";
 
-const GUEST_BUILD = "20260909-repeat-audio2";
+const GUEST_BUILD = "20260909-guestcompact1";
 
 function uniqueReservationId(guestId, videoId) {
   const randomPart = globalThis.crypto?.randomUUID
@@ -67,6 +67,9 @@ const previewTitle = document.querySelector("#previewTitle");
 const previewChannel = document.querySelector("#previewChannel");
 const previewReserveBtn = document.querySelector("#previewReserveBtn");
 const closePreviewBtn = document.querySelector("#closePreviewBtn");
+const guestMobileTabs = document.querySelector("#guestMobileTabs");
+const guestTabButtons = [...document.querySelectorAll("[data-guest-tab]")];
+const guestTabPanels = [...document.querySelectorAll("[data-guest-panel]")];
 
 let db;
 let user;
@@ -130,8 +133,24 @@ function setMessage(element, text, type = "") {
 }
 
 function setConnection(isOnline) {
-  connectionStatus.textContent = isOnline ? "Firebase Online" : "Offline";
+  connectionStatus.textContent = isOnline ? "Online" : "Offline";
   connectionStatus.dataset.state = isOnline ? "online" : "offline";
+}
+
+function setGuestTab(tabName, { scroll = false } = {}) {
+  const valid = ["search", "queue", "mine"].includes(tabName) ? tabName : "search";
+  guestTabButtons.forEach(button => {
+    const active = button.dataset.guestTab === valid;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  guestTabPanels.forEach(panel => {
+    const active = panel.dataset.guestPanel === valid;
+    panel.classList.toggle("is-active", active);
+  });
+  if (scroll && guestMobileTabs && window.matchMedia("(max-width: 620px)").matches) {
+    guestMobileTabs.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 function renderQueue() {
@@ -296,6 +315,7 @@ async function joinSession(sessionId, singerName) {
   displaySession.textContent = sessionId;
   joinPanel.hidden = true;
   roomPanel.hidden = false;
+  setGuestTab("search");
 
   setYouTubeSearchState();
 }
@@ -515,6 +535,12 @@ joinForm.addEventListener("submit", async event => {
   }
 });
 
+guestMobileTabs?.addEventListener("click", event => {
+  const button = event.target.closest("[data-guest-tab]");
+  if (!button) return;
+  setGuestTab(button.dataset.guestTab);
+});
+
 searchForm.addEventListener("submit", async event => {
   event.preventDefault();
   const query = searchInput.value.trim();
@@ -628,6 +654,7 @@ leaveBtn.addEventListener("click", async () => {
   unsubscribeCurrentSong?.();
   roomPanel.hidden = true;
   joinPanel.hidden = false;
+  setGuestTab("search");
   joinForm.querySelector("button").disabled = false;
   leaveBtn.disabled = false;
   setMessage(guestMessage, "You left the session. Your waiting reservations remain in the queue until you cancel them or the Host removes them.", "success");
