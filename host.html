@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Host</title>
-  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/style.css?v=20260909-tv1">
 </head>
 <body class="host-page">
   <header class="topbar">
     <a class="brand" href="./index.html">🎤 <span>Open Karaoke</span></a>
     <div class="topbar-actions">
-      <button class="btn btn-ghost btn-small" id="fullscreenBtn" type="button" hidden>⛶ Fullscreen</button>
+      <button class="btn btn-ghost btn-small" id="fullscreenBtn" type="button" hidden>📺 TV Mode</button>
       <div class="status-pill" id="connectionStatus" data-state="loading">Connecting…</div>
     </div>
   </header>
@@ -59,12 +59,25 @@
           </div>
         </div>
 
+        <div class="tv-karaoke-header" id="tvKaraokeHeader" aria-label="Karaoke TV controls">
+          <div class="tv-up-next-area">
+            <span class="tv-up-next-label">UP NEXT</span>
+            <div class="tv-queue-strip" id="tvQueueStrip">
+              <span class="tv-queue-empty">Waiting for reservations…</span>
+            </div>
+          </div>
+          <div class="tv-header-actions">
+            <button class="tv-icon-btn" id="tvQrToggleBtn" type="button" title="Show guest QR (Q)">▦ <span>QR</span></button>
+            <button class="tv-icon-btn" id="tvExitBtn" type="button" title="Exit TV mode (F)">⛶ <span>Exit</span></button>
+          </div>
+        </div>
+
         <div class="player-shell">
           <div id="youtubePlayer"></div>
           <div class="player-empty" id="playerEmpty">
             <div class="placeholder-icon">▶</div>
             <strong>No song playing</strong>
-            <span>Press Play or Next when a guest has reserved a song.</span>
+            <span>The first reserved song starts automatically.</span>
           </div>
         </div>
 
@@ -83,6 +96,15 @@
           <button class="btn btn-secondary" id="pauseBtn" type="button">⏸ Pause</button>
           <button class="btn btn-secondary" id="stopBtn" type="button">⏹ Stop</button>
           <button class="btn btn-primary" id="nextBtn" type="button">⏭ Next / Skip</button>
+        </div>
+
+        <div class="tv-shortcut-hint" id="tvShortcutHint" aria-hidden="true">
+          <span><kbd>Space</kbd> Play/Pause</span>
+          <span><kbd>→ / N</kbd> Next</span>
+          <span><kbd>← / P</kbd> Previous</span>
+          <span><kbd>S</kbd> Stop</span>
+          <span><kbd>Q</kbd> QR</span>
+          <span><kbd>F</kbd> TV Mode</span>
         </div>
 
         <div class="volume-row">
@@ -168,7 +190,23 @@
     </section>
   </main>
 
+  <div class="tv-qr-overlay" id="tvQrOverlay" hidden aria-modal="true" role="dialog" aria-labelledby="tvQrTitle">
+    <button class="tv-qr-backdrop" id="tvQrBackdrop" type="button" aria-label="Close QR"></button>
+    <div class="tv-qr-dialog">
+      <div class="tv-qr-dialog-head">
+        <div>
+          <p class="eyebrow">SCAN TO RESERVE</p>
+          <h2 id="tvQrTitle">Join this karaoke</h2>
+        </div>
+        <button class="tv-qr-close" id="tvQrCloseBtn" type="button" aria-label="Close QR">×</button>
+      </div>
+      <div class="tv-qr-code-wrap"><div id="tvQrCode"></div></div>
+      <strong class="tv-qr-session" id="tvQrSessionCode">—</strong>
+      <p class="tv-qr-copy">Scan with any phone to search and reserve a song.</p>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module" src="./js/host.js"></script>
+  <script type="module" src="./js/host.js?v=20260909-tv1"></script>
 </body>
 </html>

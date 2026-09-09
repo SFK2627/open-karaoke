@@ -66,6 +66,14 @@ const volumeSlider = document.querySelector("#volumeSlider");
 const volumeValue = document.querySelector("#volumeValue");
 const playerError = document.querySelector("#playerError");
 const playerMessage = document.querySelector("#playerMessage");
+const tvQueueStrip = document.querySelector("#tvQueueStrip");
+const tvQrToggleBtn = document.querySelector("#tvQrToggleBtn");
+const tvExitBtn = document.querySelector("#tvExitBtn");
+const tvQrOverlay = document.querySelector("#tvQrOverlay");
+const tvQrBackdrop = document.querySelector("#tvQrBackdrop");
+const tvQrCloseBtn = document.querySelector("#tvQrCloseBtn");
+const tvQrCode = document.querySelector("#tvQrCode");
+const tvQrSessionCode = document.querySelector("#tvQrSessionCode");
 
 let db;
 let user;
@@ -84,6 +92,8 @@ let unsubscribeConnected = null;
 let unsubscribeQueue = null;
 let unsubscribeSettings = null;
 let unsubscribeCurrentSong = null;
+let autoStartTimer = null;
+let autoStartInFlight = false;
 
 function setMessage(text, type = "") {
   hostMessage.textContent = text;
@@ -223,10 +233,34 @@ function finishedEntries() {
   return sortFinishedEntries(Object.fromEntries(queueEntries));
 }
 
+function renderTvQueueStrip() {
+  if (!tvQueueStrip) return;
+  const waiting = waitingEntries();
+
+  if (!waiting.length) {
+    tvQueueStrip.innerHTML = `<span class="tv-queue-empty">${currentSong ? "Waiting for more reservations…" : "Reserve a song — the first one starts automatically."}</span>`;
+    return;
+  }
+
+  const visible = waiting.slice(0, 7);
+  const extra = waiting.length - visible.length;
+  tvQueueStrip.innerHTML = visible.map(([, item], index) => `
+    <div class="tv-queue-card" title="${escapeHtml(item.title)} — ${escapeHtml(item.singerName)}">
+      <span class="tv-queue-number">${index + 1}</span>
+      <img src="${escapeHtml(item.thumbnail)}" alt="" loading="lazy">
+      <span class="tv-queue-text">
+        <strong>${escapeHtml(item.title)}</strong>
+        <small>👤 ${escapeHtml(item.singerName)}</small>
+      </span>
+    </div>
+  `).join("") + (extra > 0 ? `<span class="tv-queue-more">+${extra} more</span>` : "");
+}
+
 function renderHostQueue() {
   const waiting = waitingEntries();
   hostQueueCount.textContent = String(waiting.length);
   clearQueueBtn.disabled = waiting.length === 0;
+  renderTvQueueStrip();
 
   if (!waiting.length) {
     hostQueue.className = "song-list empty-state";
@@ -292,6 +326,7 @@ function renderPlaybackState(state) {
 function renderCurrentSong(song) {
   currentSong = song || null;
   showPlayerError("");
+  renderTvQueueStrip();
 
   if (!currentSong) {
     nowPlayingTitle.textContent = "Waiting for a song…";
@@ -348,6 +383,7 @@ function watchQueue(sessionId) {
     queueEntries = sortQueueEntries(snapshot.val());
     renderHostQueue();
     renderHistory();
+    scheduleAutoStart();
   });
 }
 
@@ -368,6 +404,33 @@ function watchCurrentSong(sessionId) {
   });
 }
 
+function scheduleAutoStart() {
+  window.clearTimeout(autoStartTimer);
+  autoStartTimer = window.setTimeout(() => {
+    autoStartFirstWaitingSong().catch(error => {
+      console.error("Auto-start error:", error);
+      setPlayerMessage("A song is waiting. Press Space or Play if the browser blocked autoplay.", "error");
+    });
+  }, 180);
+}
+
+async function autoStartFirstWaitingSong() {
+  if (!activeSessionId || advancing || autoStartInFlight || currentSong || !waitingEntries().length) return;
+  autoStartInFlight = true;
+  try {
+    const currentSnapshot = await get(ref(db, `sessions/${activeSessionId}/currentSong`));
+    if (currentSnapshot.exists()) return;
+
+    const queueSnapshot = await get(ref(db, `sessions/${activeSessionId}/queue`));
+    const hasWaiting = sortQueueEntries(queueSnapshot.val()).some(([, item]) => item?.status === "waiting");
+    if (!hasWaiting) return;
+
+    await advanceToNext("skipped");
+  } finally {
+    autoStartInFlight = false;
+  }
+}
+
 function currentVolume() {
   const value = Number(volumeSlider.value || 80);
   return Math.min(100, Math.max(0, value));
@@ -381,7 +444,11 @@ async function ensurePlayer() {
       onReady: event => {
         playerReady = true;
         event.target.setVolume(currentVolume());
+        try {
+          event.target.getIframe()?.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture; fullscreen");
+        } catch {}
         syncPlayerToFirebase(null).catch(error => console.error(error));
+        scheduleAutoStart();
       },
       onStateChange: event => handlePlayerStateChange(event),
       onError: event => handlePlayerError(event)
@@ -413,6 +480,9 @@ async function syncPlayerToFirebase(previousVideoId) {
     loadedVideoId = currentSong.youtubeVideoId;
     if (desiredState === "playing") {
       player.loadVideoById(currentSong.youtubeVideoId);
+      window.setTimeout(() => {
+        try { player?.playVideo?.(); } catch {}
+      }, 220);
     } else {
       player.cueVideoById(currentSong.youtubeVideoId);
     }
@@ -656,10 +726,12 @@ async function showSession(sessionId) {
   sessionCodeEl.textContent = sessionId;
   guestLinkInput.value = guestUrl;
   renderQrCode(document.querySelector("#qrCode"), guestUrl);
+  if (tvQrCode) renderQrCode(tvQrCode, guestUrl);
+  if (tvQrSessionCode) tvQrSessionCode.textContent = sessionId;
   createPanel.hidden = true;
   unlockPanel.hidden = true;
   sessionPanel.hidden = false;
-  fullscreenBtn.hidden = !(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+  fullscreenBtn.hidden = false;
   localStorage.setItem("openKaraokeHostSession", sessionId);
   watchGuests(sessionId);
   watchQueue(sessionId);
@@ -683,6 +755,45 @@ function showUnlock(sessionId, migration = false) {
       : ""
   );
   window.setTimeout(() => unlockPinInput.focus(), 50);
+}
+
+function setQrOverlay(open) {
+  if (!tvQrOverlay) return;
+  tvQrOverlay.hidden = !open;
+  document.body.classList.toggle("qr-overlay-open", open);
+}
+
+function toggleQrOverlay() {
+  setQrOverlay(Boolean(tvQrOverlay?.hidden));
+}
+
+async function enterTvMode() {
+  document.body.classList.add("tv-mode");
+  fullscreenBtn.textContent = "⛶ Exit TV";
+  try {
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+      await document.documentElement.requestFullscreen();
+    }
+  } catch {
+    // CSS TV mode still works even if the browser refuses Fullscreen API.
+  }
+}
+
+async function exitTvMode() {
+  setQrOverlay(false);
+  document.body.classList.remove("tv-mode");
+  fullscreenBtn.textContent = "📺 TV Mode";
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+  } catch {}
+}
+
+async function toggleTvMode() {
+  if (document.body.classList.contains("tv-mode") || document.fullscreenElement) {
+    await exitTvMode();
+  } else {
+    await enterTvMode();
+  }
 }
 
 async function copyText(text, button) {
@@ -964,20 +1075,82 @@ copyCodeBtn.addEventListener("click", () => copyText(activeSessionId || "", copy
 copyLinkBtn.addEventListener("click", () => copyText(guestLinkInput.value, copyLinkBtn));
 endSessionBtn.addEventListener("click", () => endSession());
 
-fullscreenBtn.addEventListener("click", async () => {
-  try {
-    if (document.fullscreenElement) {
-      await document.exitFullscreen();
-    } else {
-      await document.documentElement.requestFullscreen();
-    }
-  } catch {
-    window.alert("Fullscreen is not available in this browser.");
-  }
+fullscreenBtn.addEventListener("click", () => {
+  toggleTvMode().catch(error => console.error(error));
+});
+
+tvQrToggleBtn?.addEventListener("click", toggleQrOverlay);
+tvQrCloseBtn?.addEventListener("click", () => setQrOverlay(false));
+tvQrBackdrop?.addEventListener("click", () => setQrOverlay(false));
+tvExitBtn?.addEventListener("click", () => {
+  exitTvMode().catch(error => console.error(error));
 });
 
 document.addEventListener("fullscreenchange", () => {
-  fullscreenBtn.textContent = document.fullscreenElement ? "⛶ Exit Fullscreen" : "⛶ Fullscreen";
+  const fullscreen = Boolean(document.fullscreenElement);
+  document.body.classList.toggle("tv-mode", fullscreen);
+  fullscreenBtn.textContent = fullscreen ? "⛶ Exit TV" : "📺 TV Mode";
+  if (!fullscreen && !document.body.classList.contains("tv-mode")) setQrOverlay(false);
+});
+
+document.addEventListener("keydown", event => {
+  if (!activeSessionId || sessionPanel.hidden) return;
+  const target = event.target;
+  const tag = target?.tagName?.toLowerCase?.() || "";
+  const typing = tag === "input" || tag === "textarea" || tag === "select" || target?.isContentEditable;
+  if (typing) return;
+
+  const key = event.key.toLowerCase();
+
+  if (event.key === "Escape") {
+    if (tvQrOverlay && !tvQrOverlay.hidden) {
+      setQrOverlay(false);
+      return;
+    }
+    if (document.body.classList.contains("tv-mode")) {
+      exitTvMode().catch(error => console.error(error));
+      return;
+    }
+  }
+
+  if (key === " " || event.code === "Space") {
+    event.preventDefault();
+    if (currentSong?.playbackState === "playing") {
+      pauseCurrent().catch(error => console.error(error));
+    } else {
+      startOrResume().catch(error => console.error(error));
+    }
+    return;
+  }
+
+  if (key === "n" || event.key === "ArrowRight") {
+    event.preventDefault();
+    advanceToNext("skipped").catch(error => console.error(error));
+    return;
+  }
+
+  if (key === "p" || event.key === "ArrowLeft") {
+    event.preventDefault();
+    playPrevious().catch(error => console.error(error));
+    return;
+  }
+
+  if (key === "s") {
+    event.preventDefault();
+    stopCurrent().catch(error => console.error(error));
+    return;
+  }
+
+  if (key === "q") {
+    event.preventDefault();
+    toggleQrOverlay();
+    return;
+  }
+
+  if (key === "f") {
+    event.preventDefault();
+    toggleTvMode().catch(error => console.error(error));
+  }
 });
 
 init();
