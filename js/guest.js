@@ -80,9 +80,68 @@ let unsubscribeQueue = null;
 let unsubscribeCurrentSong = null;
 
 function normalizeSession(value) {
-  let code = String(value || "").trim().toUpperCase().replace(/\s+/g, "");
-  if (code && !code.startsWith("KARAOKE-")) code = `KARAOKE-${code}`;
-  return code;
+  let raw = String(value || "").trim();
+  if (!raw) return "";
+
+  // QR scanners and messaging apps can hand us either the code itself,
+  // a full URL, or a URL-encoded copy of either. Normalize all of them.
+  for (let i = 0; i < 2; i += 1) {
+    try {
+      const decoded = decodeURIComponent(raw);
+      if (decoded === raw) break;
+      raw = decoded;
+    } catch {
+      break;
+    }
+  }
+
+  // Parse a complete URL before changing letter case so query-parameter
+  // names such as ?session= remain intact.
+  try {
+    const maybeUrl = new URL(raw);
+    raw = maybeUrl.searchParams.get("session")
+      || maybeUrl.searchParams.get("room")
+      || maybeUrl.searchParams.get("code")
+      || raw;
+  } catch {
+    // Not a URL; continue as a normal room code.
+  }
+
+  raw = String(raw)
+    .toUpperCase()
+    .replace(/[\u2010-\u2015\u2212]/g, "-")
+    .trim();
+
+  const embedded = raw.match(/KARAOKE[\s_-]*([A-Z0-9]{4,12})/);
+  if (embedded) return `KARAOKE-${embedded[1]}`;
+
+  const compact = raw.replace(/[^A-Z0-9]/g, "");
+  if (compact.startsWith("KARAOKE")) {
+    const suffix = compact.slice(7);
+    return suffix ? `KARAOKE-${suffix}` : "KARAOKE-";
+  }
+
+  return compact ? `KARAOKE-${compact}` : "";
+}
+
+function sessionFromLocation() {
+  const params = new URLSearchParams(window.location.search);
+  const direct = params.get("session") || params.get("room") || params.get("code");
+  if (direct) return normalizeSession(direct);
+
+  // Some QR/browser combinations preserve the URL in the hash instead.
+  const hash = String(window.location.hash || "").replace(/^#/, "");
+  if (hash) {
+    try {
+      const hashParams = new URLSearchParams(hash);
+      const fromHash = hashParams.get("session") || hashParams.get("room") || hashParams.get("code");
+      if (fromHash) return normalizeSession(fromHash);
+    } catch { /* ignore */ }
+    const extracted = normalizeSession(hash);
+    if (/^KARAOKE-[A-Z0-9]{4,12}$/.test(extracted)) return extracted;
+  }
+
+  return "";
 }
 
 function setMessage(element, text, type = "") {
@@ -357,8 +416,8 @@ async function reserveSearchResult(item, button = null) {
 }
 
 async function init() {
-  const urlSession = new URLSearchParams(window.location.search).get("session");
-  if (urlSession) sessionInput.value = normalizeSession(urlSession);
+  const urlSession = sessionFromLocation();
+  if (urlSession) sessionInput.value = urlSession;
 
   const savedName = localStorage.getItem("openKaraokeSingerName");
   if (savedName) nameInput.value = savedName;
@@ -395,7 +454,7 @@ joinForm.addEventListener("submit", async event => {
   const sessionId = normalizeSession(sessionInput.value);
   const singerName = nameInput.value.trim();
 
-  if (!/^KARAOKE-[A-Z2-9]{4,8}$/.test(sessionId)) {
+  if (!/^KARAOKE-[A-Z0-9]{4,12}$/.test(sessionId)) {
     setMessage(guestMessage, "Enter a valid session code such as KARAOKE-AB12CD.", "error");
     return;
   }
