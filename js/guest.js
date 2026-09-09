@@ -14,13 +14,13 @@ import {
   youtubeThumbnail,
   sortQueueEntries,
   escapeHtml
-} from "./queue.js?v=20260909-guestcompact1";
+} from "./queue.js?v=20260909-singerremote1";
 import {
   isYouTubeSearchConfigured,
   searchYouTubeVideos
 } from "./youtube.js";
 
-const GUEST_BUILD = "20260909-guestcompact1";
+const GUEST_BUILD = "20260909-singerremote1";
 
 function uniqueReservationId(guestId, videoId) {
   const randomPart = globalThis.crypto?.randomUUID
@@ -55,6 +55,9 @@ const queueCount = document.querySelector("#queueCount");
 const guestNowTitle = document.querySelector("#guestNowTitle");
 const guestNowBody = document.querySelector("#guestNowBody");
 const guestPlaybackState = document.querySelector("#guestPlaybackState");
+const guestOwnControls = document.querySelector("#guestOwnControls");
+const guestPlayPauseBtn = document.querySelector("#guestPlayPauseBtn");
+const guestSkipBtn = document.querySelector("#guestSkipBtn");
 const youtubeSearchWarning = document.querySelector("#youtubeSearchWarning");
 const searchForm = document.querySelector("#searchForm");
 const searchInput = document.querySelector("#searchInput");
@@ -88,6 +91,7 @@ let unsubscribeGuestCount = null;
 let unsubscribeSettings = null;
 let unsubscribeQueue = null;
 let unsubscribeCurrentSong = null;
+let singerControlBusy = false;
 
 function normalizeSession(value) {
   let raw = String(value || "").trim();
@@ -197,6 +201,49 @@ function renderQueue() {
   }
 }
 
+function renderSingerControls(state = "idle") {
+  const ownsCurrentSong = Boolean(currentSong && user?.uid && currentSong.guestId === user.uid);
+  guestOwnControls.hidden = !ownsCurrentSong;
+  if (!ownsCurrentSong) {
+    singerControlBusy = false;
+    guestPlayPauseBtn.disabled = false;
+    guestSkipBtn.disabled = false;
+    guestSkipBtn.textContent = "⏭ Skip My Song";
+    return;
+  }
+
+  guestSkipBtn.textContent = "⏭ Skip My Song";
+  const isPlaying = state === "playing";
+  guestPlayPauseBtn.textContent = isPlaying ? "⏸ Pause" : "▶ Play";
+  guestPlayPauseBtn.dataset.action = isPlaying ? "pause" : "play";
+}
+
+function singerRequestId() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID().replaceAll("-", "");
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
+}
+
+async function sendSingerControl(action) {
+  if (!activeSessionId || !user?.uid || !currentSong) {
+    throw new Error("No active song to control.");
+  }
+  if (currentSong.guestId !== user.uid) {
+    throw new Error("You can only control your own current song.");
+  }
+  if (!["play", "pause", "skip"].includes(action)) {
+    throw new Error("Invalid singer control.");
+  }
+
+  const requestId = singerRequestId();
+  const requestRef = ref(db, `sessions/${activeSessionId}/controlRequests/${user.uid}/${requestId}`);
+  await set(requestRef, {
+    action,
+    queueItemId: currentSong.queueItemId,
+    requestId,
+    createdAt: Date.now()
+  });
+}
+
 function renderCurrentSong(song) {
   currentSong = song || null;
 
@@ -205,6 +252,7 @@ function renderCurrentSong(song) {
     guestPlaybackState.textContent = "IDLE";
     guestPlaybackState.dataset.state = "idle";
     guestNowBody.innerHTML = '<div class="guest-now-placeholder">The current song will appear here when the Host starts playback.</div>';
+    renderSingerControls("idle");
     renderQueue();
     return;
   }
@@ -222,6 +270,7 @@ function renderCurrentSong(song) {
       <strong>${escapeHtml(currentSong.title || "Untitled song")}</strong>
       <span>👤 ${escapeHtml(currentSong.singerName || "Guest")}</span>
     </div>`;
+  renderSingerControls(state);
   renderQueue();
 }
 
@@ -305,6 +354,11 @@ async function joinSession(sessionId, singerName) {
   unsubscribeSettings = subscriptions.unsubscribeSettings;
   unsubscribeQueue = subscriptions.unsubscribeQueue;
   unsubscribeCurrentSong = subscriptions.unsubscribeCurrentSong;
+
+  // Re-evaluate ownership after the page-level auth user is assigned. This
+  // ensures the mini remote appears immediately even if the first realtime
+  // current-song snapshot arrived during listener setup.
+  renderCurrentSong(currentSong);
 
   registerDisconnectCleanup(thisGuestRef);
 
@@ -631,6 +685,46 @@ mySongs.addEventListener("click", async event => {
     console.error(error);
     setMessage(reserveMessage, "Could not cancel that reservation.", "error");
     button.disabled = false;
+  }
+});
+
+guestPlayPauseBtn?.addEventListener("click", async () => {
+  if (singerControlBusy || guestOwnControls.hidden) return;
+  const action = guestPlayPauseBtn.dataset.action || "pause";
+  singerControlBusy = true;
+  guestPlayPauseBtn.disabled = true;
+  guestSkipBtn.disabled = true;
+  try {
+    await sendSingerControl(action);
+  } catch (error) {
+    console.error(error);
+    setMessage(reserveMessage, error.message || "Could not control your song.", "error");
+  } finally {
+    window.setTimeout(() => {
+      singerControlBusy = false;
+      if (!guestOwnControls.hidden) {
+        guestPlayPauseBtn.disabled = false;
+        guestSkipBtn.disabled = false;
+      }
+    }, 450);
+  }
+});
+
+guestSkipBtn?.addEventListener("click", async () => {
+  if (singerControlBusy || guestOwnControls.hidden) return;
+  singerControlBusy = true;
+  guestPlayPauseBtn.disabled = true;
+  guestSkipBtn.disabled = true;
+  guestSkipBtn.textContent = "Skipping…";
+  try {
+    await sendSingerControl("skip");
+  } catch (error) {
+    console.error(error);
+    setMessage(reserveMessage, error.message || "Could not skip your song.", "error");
+    singerControlBusy = false;
+    guestPlayPauseBtn.disabled = false;
+    guestSkipBtn.disabled = false;
+    guestSkipBtn.textContent = "⏭ Skip My Song";
   }
 });
 

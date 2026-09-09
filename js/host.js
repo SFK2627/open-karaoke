@@ -93,6 +93,9 @@ let unsubscribeConnected = null;
 let unsubscribeQueue = null;
 let unsubscribeSettings = null;
 let unsubscribeCurrentSong = null;
+let unsubscribeControlRequests = null;
+let processingSingerControls = false;
+const handledSingerRequestIds = new Set();
 let autoStartTimer = null;
 let autoStartInFlight = false;
 
@@ -327,7 +330,7 @@ function buildGuestUrl(sessionId) {
   const url = new URL("./guest.html", window.location.href);
   url.search = "";
   url.searchParams.set("session", sessionId);
-  url.searchParams.set("v", "20260909-repeat-audio2");
+  url.searchParams.set("v", "20260909-singerremote1");
   return url.toString();
 }
 
@@ -572,6 +575,72 @@ function watchCurrentSong(sessionId) {
     const previousVideoId = currentSong?.youtubeVideoId || null;
     renderCurrentSong(nextCurrent);
     syncPlayerToFirebase(previousVideoId).catch(error => console.error(error));
+  });
+}
+
+function flattenSingerControlRequests(value) {
+  const requests = [];
+  Object.entries(value || {}).forEach(([guestUid, guestRequests]) => {
+    Object.entries(guestRequests || {}).forEach(([requestKey, request]) => {
+      if (!request || typeof request !== "object") return;
+      requests.push({ guestUid, requestKey, ...request });
+    });
+  });
+  return requests.sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
+}
+
+async function processSingerControlRequests(value) {
+  if (processingSingerControls || !activeSessionId) return;
+  processingSingerControls = true;
+  try {
+    const requests = flattenSingerControlRequests(value);
+    for (const request of requests) {
+      const requestPath = `sessions/${activeSessionId}/controlRequests/${request.guestUid}/${request.requestKey}`;
+      const requestRef = ref(db, requestPath);
+      const requestId = String(request.requestId || request.requestKey);
+
+      if (handledSingerRequestIds.has(requestId)) {
+        try { await remove(requestRef); } catch {}
+        continue;
+      }
+
+      const stillOwnsSong = Boolean(
+        currentSong &&
+        currentSong.guestId === request.guestUid &&
+        currentSong.queueItemId === request.queueItemId
+      );
+
+      if (!stillOwnsSong || !["play", "pause", "skip"].includes(request.action)) {
+        try { await remove(requestRef); } catch {}
+        continue;
+      }
+
+      handledSingerRequestIds.add(requestId);
+      try {
+        if (request.action === "play") {
+          await startOrResume();
+        } else if (request.action === "pause") {
+          await pauseCurrent();
+        } else if (request.action === "skip") {
+          await advanceToNext("skipped");
+        }
+      } catch (error) {
+        console.error("Singer control request failed:", error);
+      } finally {
+        try { await remove(requestRef); } catch (error) { console.warn("Could not clear singer control request", error); }
+      }
+    }
+
+    if (handledSingerRequestIds.size > 200) handledSingerRequestIds.clear();
+  } finally {
+    processingSingerControls = false;
+  }
+}
+
+function watchSingerControls(sessionId) {
+  unsubscribeControlRequests?.();
+  unsubscribeControlRequests = onValue(ref(db, `sessions/${sessionId}/controlRequests`), snapshot => {
+    processSingerControlRequests(snapshot.val()).catch(error => console.error(error));
   });
 }
 
@@ -936,6 +1005,7 @@ async function showSession(sessionId) {
   watchQueue(sessionId);
   watchSettings(sessionId);
   watchCurrentSong(sessionId);
+  watchSingerControls(sessionId);
   await setupHostPresence(sessionId);
   await ensurePlayer();
 }
@@ -1032,11 +1102,13 @@ function unsubscribeRoomListeners() {
   unsubscribeQueue?.();
   unsubscribeSettings?.();
   unsubscribeCurrentSong?.();
+  unsubscribeControlRequests?.();
   unsubscribeGuests = null;
   unsubscribeConnected = null;
   unsubscribeQueue = null;
   unsubscribeSettings = null;
   unsubscribeCurrentSong = null;
+  unsubscribeControlRequests = null;
 }
 
 async function endSession() {

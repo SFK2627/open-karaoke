@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Guest</title>
-  <link rel="stylesheet" href="./css/style.css?v=20260909-guestjoincompact2">
+  <link rel="stylesheet" href="./css/style.css?v=20260909-singerremote1">
 </head>
 <body class="guest-page">
   <header class="topbar compact-topbar">
@@ -70,6 +70,11 @@
         </div>
         <div class="guest-now-body" id="guestNowBody">
           <div class="guest-now-placeholder">The current song will appear here when the Host starts playback.</div>
+        </div>
+        <div class="guest-own-controls" id="guestOwnControls" hidden>
+          <span class="guest-own-turn">🎤 YOUR TURN</span>
+          <button class="btn btn-secondary guest-own-control-btn" id="guestPlayPauseBtn" type="button">⏸ Pause</button>
+          <button class="btn btn-danger guest-own-control-btn" id="guestSkipBtn" type="button">⏭ Skip My Song</button>
         </div>
       </article>
 
@@ -162,6 +167,6 @@
     </section>
   </div>
 
-  <script type="module" src="./js/guest.js?v=20260909-guestjoincompact2"></script>
+  <script type="module" src="./js/guest.js?v=20260909-singerremote1"></script>
 </body>
 </html>

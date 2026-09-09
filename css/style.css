@@ -1660,7 +1660,6 @@ body.tv-mode .player-stage::before {
   animation: ambiBorderShift 16s linear infinite;
 }
 
-
 /* =========================================================
    GUEST MOBILE COMPACT UI v1
    App-like controller: tiny header, condensed cards, tabbed content.
@@ -2215,7 +2214,6 @@ body.tv-mode .player-stage::before {
   }
 }
 
-
 /* =========================================================
    GUEST MOBILE JOIN v2 - ULTRA COMPACT
    The pre-join screen should feel like a controller sign-in,
@@ -2358,4 +2356,63 @@ body.tv-mode .player-stage::before {
     grid-template-columns: 58px minmax(0,1fr);
     gap: 6px;
   }
+}
+
+
+/* =========================================================
+   GUEST SINGER MINI REMOTE v1
+   Only appears when this guest owns the current song.
+   ========================================================= */
+.guest-own-controls {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.guest-own-controls[hidden] { display: none !important; }
+.guest-own-turn {
+  flex: 1 1 auto;
+  color: #c4b5fd;
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  white-space: nowrap;
+}
+.guest-own-control-btn {
+  min-height: 34px;
+  padding: 5px 10px;
+  border-radius: 9px;
+  font-size: .68rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+  body.guest-page .guest-own-controls {
+    gap: 5px;
+    margin-top: 5px;
+    padding-top: 6px;
+  }
+  body.guest-page .guest-own-turn {
+    font-size: .57rem;
+    letter-spacing: .06em;
+  }
+  body.guest-page .guest-own-control-btn {
+    min-height: 31px;
+    padding: 4px 7px;
+    border-radius: 8px;
+    font-size: .61rem;
+  }
+}
+
+@media (max-width: 380px) {
+  body.guest-page .guest-own-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  body.guest-page .guest-own-turn {
+    grid-column: 1 / -1;
+  }
+  body.guest-page .guest-own-control-btn { width: 100%; }
 }
