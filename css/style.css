@@ -1249,3 +1249,245 @@ body.tv-mode .tv-shortcut-hint {
     font-size: .66rem;
   }
 }
+
+/* =========================================================
+   TV MODE v3 - LARGE VIDEO, ZERO OVERLAP
+   Layout: Up Next -> Video -> Now Playing -> Controls.
+   Nothing floats over the YouTube video.
+   ========================================================= */
+body.tv-mode .player-card {
+  display: grid;
+  grid-template-rows: 68px minmax(0, 1fr) 44px 50px;
+  grid-template-columns: minmax(0, 1fr);
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.tv-mode .tv-karaoke-header {
+  grid-row: 1;
+  min-height: 0;
+  height: 68px;
+  padding: 6px 10px;
+  gap: 8px;
+}
+
+body.tv-mode .tv-up-next-label {
+  min-width: 60px;
+  padding: 0 7px;
+  border-radius: 10px;
+  font-size: .64rem;
+}
+
+body.tv-mode .tv-queue-strip {
+  height: 56px;
+  gap: 6px;
+}
+
+body.tv-mode .tv-queue-card {
+  flex-basis: 174px;
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 7px;
+  padding: 4px 6px 4px 4px;
+  border-radius: 10px;
+}
+
+body.tv-mode .tv-queue-card img {
+  width: 62px;
+  border-radius: 7px;
+}
+
+body.tv-mode .tv-queue-text { gap: 2px; }
+body.tv-mode .tv-queue-text strong { font-size: .7rem; }
+body.tv-mode .tv-queue-text small { font-size: .6rem; }
+
+body.tv-mode .tv-icon-btn {
+  min-width: 52px;
+  height: 56px;
+  padding: 5px 7px;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+body.tv-mode .tv-icon-btn span {
+  font-size: .56rem;
+}
+
+body.tv-mode .player-shell {
+  position: relative;
+  grid-row: 2;
+  align-self: center;
+  justify-self: center;
+  width: min(calc(100vw - 18px), calc((100dvh - 174px) * 1.7777778));
+  max-width: calc(100vw - 18px);
+  max-height: calc(100dvh - 174px);
+  height: auto;
+  aspect-ratio: 16 / 9;
+  margin: 6px auto;
+  border-radius: 13px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 16px 65px rgba(0,0,0,.62);
+}
+
+body.tv-mode .now-playing-host {
+  position: static;
+  grid-row: 3;
+  z-index: auto;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  padding: 5px 12px;
+  border: 0;
+  border-top: 1px solid rgba(255,255,255,.08);
+  border-radius: 0;
+  background: #070b15;
+  backdrop-filter: none;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+body.tv-mode .now-playing-copy {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+}
+
+body.tv-mode .now-playing-copy .eyebrow {
+  display: block;
+  margin: 0;
+  font-size: .62rem;
+}
+
+body.tv-mode .now-playing-copy h3 {
+  margin: 0;
+  min-width: 0;
+  font-size: clamp(.88rem, 1.35vw, 1.18rem);
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.tv-mode .now-playing-singer {
+  margin: 0;
+  font-size: .7rem;
+  white-space: nowrap;
+}
+
+body.tv-mode .playback-chip {
+  display: inline-flex;
+  min-height: 24px;
+  padding: 2px 7px;
+  font-size: .58rem;
+  flex: 0 0 auto;
+}
+
+body.tv-mode .host-player-controls-final {
+  position: static;
+  grid-row: 4;
+  z-index: auto;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  width: 100%;
+  height: 50px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 6px 12px;
+  border: 0;
+  border-top: 1px solid rgba(255,255,255,.07);
+  border-radius: 0;
+  background: #040711;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+body.tv-mode .host-player-controls-final .btn {
+  min-height: 36px;
+  height: 36px;
+  padding: 5px 8px;
+  border-radius: 9px;
+  font-size: .7rem;
+}
+
+body.tv-mode .tv-shortcut-hint {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  body.tv-mode .player-card {
+    grid-template-rows: 60px minmax(0, 1fr) 40px 46px;
+  }
+
+  body.tv-mode .tv-karaoke-header {
+    height: 60px;
+    min-height: 0;
+    padding: 5px 7px;
+  }
+
+  body.tv-mode .tv-up-next-label {
+    min-width: 48px;
+    font-size: .55rem;
+  }
+
+  body.tv-mode .tv-queue-strip { height: 50px; }
+
+  body.tv-mode .tv-queue-card {
+    flex-basis: 150px;
+    grid-template-columns: 54px minmax(0, 1fr);
+  }
+
+  body.tv-mode .tv-queue-card img { width: 54px; }
+
+  body.tv-mode .tv-icon-btn {
+    min-width: 46px;
+    height: 50px;
+  }
+
+  body.tv-mode .player-shell {
+    width: min(calc(100vw - 10px), calc((100dvh - 154px) * 1.7777778));
+    max-width: calc(100vw - 10px);
+    max-height: calc(100dvh - 154px);
+    margin: 4px auto;
+    border-radius: 9px;
+  }
+
+  body.tv-mode .now-playing-host {
+    height: 40px;
+    padding: 4px 8px;
+  }
+
+  body.tv-mode .now-playing-copy {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 6px;
+  }
+
+  body.tv-mode .now-playing-copy .eyebrow { font-size: .52rem; }
+  body.tv-mode .now-playing-copy h3 { font-size: .82rem; }
+  body.tv-mode .now-playing-singer { font-size: .62rem; }
+  body.tv-mode .playback-chip { min-height: 21px; font-size: .52rem; }
+
+  body.tv-mode .host-player-controls-final {
+    height: 46px;
+    gap: 4px;
+    padding: 5px 7px;
+  }
+
+  body.tv-mode .host-player-controls-final .btn {
+    min-height: 34px;
+    height: 34px;
+    padding: 4px 5px;
+    font-size: .62rem;
+  }
+}
