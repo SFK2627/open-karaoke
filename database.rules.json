@@ -14,7 +14,7 @@
           ".read": "auth != null && (root.child('sessions').child($sessionId).child('meta').child('hostUid').val() === auth.uid || root.child('sessions').child($sessionId).child('guests').child(auth.uid).exists())",
           "$uid": {
             ".write": "auth != null && (auth.uid === $uid || root.child('sessions').child($sessionId).child('meta').child('hostUid').val() === auth.uid)",
-            ".validate": "!newData.exists() || (newData.hasChildren(['name','joinedAt','lastSeen']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 30 && newData.child('joinedAt').isNumber() && newData.child('lastSeen').isNumber())"
+            ".validate": "!newData.exists() || (newData.hasChildren(['name','joinedAt','lastSeen','online']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 30 && newData.child('joinedAt').isNumber() && newData.child('lastSeen').isNumber() && newData.child('online').isBoolean())"
           }
         },
         "queue": {
@@ -28,6 +28,15 @@
           ".read": "auth != null && (root.child('sessions').child($sessionId).child('meta').child('hostUid').val() === auth.uid || root.child('sessions').child($sessionId).child('guests').child(auth.uid).exists())",
           ".write": "auth != null && root.child('sessions').child($sessionId).child('meta').child('hostUid').val() === auth.uid",
           ".validate": "!newData.exists() || (newData.hasChildren(['queueItemId','youtubeVideoId','title','thumbnail','singerName','guestId','startedAt','playbackState']) && newData.child('queueItemId').isString() && newData.child('youtubeVideoId').isString() && newData.child('youtubeVideoId').val().length >= 6 && newData.child('youtubeVideoId').val().length <= 20 && newData.child('title').isString() && newData.child('title').val().length > 0 && newData.child('title').val().length <= 120 && newData.child('thumbnail').isString() && newData.child('singerName').isString() && newData.child('guestId').isString() && newData.child('startedAt').isNumber() && (newData.child('playbackState').val() === 'playing' || newData.child('playbackState').val() === 'paused' || newData.child('playbackState').val() === 'stopped' || newData.child('playbackState').val() === 'error'))"
+        },
+        "controlRequests": {
+          ".read": "auth != null && root.child('sessions').child($sessionId).child('meta').child('hostUid').val() === auth.uid",
+          "$uid": {
+            "$requestId": {
+              ".write": "auth != null && auth.uid === $uid && root.child('sessions').child($sessionId).child('guests').child(auth.uid).exists() && root.child('sessions').child($sessionId).child('currentSong').child('guestId').val() === auth.uid && newData.exists() && newData.child('queueItemId').val() === root.child('sessions').child($sessionId).child('currentSong').child('queueItemId').val()",
+              ".validate": "newData.hasChildren(['action','queueItemId','requestId','createdAt']) && (newData.child('action').val() === 'play' || newData.child('action').val() === 'pause' || newData.child('action').val() === 'skip') && newData.child('queueItemId').isString() && newData.child('requestId').isString() && newData.child('requestId').val() === $requestId && newData.child('createdAt').isNumber()"
+            }
+          }
         },
         "settings": {
           ".read": "auth != null && (root.child('sessions').child($sessionId).child('meta').child('hostUid').val() === auth.uid || root.child('sessions').child($sessionId).child('guests').child(auth.uid).exists())",

@@ -3138,3 +3138,583 @@ body.tv-mode .tv-shortcut-hint {
     padding: 2px 6px;
   }
 }
+
+
+/* =========================================================
+   TV MODE v7 - PREMIUM RETRO BAR + ULTRA COMPACT UP NEXT
+   Final override for a more premium lower bar, more compact top strip,
+   and smoother equalizer motion while keeping the video dominant.
+   ========================================================= */
+body.tv-mode .player-card {
+  grid-template-rows: 54px minmax(0, 1fr) 88px;
+  grid-template-columns: minmax(0, 1fr);
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.tv-mode .tv-karaoke-header {
+  min-height: 54px;
+  height: 54px;
+  padding: 4px 10px;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255, 164, 46, .16);
+  background:
+    linear-gradient(180deg, rgba(5, 10, 20, .98) 0%, rgba(6, 8, 16, .98) 100%),
+    radial-gradient(circle at top center, rgba(0, 255, 200, .06), transparent 60%);
+}
+
+body.tv-mode .tv-up-next-area {
+  gap: 8px;
+}
+
+body.tv-mode .tv-up-next-label {
+  min-width: 68px;
+  padding: 0 9px;
+  border-radius: 12px;
+  font-size: .64rem;
+  letter-spacing: .18em;
+  background: linear-gradient(180deg, rgba(82, 68, 152, .9), rgba(34, 30, 77, .95));
+  border: 1px solid rgba(154, 132, 255, .35);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 8px 18px rgba(0,0,0,.22);
+}
+
+body.tv-mode .tv-queue-strip {
+  height: 46px;
+  gap: 7px;
+  padding: 0;
+}
+
+body.tv-mode .tv-queue-empty {
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: .8rem;
+  color: #aeb7d0;
+  background: rgba(255,255,255,.03);
+  border: 1px dashed rgba(255, 171, 61, .18);
+}
+
+body.tv-mode .tv-queue-card {
+  flex: 0 0 188px;
+  grid-template-columns: 56px minmax(0,1fr);
+  gap: 8px;
+  padding: 5px 8px 5px 5px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 171, 61, .18);
+  background:
+    linear-gradient(180deg, rgba(16, 20, 34, .98), rgba(8, 10, 18, .98));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 8px 16px rgba(0,0,0,.18);
+}
+
+body.tv-mode .tv-queue-card img {
+  width: 56px;
+  border-radius: 8px;
+}
+
+body.tv-mode .tv-queue-number {
+  top: 3px;
+  left: 3px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  font-size: .62rem;
+}
+
+body.tv-mode .tv-queue-text {
+  gap: 2px;
+}
+
+body.tv-mode .tv-queue-text strong {
+  font-size: .72rem;
+  color: #fff6e6;
+}
+
+body.tv-mode .tv-queue-text small {
+  font-size: .62rem;
+  color: #9fb2d4;
+}
+
+body.tv-mode .tv-queue-more {
+  font-size: .68rem;
+  letter-spacing: .08em;
+}
+
+body.tv-mode .tv-header-actions {
+  gap: 6px;
+}
+
+body.tv-mode .tv-icon-btn {
+  min-width: 58px;
+  height: 46px;
+  gap: 2px;
+  padding: 5px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 171, 61, .18);
+  background: linear-gradient(180deg, rgba(18, 21, 34, .96), rgba(8, 10, 17, .98));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 8px 16px rgba(0,0,0,.18);
+  font-size: 1rem;
+}
+
+body.tv-mode .tv-icon-btn span {
+  font-size: .56rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+body.tv-mode .player-shell {
+  position: relative;
+  grid-row: 2;
+  align-self: center;
+  justify-self: center;
+  width: min(calc(100vw - 18px), calc((100dvh - 150px) * 1.7777778));
+  max-width: calc(100vw - 18px);
+  max-height: calc(100dvh - 150px);
+  aspect-ratio: 16 / 9;
+  margin: 2px auto;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow:
+    0 24px 72px rgba(0,0,0,.52),
+    inset 0 0 0 1px rgba(255,255,255,.04);
+}
+
+body.tv-mode .tv-retro-bar {
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 182px;
+  align-items: stretch;
+  gap: 0;
+  padding: 0 10px 10px;
+  margin: 0;
+  min-height: 88px;
+  max-height: 88px;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,.28));
+}
+
+body.tv-mode .tv-retro-controls,
+body.tv-mode .tv-retro-info,
+body.tv-mode .tv-retro-status {
+  min-height: 88px;
+  max-height: 88px;
+  position: relative;
+  border-top: 1px solid rgba(255, 149, 22, .92);
+  border-bottom: 1px solid rgba(255, 149, 22, .92);
+  background:
+    linear-gradient(180deg, rgba(35, 24, 18, .98) 0%, rgba(12, 10, 10, .99) 100%),
+    linear-gradient(90deg, rgba(255, 170, 65, .06), rgba(255, 120, 0, .03));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 170, 65, .18),
+    inset 0 10px 22px rgba(255, 170, 65, .05),
+    inset 0 -8px 18px rgba(0,0,0,.32);
+}
+
+body.tv-mode .tv-retro-controls::after,
+body.tv-mode .tv-retro-info::after,
+body.tv-mode .tv-retro-status::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  pointer-events: none;
+  border: 1px solid rgba(255, 176, 79, .12);
+  border-radius: inherit;
+}
+
+body.tv-mode .tv-retro-controls {
+  position: relative;
+  width: auto;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  padding: 22px 8px 8px;
+  margin: 0;
+  border-left: 1px solid rgba(255, 149, 22, .92);
+  border-right: 1px solid rgba(255, 149, 22, .42);
+  border-radius: 16px 0 0 16px;
+  overflow: hidden;
+}
+
+body.tv-mode .tv-retro-controls::before {
+  content: "KARAOKE CONTROL";
+  position: absolute;
+  top: 6px;
+  left: 12px;
+  font-size: .5rem;
+  font-weight: 900;
+  letter-spacing: .22em;
+  color: rgba(255, 206, 126, .9);
+  text-shadow: 0 0 8px rgba(255, 136, 0, .16);
+}
+
+body.tv-mode .tv-retro-controls .btn {
+  align-self: end;
+  min-height: 42px;
+  height: 42px;
+  padding: 5px 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 184, 93, .28);
+  background:
+    linear-gradient(180deg, rgba(50, 53, 63, .96) 0%, rgba(15, 16, 22, .99) 100%);
+  color: #fff0d1;
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .02em;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    inset 0 -5px 10px rgba(0,0,0,.28),
+    0 4px 10px rgba(0,0,0,.18);
+  white-space: nowrap;
+}
+
+body.tv-mode .tv-retro-controls .btn:hover {
+  transform: translateY(-1px);
+}
+
+body.tv-mode .tv-retro-controls #playBtn,
+body.tv-mode .tv-retro-controls #nextBtn {
+  background: linear-gradient(180deg, rgba(166, 100, 255, .98) 0%, rgba(98, 52, 232, .99) 100%);
+  border-color: rgba(198, 161, 255, .54);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.16),
+    0 0 18px rgba(120, 76, 255, .22),
+    0 4px 10px rgba(0,0,0,.2);
+}
+
+body.tv-mode .tv-retro-info {
+  position: static;
+  width: auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(180px, .78fr);
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border-left: 0;
+  border-right: 1px solid rgba(255, 149, 22, .42);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.tv-mode .tv-retro-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 10px 16px;
+  background: transparent;
+}
+
+body.tv-mode .tv-retro-panel + .tv-retro-panel {
+  border-left: 1px solid rgba(255, 149, 22, .42);
+}
+
+body.tv-mode .tv-retro-label {
+  margin: 0 0 4px;
+  color: #ffb24c;
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .18em;
+}
+
+body.tv-mode #nowPlayingTitle {
+  margin: 0;
+  color: #ff7d12;
+  text-transform: uppercase;
+  font-size: clamp(1rem, 1.7vw, 1.48rem);
+  line-height: 1.02;
+  font-weight: 900;
+  text-shadow: 0 0 12px rgba(255, 106, 0, .16);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.tv-mode #nowPlayingSinger {
+  margin: 0;
+  color: #fff0db;
+  font-size: clamp(.74rem, 1vw, .92rem);
+  font-weight: 800;
+  line-height: 1.08;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.tv-mode .tv-retro-status {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 10px;
+  border-left: 0;
+  border-right: 1px solid rgba(255, 149, 22, .92);
+  border-radius: 0 16px 16px 0;
+}
+
+body.tv-mode .tv-retro-status::before {
+  content: "LEVEL";
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: .48rem;
+  font-weight: 900;
+  letter-spacing: .24em;
+  color: rgba(255, 206, 126, .9);
+}
+
+body.tv-mode .tv-equalizer {
+  min-height: 34px;
+  gap: 4px;
+  margin: 6px 0 0;
+  align-items: end;
+}
+
+body.tv-mode .tv-eq-bar {
+  width: 5px;
+  min-height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe2a6 0%, #ffab3d 40%, #ff6d00 100%);
+  box-shadow:
+    0 0 8px rgba(255, 164, 46, .32),
+    0 0 16px rgba(255, 108, 0, .12);
+  transform-origin: bottom center;
+}
+
+body.tv-mode .tv-eq-bar:nth-child(1)  { height: 14px; animation-delay: -.92s; }
+body.tv-mode .tv-eq-bar:nth-child(2)  { height: 20px; animation-delay: -.41s; }
+body.tv-mode .tv-eq-bar:nth-child(3)  { height: 12px; animation-delay: -.68s; }
+body.tv-mode .tv-eq-bar:nth-child(4)  { height: 28px; animation-delay: -.18s; }
+body.tv-mode .tv-eq-bar:nth-child(5)  { height: 18px; animation-delay: -.76s; }
+body.tv-mode .tv-eq-bar:nth-child(6)  { height: 30px; animation-delay: -.25s; }
+body.tv-mode .tv-eq-bar:nth-child(7)  { height: 16px; animation-delay: -.61s; }
+body.tv-mode .tv-eq-bar:nth-child(8)  { height: 24px; animation-delay: -.06s; }
+body.tv-mode .tv-eq-bar:nth-child(9)  { height: 15px; animation-delay: -.54s; }
+body.tv-mode .tv-eq-bar:nth-child(10) { height: 26px; animation-delay: -.13s; }
+body.tv-mode .tv-eq-bar:nth-child(11) { height: 17px; animation-delay: -.84s; }
+body.tv-mode .tv-eq-bar:nth-child(12) { height: 22px; animation-delay: -.31s; }
+
+@keyframes tvEqPulsePremium {
+  0% { transform: scaleY(.35); opacity: .32; }
+  10% { transform: scaleY(.55); opacity: .6; }
+  20% { transform: scaleY(1.15); opacity: 1; }
+  35% { transform: scaleY(.72); opacity: .72; }
+  50% { transform: scaleY(1.42); opacity: 1; }
+  65% { transform: scaleY(.82); opacity: .84; }
+  80% { transform: scaleY(1.22); opacity: .96; }
+  100% { transform: scaleY(.42); opacity: .4; }
+}
+
+body.tv-mode .player-card[data-playback="playing"] .tv-eq-bar {
+  animation: tvEqPulsePremium .82s cubic-bezier(.43, 0, .27, 1) infinite;
+}
+
+body.tv-mode .player-card[data-playback="paused"] .tv-eq-bar,
+body.tv-mode .player-card[data-playback="stopped"] .tv-eq-bar,
+body.tv-mode .player-card[data-playback="idle"] .tv-eq-bar,
+body.tv-mode .player-card[data-playback="error"] .tv-eq-bar {
+  animation: none;
+  opacity: .34;
+  transform: scaleY(.42);
+}
+
+body.tv-mode .tv-retro-chip,
+body.tv-mode .playback-chip {
+  min-height: 24px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+  background: linear-gradient(180deg, rgba(0, 55, 42, .85), rgba(0, 29, 22, .95));
+  border: 1px solid rgba(42, 230, 150, .35);
+  color: #98ffd8;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 0 12px rgba(16, 185, 129, .14);
+}
+
+@media (max-width: 1200px) {
+  body.tv-mode .player-card {
+    grid-template-rows: 52px minmax(0, 1fr) 82px;
+  }
+  body.tv-mode .tv-karaoke-header {
+    min-height: 52px;
+    height: 52px;
+    padding: 4px 8px;
+  }
+  body.tv-mode .tv-up-next-label {
+    min-width: 62px;
+    font-size: .58rem;
+  }
+  body.tv-mode .tv-queue-strip {
+    height: 42px;
+  }
+  body.tv-mode .tv-queue-card {
+    flex-basis: 170px;
+    grid-template-columns: 48px minmax(0,1fr);
+  }
+  body.tv-mode .tv-queue-card img {
+    width: 48px;
+  }
+  body.tv-mode .player-shell {
+    width: min(calc(100vw - 14px), calc((100dvh - 142px) * 1.7777778));
+    max-width: calc(100vw - 14px);
+    max-height: calc(100dvh - 142px);
+  }
+  body.tv-mode .tv-retro-bar {
+    grid-template-columns: 274px minmax(0, 1fr) 164px;
+    padding: 0 7px 7px;
+    min-height: 82px;
+    max-height: 82px;
+  }
+  body.tv-mode .tv-retro-controls,
+  body.tv-mode .tv-retro-info,
+  body.tv-mode .tv-retro-status {
+    min-height: 82px;
+    max-height: 82px;
+  }
+  body.tv-mode .tv-retro-controls {
+    padding: 21px 7px 7px;
+  }
+  body.tv-mode .tv-retro-controls .btn {
+    min-height: 38px;
+    height: 38px;
+    font-size: .54rem;
+  }
+  body.tv-mode .tv-retro-panel {
+    padding: 9px 12px;
+  }
+  body.tv-mode #nowPlayingTitle {
+    font-size: clamp(.92rem, 1.45vw, 1.24rem);
+  }
+  body.tv-mode #nowPlayingSinger {
+    font-size: clamp(.7rem, .95vw, .86rem);
+  }
+  body.tv-mode .tv-equalizer {
+    min-height: 30px;
+    gap: 3px;
+  }
+  body.tv-mode .tv-eq-bar {
+    width: 4px;
+  }
+}
+
+@media (max-width: 900px) {
+  body.tv-mode .player-card {
+    grid-template-rows: 50px minmax(0, 1fr) 74px;
+  }
+  body.tv-mode .tv-karaoke-header {
+    min-height: 50px;
+    height: 50px;
+    padding: 4px 6px;
+    gap: 6px;
+  }
+  body.tv-mode .tv-up-next-label {
+    min-width: 56px;
+    border-radius: 10px;
+    font-size: .54rem;
+  }
+  body.tv-mode .tv-queue-strip {
+    height: 40px;
+    gap: 6px;
+  }
+  body.tv-mode .tv-queue-card {
+    flex-basis: 144px;
+    grid-template-columns: 40px minmax(0,1fr);
+    gap: 6px;
+    padding: 4px 6px 4px 4px;
+  }
+  body.tv-mode .tv-queue-card img {
+    width: 40px;
+    border-radius: 6px;
+  }
+  body.tv-mode .tv-queue-number {
+    min-width: 16px;
+    height: 16px;
+    font-size: .56rem;
+  }
+  body.tv-mode .tv-queue-text strong {
+    font-size: .66rem;
+  }
+  body.tv-mode .tv-queue-text small {
+    font-size: .56rem;
+  }
+  body.tv-mode .tv-icon-btn {
+    min-width: 50px;
+    height: 40px;
+    padding: 4px 6px;
+    font-size: .92rem;
+  }
+  body.tv-mode .tv-icon-btn span {
+    font-size: .5rem;
+  }
+  body.tv-mode .player-shell {
+    width: min(calc(100vw - 10px), calc((100dvh - 130px) * 1.7777778));
+    max-width: calc(100vw - 10px);
+    max-height: calc(100dvh - 130px);
+    border-radius: 14px;
+  }
+  body.tv-mode .tv-retro-bar {
+    grid-template-columns: 1.08fr 1.36fr 118px;
+    padding: 0 4px 4px;
+    min-height: 74px;
+    max-height: 74px;
+  }
+  body.tv-mode .tv-retro-controls,
+  body.tv-mode .tv-retro-info,
+  body.tv-mode .tv-retro-status {
+    min-height: 74px;
+    max-height: 74px;
+  }
+  body.tv-mode .tv-retro-controls {
+    gap: 4px;
+    padding: 18px 5px 5px;
+  }
+  body.tv-mode .tv-retro-controls::before {
+    top: 5px;
+    left: 8px;
+    font-size: .42rem;
+  }
+  body.tv-mode .tv-retro-controls .btn {
+    min-height: 34px;
+    height: 34px;
+    padding: 3px 3px;
+    font-size: .48rem;
+    border-radius: 8px;
+  }
+  body.tv-mode .tv-retro-info {
+    grid-template-columns: minmax(0, 1.16fr) minmax(88px, .76fr);
+  }
+  body.tv-mode .tv-retro-panel {
+    padding: 7px 8px;
+  }
+  body.tv-mode .tv-retro-label {
+    font-size: .46rem;
+    margin-bottom: 2px;
+  }
+  body.tv-mode #nowPlayingTitle {
+    font-size: .74rem;
+  }
+  body.tv-mode #nowPlayingSinger {
+    font-size: .58rem;
+  }
+  body.tv-mode .tv-retro-status::before {
+    top: 4px;
+    font-size: .4rem;
+  }
+  body.tv-mode .tv-equalizer {
+    min-height: 24px;
+    gap: 2px;
+    margin-top: 4px;
+  }
+  body.tv-mode .tv-eq-bar {
+    width: 3px;
+  }
+  body.tv-mode .tv-retro-chip,
+  body.tv-mode .playback-chip {
+    min-height: 18px;
+    padding: 2px 6px;
+    font-size: .48rem;
+  }
+}
