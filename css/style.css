@@ -2416,3 +2416,402 @@ body.tv-mode .player-stage::before {
   }
   body.guest-page .guest-own-control-btn { width: 100%; }
 }
+
+/* =========================================================
+   TV MODE v5 - RETRO KARAOKE LOWER THIRD
+   Single integrated bar: controls + now playing + reserved by + equalizer.
+   ========================================================= */
+.tv-retro-bar {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.tv-retro-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tv-equalizer {
+  display: inline-flex;
+  align-items: end;
+  gap: 4px;
+  min-height: 36px;
+}
+
+.tv-eq-bar {
+  width: 6px;
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffd18b 0%, #ff9b25 48%, #ff6900 100%);
+  box-shadow: 0 0 10px rgba(255, 140, 40, .22);
+  opacity: .5;
+  transform-origin: bottom center;
+}
+
+.tv-eq-bar:nth-child(1) { height: 16px; animation-delay: -.9s; }
+.tv-eq-bar:nth-child(2) { height: 26px; animation-delay: -.2s; }
+.tv-eq-bar:nth-child(3) { height: 18px; animation-delay: -.7s; }
+.tv-eq-bar:nth-child(4) { height: 30px; animation-delay: -.4s; }
+.tv-eq-bar:nth-child(5) { height: 20px; animation-delay: -.8s; }
+.tv-eq-bar:nth-child(6) { height: 28px; animation-delay: -.1s; }
+.tv-eq-bar:nth-child(7) { height: 15px; animation-delay: -.6s; }
+.tv-eq-bar:nth-child(8) { height: 24px; animation-delay: -.3s; }
+
+@keyframes tvEqPulse {
+  0%, 100% { transform: scaleY(.5); opacity: .38; }
+  25% { transform: scaleY(1.08); opacity: .95; }
+  50% { transform: scaleY(.72); opacity: .7; }
+  75% { transform: scaleY(1.28); opacity: 1; }
+}
+
+.player-card[data-playback="playing"] .tv-eq-bar {
+  animation: tvEqPulse .95s ease-in-out infinite;
+  opacity: 1;
+}
+
+.player-card[data-playback="paused"] .tv-eq-bar,
+.player-card[data-playback="stopped"] .tv-eq-bar,
+.player-card[data-playback="idle"] .tv-eq-bar,
+.player-card[data-playback="error"] .tv-eq-bar {
+  animation: none;
+  opacity: .42;
+}
+
+body:not(.tv-mode) .tv-retro-bar {
+  grid-template-columns: 1fr;
+}
+
+body:not(.tv-mode) .tv-retro-controls {
+  position: static;
+}
+
+body:not(.tv-mode) .tv-retro-info {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+body:not(.tv-mode) .tv-retro-panel,
+body:not(.tv-mode) .tv-retro-status {
+  border: 1px solid var(--line);
+  background: rgba(10, 18, 40, .72);
+  border-radius: 18px;
+  padding: 14px 16px;
+}
+
+body:not(.tv-mode) .tv-retro-status {
+  justify-content: flex-start;
+}
+
+body:not(.tv-mode) .tv-retro-label {
+  color: #f59e0b;
+}
+
+body:not(.tv-mode) .tv-retro-panel h3,
+body:not(.tv-mode) .tv-retro-panel .now-playing-singer {
+  margin: 2px 0 0;
+}
+
+body.tv-mode .player-card {
+  display: grid;
+  grid-template-rows: 68px minmax(0, 1fr) 112px;
+  grid-template-columns: minmax(0, 1fr);
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.tv-mode .player-shell {
+  position: relative;
+  grid-row: 2;
+  align-self: center;
+  justify-self: center;
+  width: min(calc(100vw - 24px), calc((100dvh - 204px) * 1.7777778));
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 204px);
+  aspect-ratio: 16 / 9;
+  margin: 6px auto;
+  border-radius: 14px;
+}
+
+body.tv-mode .tv-retro-bar {
+  grid-row: 3;
+  grid-template-columns: minmax(270px, 360px) minmax(0, 1fr) 175px;
+  align-items: stretch;
+  gap: 0;
+  padding: 0 12px 12px;
+  margin: 0;
+}
+
+body.tv-mode .tv-retro-controls,
+body.tv-mode .tv-retro-info,
+body.tv-mode .tv-retro-status {
+  min-height: 100px;
+  border-top: 1px solid rgba(255, 132, 0, .82);
+  border-bottom: 1px solid rgba(255, 132, 0, .82);
+  background:
+    linear-gradient(180deg, rgba(24, 20, 24, .97) 0%, rgba(10, 10, 12, .98) 100%),
+    radial-gradient(circle at top left, rgba(255, 150, 40, .12), transparent 58%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 160, 55, .2),
+    0 10px 24px rgba(0, 0, 0, .22);
+}
+
+body.tv-mode .tv-retro-controls {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  width: auto;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  padding: 28px 12px 12px;
+  margin: 0;
+  border-left: 1px solid rgba(255, 132, 0, .82);
+  border-right: 1px solid rgba(255, 132, 0, .38);
+  border-radius: 16px 0 0 16px;
+  overflow: hidden;
+}
+
+body.tv-mode .tv-retro-controls::before {
+  content: "KARAOKE CONTROL";
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font-size: .58rem;
+  letter-spacing: .18em;
+  color: rgba(255, 188, 93, .84);
+}
+
+body.tv-mode .tv-retro-controls .btn {
+  align-self: end;
+  min-height: 54px;
+  height: 54px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 165, 74, .42);
+  background: linear-gradient(180deg, rgba(34, 36, 44, .95) 0%, rgba(12, 13, 18, .98) 100%);
+  color: #fff1cf;
+  font-size: .78rem;
+  font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 4px 10px rgba(0,0,0,.24);
+}
+
+body.tv-mode .tv-retro-controls #playBtn,
+body.tv-mode .tv-retro-controls #nextBtn {
+  background: linear-gradient(180deg, rgba(145, 92, 255, .95) 0%, rgba(95, 57, 218, .98) 100%);
+  border-color: rgba(182, 145, 255, .62);
+  color: #fff;
+}
+
+body.tv-mode .tv-retro-info {
+  position: static;
+  z-index: auto;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  width: auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(180px, .82fr);
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border-left: 0;
+  border-right: 1px solid rgba(255, 132, 0, .38);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.tv-mode .tv-retro-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 12px 16px;
+  background: transparent;
+}
+
+body.tv-mode .tv-retro-panel + .tv-retro-panel {
+  border-left: 1px solid rgba(255, 132, 0, .38);
+}
+
+body.tv-mode .tv-retro-label {
+  margin: 0 0 6px;
+  color: #ffab3d;
+  font-size: .72rem;
+  letter-spacing: .12em;
+}
+
+body.tv-mode #nowPlayingTitle {
+  margin: 0;
+  color: #ff7f11;
+  text-transform: uppercase;
+  font-size: clamp(1.1rem, 2.1vw, 2.05rem);
+  line-height: 1.05;
+  font-weight: 900;
+  text-shadow: 0 0 10px rgba(255, 106, 0, .18);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.tv-mode #nowPlayingSinger {
+  margin: 0;
+  color: #fff2dd;
+  font-size: clamp(.9rem, 1.3vw, 1.18rem);
+  font-weight: 700;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.tv-mode .tv-retro-status {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 10px;
+  border-left: 0;
+  border-right: 1px solid rgba(255, 132, 0, .82);
+  border-radius: 0 16px 16px 0;
+}
+
+body.tv-mode .tv-equalizer {
+  min-height: 42px;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+body.tv-mode .tv-eq-bar {
+  width: 7px;
+}
+
+body.tv-mode .tv-retro-chip,
+body.tv-mode .playback-chip {
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: .68rem;
+  letter-spacing: .12em;
+}
+
+body.tv-mode .tv-shortcut-hint {
+  display: none !important;
+}
+
+@media (max-width: 1200px) {
+  body.tv-mode .player-card {
+    grid-template-rows: 64px minmax(0, 1fr) 104px;
+  }
+
+  body.tv-mode .player-shell {
+    width: min(calc(100vw - 18px), calc((100dvh - 190px) * 1.7777778));
+    max-width: calc(100vw - 18px);
+    max-height: calc(100dvh - 190px);
+  }
+
+  body.tv-mode .tv-retro-bar {
+    grid-template-columns: minmax(235px, 310px) minmax(0, 1fr) 152px;
+    padding: 0 9px 9px;
+  }
+
+  body.tv-mode .tv-retro-controls,
+  body.tv-mode .tv-retro-info,
+  body.tv-mode .tv-retro-status {
+    min-height: 95px;
+  }
+
+  body.tv-mode .tv-retro-controls .btn {
+    min-height: 48px;
+    height: 48px;
+    padding: 7px 8px;
+    font-size: .7rem;
+  }
+
+  body.tv-mode #nowPlayingTitle {
+    font-size: clamp(1rem, 1.8vw, 1.55rem);
+  }
+
+  body.tv-mode #nowPlayingSinger {
+    font-size: clamp(.82rem, 1.1vw, 1rem);
+  }
+}
+
+@media (max-width: 900px) {
+  body.tv-mode .player-card {
+    grid-template-rows: 58px minmax(0, 1fr) 96px;
+  }
+
+  body.tv-mode .tv-karaoke-header {
+    height: 58px;
+    padding: 5px 7px;
+  }
+
+  body.tv-mode .player-shell {
+    width: min(calc(100vw - 10px), calc((100dvh - 170px) * 1.7777778));
+    max-width: calc(100vw - 10px);
+    max-height: calc(100dvh - 170px);
+  }
+
+  body.tv-mode .tv-retro-bar {
+    grid-template-columns: 1.05fr 1.45fr 125px;
+    padding: 0 5px 5px;
+  }
+
+  body.tv-mode .tv-retro-controls,
+  body.tv-mode .tv-retro-info,
+  body.tv-mode .tv-retro-status {
+    min-height: 91px;
+  }
+
+  body.tv-mode .tv-retro-controls {
+    gap: 5px;
+    padding: 24px 8px 8px;
+  }
+
+  body.tv-mode .tv-retro-controls .btn {
+    min-height: 42px;
+    height: 42px;
+    padding: 5px 4px;
+    font-size: .6rem;
+  }
+
+  body.tv-mode .tv-retro-panel {
+    padding: 10px 10px;
+  }
+
+  body.tv-mode .tv-retro-label {
+    margin-bottom: 4px;
+    font-size: .58rem;
+  }
+
+  body.tv-mode #nowPlayingTitle {
+    font-size: .9rem;
+  }
+
+  body.tv-mode #nowPlayingSinger {
+    font-size: .74rem;
+  }
+
+  body.tv-mode .tv-equalizer {
+    min-height: 34px;
+    gap: 4px;
+  }
+
+  body.tv-mode .tv-eq-bar {
+    width: 5px;
+  }
+
+  body.tv-mode .tv-retro-chip,
+  body.tv-mode .playback-chip {
+    min-height: 22px;
+    font-size: .53rem;
+    padding: 3px 7px;
+  }
+}

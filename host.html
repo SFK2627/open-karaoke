@@ -89,21 +89,39 @@
           </div>
         </div>
 
-        <div class="now-playing-host">
-          <div class="now-playing-copy">
-            <p class="eyebrow">NOW PLAYING</p>
-            <h3 id="nowPlayingTitle">Waiting for a song…</h3>
-            <p id="nowPlayingSinger" class="muted now-playing-singer">Queue is ready when guests add songs.</p>
+        <div class="tv-retro-bar" id="tvRetroBar">
+          <div class="host-player-controls host-player-controls-final tv-retro-controls">
+            <button class="btn btn-secondary" id="previousBtn" type="button">⏮ Previous</button>
+            <button class="btn btn-primary" id="playBtn" type="button">▶ Play / Resume</button>
+            <button class="btn btn-secondary" id="pauseBtn" type="button">⏸ Pause</button>
+            <button class="btn btn-secondary" id="stopBtn" type="button">⏹ Stop</button>
+            <button class="btn btn-primary" id="nextBtn" type="button">⏭ Next / Skip</button>
           </div>
-          <span class="playback-chip" id="playbackState" data-state="idle">IDLE</span>
-        </div>
 
-        <div class="host-player-controls host-player-controls-final">
-          <button class="btn btn-secondary" id="previousBtn" type="button">⏮ Previous</button>
-          <button class="btn btn-primary" id="playBtn" type="button">▶ Play / Resume</button>
-          <button class="btn btn-secondary" id="pauseBtn" type="button">⏸ Pause</button>
-          <button class="btn btn-secondary" id="stopBtn" type="button">⏹ Stop</button>
-          <button class="btn btn-primary" id="nextBtn" type="button">⏭ Next / Skip</button>
+          <div class="now-playing-host tv-retro-info">
+            <div class="tv-retro-panel tv-retro-now">
+              <p class="eyebrow tv-retro-label">NOW PLAYING</p>
+              <h3 id="nowPlayingTitle">Waiting for a song…</h3>
+            </div>
+            <div class="tv-retro-panel tv-retro-reserved">
+              <p class="eyebrow tv-retro-label">RESERVED BY</p>
+              <p id="nowPlayingSinger" class="muted now-playing-singer">Waiting for singer…</p>
+            </div>
+          </div>
+
+          <div class="tv-retro-status" aria-label="Playback status">
+            <div class="tv-equalizer" aria-hidden="true">
+              <span class="tv-eq-bar"></span>
+              <span class="tv-eq-bar"></span>
+              <span class="tv-eq-bar"></span>
+              <span class="tv-eq-bar"></span>
+              <span class="tv-eq-bar"></span>
+              <span class="tv-eq-bar"></span>
+              <span class="tv-eq-bar"></span>
+              <span class="tv-eq-bar"></span>
+            </div>
+            <span class="playback-chip tv-retro-chip" id="playbackState" data-state="idle">IDLE</span>
+          </div>
         </div>
 
         <div class="tv-shortcut-hint" id="tvShortcutHint" aria-hidden="true">

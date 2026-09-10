@@ -53,6 +53,7 @@ const lockHostBtn = document.querySelector("#lockHostBtn");
 const fullscreenBtn = document.querySelector("#fullscreenBtn");
 const copyCodeBtn = document.querySelector("#copyCodeBtn");
 const copyLinkBtn = document.querySelector("#copyLinkBtn");
+const playerCard = document.querySelector(".player-card");
 const playerShell = document.querySelector(".player-shell");
 const playerEmpty = document.querySelector("#playerEmpty");
 const nowPlayingTitle = document.querySelector("#nowPlayingTitle");
@@ -493,6 +494,7 @@ function renderPlaybackState(state) {
   const normalized = ["playing", "paused", "stopped", "error"].includes(state) ? state : "idle";
   playbackStateEl.dataset.state = normalized;
   playbackStateEl.textContent = normalized.toUpperCase();
+  playerCard?.setAttribute("data-playback", normalized);
 }
 
 function renderCurrentSong(song) {
@@ -502,7 +504,7 @@ function renderCurrentSong(song) {
 
   if (!currentSong) {
     nowPlayingTitle.textContent = "Waiting for a song…";
-    nowPlayingSinger.textContent = "Queue is ready when guests add songs.";
+    nowPlayingSinger.textContent = "Waiting for singer…";
     playerEmpty.hidden = false;
     renderPlaybackState("idle");
     updateAmbilightForSong(null);
@@ -511,7 +513,7 @@ function renderCurrentSong(song) {
   }
 
   nowPlayingTitle.textContent = currentSong.title || "Untitled song";
-  nowPlayingSinger.textContent = `👤 ${currentSong.singerName || "Guest"}`;
+  nowPlayingSinger.textContent = currentSong.singerName || "Guest";
   playerEmpty.hidden = true;
   renderPlaybackState(currentSong.playbackState || "playing");
   updateAmbilightForSong(currentSong);
