@@ -5,15 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Guest</title>
-  <link rel="stylesheet" href="./css/style.css?v=20260910-themeselect2">
+  <link rel="stylesheet" href="./css/style.css?v=20260910-watch1">
 </head>
 <body class="guest-page">
   <header class="topbar compact-topbar">
     <a class="brand" href="./index.html">🎤 <span>Open Karaoke</span></a>
-    <div class="guest-topbar-actions">
-      <span class="guest-theme-badge" id="guestThemeBadge">Classic Videoke</span>
-      <div class="status-pill guest-status-pill" id="connectionStatus" data-state="loading">…</div>
-    </div>
+    <div class="status-pill guest-status-pill" id="connectionStatus" data-state="loading">…</div>
   </header>
 
   <main class="page-shell guest-shell">
@@ -82,10 +79,25 @@
       </article>
 
       <nav class="guest-mobile-tabs" id="guestMobileTabs" aria-label="Guest controller sections">
+        <button class="guest-tab-btn" type="button" data-guest-tab="watch">▶ <span>Watch</span></button>
         <button class="guest-tab-btn is-active" type="button" data-guest-tab="search">🔎 <span>Search</span></button>
         <button class="guest-tab-btn" type="button" data-guest-tab="queue">≡ <span>Queue</span></button>
         <button class="guest-tab-btn" type="button" data-guest-tab="mine">♪ <span>My Songs</span></button>
       </nav>
+
+      <article class="panel watch-panel guest-tab-panel" data-guest-panel="watch">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">LIVE WATCH</p>
+            <h2>Watching Karaoke</h2>
+          </div>
+          <span class="playback-chip" id="watchSyncState">LIVE</span>
+        </div>
+        <div class="watch-frame-wrap">
+          <div id="watchPlayer"></div>
+        </div>
+        <div class="watch-info" id="watchInfo">Waiting for the Host to start a song.</div>
+      </article>
 
       <article class="panel reserve-card guest-tab-panel is-active" data-guest-panel="search">
         <div class="section-heading mobile-stack-heading">
@@ -170,6 +182,6 @@
     </section>
   </div>
 
-  <script type="module" src="./js/guest.js?v=20260910-stylepack20"></script>
+  <script type="module" src="./js/guest.js?v=20260909-realtimesync1"></script>
 </body>
 </html>

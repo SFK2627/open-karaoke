@@ -20,7 +20,7 @@ import {
   searchYouTubeVideos
 } from "./youtube.js";
 
-const GUEST_BUILD = "20260910-stylepack20";
+const GUEST_BUILD = "20260909-realtimesync1";
 
 function uniqueReservationId(guestId, videoId) {
   const randomPart = globalThis.crypto?.randomUUID
@@ -53,6 +53,9 @@ const guestQueue = document.querySelector("#guestQueue");
 const mySongs = document.querySelector("#mySongs");
 const queueCount = document.querySelector("#queueCount");
 const guestNowTitle = document.querySelector("#guestNowTitle");
+const watchPlayerEl = document.querySelector("#watchPlayer");
+const watchInfo = document.querySelector("#watchInfo");
+const watchSyncState = document.querySelector("#watchSyncState");
 const guestNowBody = document.querySelector("#guestNowBody");
 const guestPlaybackState = document.querySelector("#guestPlaybackState");
 const guestOwnControls = document.querySelector("#guestOwnControls");
@@ -73,72 +76,6 @@ const closePreviewBtn = document.querySelector("#closePreviewBtn");
 const guestMobileTabs = document.querySelector("#guestMobileTabs");
 const guestTabButtons = [...document.querySelectorAll("[data-guest-tab]")];
 const guestTabPanels = [...document.querySelectorAll("[data-guest-panel]")];
-const guestThemeBadge = document.querySelector("#guestThemeBadge");
-const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-
-const TV_THEME_IDS = new Set(["classic", "neon", "studio", "disco", "ocean", "christmas", "spider", "gold", "pink", "minimal", "maximal", "futuristic", "vector", "collage", "retro", "cyberpunk", "popart", "glass", "clay", "pixel", "editorial", "y2k", "swiss", "surreal", "bohemian", "victorian", "graffiti", "aurora", "handwritten"]);
-const TV_THEME_LABELS = {
-  classic: "Classic Videoke",
-  neon: "Neon Night",
-  studio: "Light Studio",
-  disco: "Disco RGB",
-  ocean: "Ocean Blue",
-  christmas: "Christmas",
-  spider: "Spider Hero",
-  gold: "Gold Luxury",
-  pink: "Pink Cute",
-  minimal: "Minimalism",
-  maximal: "Maximalism",
-  futuristic: "Futuristic",
-  vector: "Vector Art",
-  collage: "Collage Art",
-  retro: "Retro",
-  cyberpunk: "Cyberpunk",
-  popart: "Pop Art",
-  glass: "Glass Morphism",
-  clay: "Clay Style",
-  pixel: "Pixel Art",
-  editorial: "Editorial",
-  y2k: "Y2K",
-  swiss: "Swiss Design",
-  surreal: "Surreal Design",
-  bohemian: "Bohemian",
-  victorian: "Victorian Style",
-  graffiti: "Graffiti",
-  aurora: "Aurora",
-  handwritten: "Handwritten"
-};
-const TV_THEME_META_COLORS = {
-  classic: "#090a0e",
-  neon: "#08051a",
-  studio: "#f7efe2",
-  disco: "#170022",
-  ocean: "#082b3a",
-  christmas: "#0b2418",
-  spider: "#071b36",
-  gold: "#17120a",
-  pink: "#3a1730",
-  minimal: "#f2f1ed",
-  maximal: "#43114f",
-  futuristic: "#06131c",
-  vector: "#143d6b",
-  collage: "#e8dcc7",
-  retro: "#5b321c",
-  cyberpunk: "#0b0b12",
-  popart: "#ffd93b",
-  glass: "#18243e",
-  clay: "#f4d7c9",
-  pixel: "#111022",
-  editorial: "#f4f0e8",
-  y2k: "#d7e7f4",
-  swiss: "#f7f7f5",
-  surreal: "#331b63",
-  bohemian: "#6f3f2f",
-  victorian: "#241613",
-  graffiti: "#191a20",
-  aurora: "#071521",
-  handwritten: "#f1ead8"
-};
 
 let db;
 let user;
@@ -149,6 +86,9 @@ let guestRef = null;
 let reservationsLocked = false;
 let currentQueue = [];
 let currentSong = null;
+let watchPlayer = null;
+let watchPlayerReady = false;
+let watchLoadedId = null;
 let currentSearchResults = new Map();
 let previewVideo = null;
 let lastSearchAt = 0;
@@ -163,38 +103,6 @@ let guestDisconnectAction = null;
 let roomResyncTimer = null;
 let roomResyncInFlight = false;
 let roomListenerGeneration = 0;
-let activeGuestTheme = "classic";
-let guestThemeTransitionTimer = null;
-
-function normalizeGuestTheme(value) {
-  return TV_THEME_IDS.has(value) ? value : "classic";
-}
-
-function savedGuestTheme() {
-  return normalizeGuestTheme(localStorage.getItem("openKaraokeGuestTheme") || "classic");
-}
-
-function applyGuestTheme(theme, { animate = true } = {}) {
-  const normalized = normalizeGuestTheme(theme);
-  const changed = normalized !== activeGuestTheme;
-  activeGuestTheme = normalized;
-  document.body.dataset.tvTheme = normalized;
-  document.body.dataset.guestTheme = normalized;
-  localStorage.setItem("openKaraokeGuestTheme", normalized);
-
-  if (guestThemeBadge) guestThemeBadge.textContent = TV_THEME_LABELS[normalized] || "Karaoke Theme";
-  if (themeColorMeta) themeColorMeta.setAttribute("content", TV_THEME_META_COLORS[normalized] || "#0b1020");
-
-  if (changed && animate) {
-    document.body.classList.remove("guest-theme-switching");
-    void document.body.offsetWidth;
-    document.body.classList.add("guest-theme-switching");
-    window.clearTimeout(guestThemeTransitionTimer);
-    guestThemeTransitionTimer = window.setTimeout(() => {
-      document.body.classList.remove("guest-theme-switching");
-    }, 680);
-  }
-}
 
 function normalizeSession(value) {
   let raw = String(value || "").trim();
@@ -347,6 +255,36 @@ async function sendSingerControl(action) {
     requestId,
     createdAt: Date.now()
   });
+}
+
+function initWatchPlayer() {
+  if (watchPlayer || !watchPlayerEl) return;
+  createYouTubePlayer("watchPlayer", {
+    onReady: () => { watchPlayerReady = true; },
+    onStateChange: () => {}
+  }).then(player => { watchPlayer = player; }).catch(error => console.error(error));
+}
+
+function syncWatchPlayer(song) {
+  if (!watchPlayerEl || !song?.youtubeVideoId) {
+    if (watchInfo) watchInfo.textContent = "Waiting for the Host to start a song.";
+    return;
+  }
+  initWatchPlayer();
+  if (watchInfo) watchInfo.textContent = `${song.title || "Untitled"} • ${song.singerName || "Guest"}`;
+  if (!watchPlayerReady || !watchPlayer) return;
+  const target = song.playbackState === "playing" ? "playing" : song.playbackState;
+  if (watchLoadedId !== song.youtubeVideoId) {
+    watchLoadedId = song.youtubeVideoId;
+    watchPlayer.loadVideoById(song.youtubeVideoId);
+  }
+  setTimeout(() => {
+    try {
+      if (Number.isFinite(song.currentTime)) watchPlayer.seekTo(song.currentTime, true);
+      if (target === "playing") watchPlayer.playVideo();
+      if (target === "paused") watchPlayer.pauseVideo();
+    } catch {}
+  }, 500);
 }
 
 function renderCurrentSong(song) {
@@ -509,7 +447,7 @@ function restartRoomListeners() {
 
   const hostRef = ref(db, `sessions/${sessionId}/meta/hostOnline`);
   const guestsRef = ref(db, `sessions/${sessionId}/guests`);
-  const settingsRef = ref(db, `sessions/${sessionId}/settings`);
+  const settingsRef = ref(db, `sessions/${sessionId}/settings/reservationsLocked`);
   const queueRef = ref(db, `sessions/${sessionId}/queue`);
   const currentSongRef = ref(db, `sessions/${sessionId}/currentSong`);
 
@@ -527,9 +465,7 @@ function restartRoomListeners() {
 
   unsubscribeSettings = onValue(settingsRef, snapshot => {
     if (generation !== roomListenerGeneration) return;
-    const settings = snapshot.val() || {};
-    setReservationLockState(settings.reservationsLocked === true);
-    applyGuestTheme(settings.tvTheme || savedGuestTheme());
+    setReservationLockState(snapshot.val() === true);
   }, roomListenerError("settings", generation));
 
   unsubscribeQueue = onValue(queueRef, snapshot => {
@@ -888,7 +824,6 @@ leaveBtn.addEventListener("click", async () => {
   currentSong = null;
   roomPanel.hidden = true;
   joinPanel.hidden = false;
-  applyGuestTheme("classic");
   setGuestTab("search");
   joinForm.querySelector("button").disabled = false;
   leaveBtn.disabled = false;
@@ -910,7 +845,5 @@ window.addEventListener("online", () => {
   if (activeSessionId) scheduleRoomResync(40);
 });
 
-
-applyGuestTheme(savedGuestTheme(), { animate: false });
 
 init();
