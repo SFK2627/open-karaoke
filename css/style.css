@@ -7274,3 +7274,61 @@ body.guest-page .guest-watch-empty::after {
 }
 body.guest-page .guest-watch-empty[hidden]::after { display: none !important; }
 body.guest-page .guest-watch-input-shield { cursor: pointer; }
+
+
+/* ==========================================================================
+   GUEST WATCH v4 — CLICKABLE PLAYER + LIVE TAB COUNTS
+   The iframe is intentionally interactive so mobile browsers can accept a
+   direct user gesture when muted autoplay is blocked. Drift correction keeps
+   it aligned with the Host after any accidental local interaction.
+   ========================================================================== */
+body.guest-page .guest-watch-player,
+body.guest-page #guestWatchPlayer,
+body.guest-page #guestWatchPlayer iframe {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto !important;
+}
+
+body.guest-page .guest-tab-btn {
+  position: relative;
+}
+
+body.guest-page .guest-tab-count {
+  flex: 0 0 auto;
+  min-width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border: 1px solid color-mix(in srgb, var(--guest-accent2-safe) 34%, var(--guest-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--guest-accent) 18%, var(--guest-panel-b));
+  color: var(--guest-text) !important;
+  font: 900 .58rem/1 var(--karaoke-ui-font, system-ui, sans-serif) !important;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+body.guest-page .guest-tab-btn.is-active .guest-tab-count {
+  background: color-mix(in srgb, var(--guest-accent) 34%, var(--guest-panel-b));
+  border-color: color-mix(in srgb, var(--guest-accent2-safe) 55%, var(--guest-border));
+}
+
+body.guest-page .guest-tab-count[data-empty="true"] {
+  opacity: .68;
+}
+
+@media (max-width: 620px) {
+  body.guest-page .guest-tab-btn {
+    gap: 3px !important;
+  }
+  body.guest-page .guest-tab-count {
+    min-width: 16px;
+    height: 16px;
+    padding-inline: 4px;
+    font-size: .52rem !important;
+  }
+}
