@@ -22,7 +22,7 @@ import {
   youtubePlayerErrorMessage
 } from "./youtube.js";
 
-const GUEST_BUILD = "20260910-watchdisplay1";
+const GUEST_BUILD = "20260910-watchdisplay2";
 
 function uniqueReservationId(guestId, videoId) {
   const randomPart = globalThis.crypto?.randomUUID
@@ -78,6 +78,7 @@ const guestTabPanels = [...document.querySelectorAll("[data-guest-panel]")];
 const guestThemeBadge = document.querySelector("#guestThemeBadge");
 const themeColorMeta = document.querySelector('meta[name="theme-color"]');
 const guestWatchStage = document.querySelector("#guestWatchStage");
+const watchInputShield = document.querySelector(".guest-watch-input-shield");
 const watchEmpty = document.querySelector("#watchEmpty");
 const watchTitle = document.querySelector("#watchTitle");
 const watchSinger = document.querySelector("#watchSinger");
@@ -192,6 +193,7 @@ let watchSyncTickTimer = null;
 let watchApplyTimer = null;
 let watchFocusActive = false;
 let watchWakeLock = null;
+let watchLoadRetryTimer = null;
 const WATCH_DRIFT_SEEK_SECONDS = 1.15;
 const WATCH_SYNC_TICK_MS = 900;
 
@@ -470,11 +472,27 @@ async function ensureWatchPlayer() {
         watchPlayerReady = true;
         try { event.target.mute?.(); } catch {}
         try { event.target.setVolume?.(0); } catch {}
-        try { event.target.getIframe()?.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture; fullscreen"); } catch {}
+        try {
+          const iframe = event.target.getIframe?.();
+          iframe?.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture; fullscreen");
+          iframe?.setAttribute("title", "Live synchronized karaoke display");
+        } catch {}
+        // The loading cover may already be visible before YouTube is ready.
+        // Force a fresh load immediately so the live display cannot get stuck.
         forceWatchResync();
       },
-      onStateChange: () => {
+      onStateChange: event => {
         if (document.body.dataset.guestSection === "watch") updateWatchProgressUi();
+        const state = Number(event?.data);
+        const YTPS = window.YT?.PlayerState || {};
+        const hasRenderableVideo = Boolean(
+          currentSong?.youtubeVideoId &&
+          [YTPS.BUFFERING, YTPS.PLAYING, YTPS.PAUSED, YTPS.CUED].includes(state)
+        );
+        // Once YouTube confirms the requested video is loaded/cued, never
+        // leave the syncing cover sitting over the actual karaoke display.
+        if (hasRenderableVideo && watchEmpty) watchEmpty.hidden = true;
+        if (state === YTPS.PLAYING) setWatchSyncUi("synced", "● LIVE SYNCED");
       },
       onError: event => {
         setWatchSyncUi("error", "VIDEO ERROR");
@@ -537,15 +555,33 @@ function applyWatchSync({ force = false } = {}) {
 
       if (watchLoadedVideoId !== targetVideoId) {
         watchLoadedVideoId = targetVideoId;
+        // Reveal the iframe as soon as the song is handed to YouTube. The
+        // player can show its own loading frame instead of a permanent cover.
+        if (watchEmpty) watchEmpty.hidden = true;
         if (desiredState === "playing") {
           watchPlayer.loadVideoById({ videoId: targetVideoId, startSeconds: Math.max(0, expected) });
         } else {
           watchPlayer.cueVideoById({ videoId: targetVideoId, startSeconds: Math.max(0, expected) });
         }
-        if (watchEmpty) watchEmpty.hidden = true;
         setWatchSyncUi("adjusting", "SYNCING…");
+
+        window.clearTimeout(watchLoadRetryTimer);
+        watchLoadRetryTimer = window.setTimeout(() => {
+          if (!watchPlayerReady || !watchPlayer || watchLoadedVideoId !== targetVideoId) return;
+          try {
+            watchPlayer.mute?.();
+            watchPlayer.setVolume?.(0);
+            if (desiredState === "playing") watchPlayer.playVideo?.();
+            if (watchEmpty) watchEmpty.hidden = true;
+          } catch {}
+          scheduleWatchApply(40, true);
+        }, 700);
         return;
       }
+
+      // Defensive recovery for mobile: the correct player is already loaded,
+      // so a stale loading cover must never remain above it.
+      if (watchEmpty) watchEmpty.hidden = true;
 
       let localTime = 0;
       try { localTime = Number(watchPlayer.getCurrentTime?.()) || 0; } catch {}
@@ -610,6 +646,8 @@ function stopWatchSyncTicker() {
   watchSyncTickTimer = null;
   window.clearTimeout(watchApplyTimer);
   watchApplyTimer = null;
+  window.clearTimeout(watchLoadRetryTimer);
+  watchLoadRetryTimer = null;
 }
 
 async function requestWatchWakeLock() {
@@ -1038,13 +1076,38 @@ guestMobileTabs?.addEventListener("click", event => {
   if (!button) return;
   setGuestTab(button.dataset.guestTab);
   if (button.dataset.guestTab === "watch") {
-    // A direct tap gives mobile browsers the user gesture they may require to
-    // start the muted synchronized YouTube player.
-    forceWatchResync();
+    // Use the actual tab tap as an autoplay-safe user gesture when possible.
+    nudgeWatchPlaybackFromGesture();
+    applyWatchSync({ force: true });
   }
 });
 
+async function nudgeWatchPlaybackFromGesture() {
+  if (!currentSong?.youtubeVideoId) return;
+  try {
+    await ensureWatchPlayer();
+    if (!watchPlayerReady || !watchPlayer) return;
+    watchPlayer.mute?.();
+    watchPlayer.setVolume?.(0);
+    if ((currentSong.playbackState || playbackSync?.state) === "playing") {
+      watchPlayer.playVideo?.();
+    }
+    if (watchEmpty) watchEmpty.hidden = true;
+    scheduleWatchApply(20, true);
+  } catch {}
+}
+
+// Mobile autoplay fallback: one tap can wake the muted iframe while the
+// transparent shield still prevents guests from seeking or pausing locally.
+watchInputShield?.addEventListener("click", () => {
+  nudgeWatchPlaybackFromGesture();
+});
+watchEmpty?.addEventListener("click", () => {
+  if (currentSong?.youtubeVideoId) nudgeWatchPlaybackFromGesture();
+});
+
 watchResyncBtn?.addEventListener("click", () => {
+  nudgeWatchPlaybackFromGesture();
   applyWatchSync({ force: true });
 });
 

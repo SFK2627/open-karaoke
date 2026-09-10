@@ -7058,9 +7058,13 @@ body.guest-page .guest-watch-stage {
 }
 
 body.guest-page .guest-watch-player,
-body.guest-page .guest-watch-player iframe {
+body.guest-page .guest-watch-player iframe,
+body.guest-page #guestWatchPlayer,
+body.guest-page #guestWatchPlayer iframe {
   width: 100% !important;
   height: 100% !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
   display: block !important;
   border: 0 !important;
 }
@@ -7255,3 +7259,18 @@ body.guest-page.guest-watch-focus .guest-watch-note { display: none; }
 @media (prefers-reduced-motion: reduce) {
   body.guest-page .guest-watch-progress > span { transition: none; }
 }
+
+
+/* Guest Watch stuck-sync recovery. The cover can be tapped as a mobile
+   autoplay nudge, but it is removed immediately once YouTube can render. */
+body.guest-page .guest-watch-empty { cursor: pointer; }
+body.guest-page .guest-watch-empty::after {
+  content: "Tap once if your phone blocks autoplay";
+  display: block;
+  margin-top: 4px;
+  color: rgba(255,255,255,.52);
+  font: 700 .56rem/1.25 var(--karaoke-ui-font, system-ui, sans-serif);
+  letter-spacing: .02em;
+}
+body.guest-page .guest-watch-empty[hidden]::after { display: none !important; }
+body.guest-page .guest-watch-input-shield { cursor: pointer; }
