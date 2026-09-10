@@ -81,6 +81,12 @@ const tvQrBackdrop = document.querySelector("#tvQrBackdrop");
 const tvQrCloseBtn = document.querySelector("#tvQrCloseBtn");
 const tvQrCode = document.querySelector("#tvQrCode");
 const tvQrSessionCode = document.querySelector("#tvQrSessionCode");
+const tvNowSingerPreview = document.querySelector("#tvNowSingerPreview");
+const tvNextSingerPreview = document.querySelector("#tvNextSingerPreview");
+const tvReactionLayer = document.querySelector("#tvReactionLayer");
+const tvDedicationOverlay = document.querySelector("#tvDedicationOverlay");
+const tvDedicationText = document.querySelector("#tvDedicationText");
+const tvDedicationFrom = document.querySelector("#tvDedicationFrom");
 
 let db;
 let user;
@@ -103,8 +109,12 @@ let unsubscribeQueue = null;
 let unsubscribeSettings = null;
 let unsubscribeCurrentSong = null;
 let unsubscribeControlRequests = null;
+let unsubscribeReactions = null;
 let processingSingerControls = false;
 const handledSingerRequestIds = new Set();
+const seenReactionNonces = new Set();
+let dedicationOverlayTimer = null;
+let lastDedicationSongId = null;
 let autoStartTimer = null;
 let autoStartInFlight = false;
 
@@ -462,9 +472,66 @@ function finishedEntries() {
   return sortFinishedEntries(Object.fromEntries(queueEntries));
 }
 
+function renderSingerPreview() {
+  const waiting = waitingEntries();
+  if (tvNowSingerPreview) tvNowSingerPreview.textContent = currentSong?.singerName || "—";
+  if (tvNextSingerPreview) tvNextSingerPreview.textContent = waiting[0]?.[1]?.singerName || "Waiting…";
+}
+
+function showTvReaction(reaction) {
+  if (!tvReactionLayer || !document.body.classList.contains("tv-mode")) return;
+  const emoji = String(reaction?.emoji || "");
+  if (!["👏", "❤️", "🔥", "🎤", "😂"].includes(emoji)) return;
+  const item = document.createElement("span");
+  item.className = "tv-floating-reaction";
+  item.style.setProperty("--reaction-x", `${8 + Math.random() * 84}%`);
+  item.style.setProperty("--reaction-shift", `${Math.round((Math.random() - .5) * 120)}px`);
+  item.style.setProperty("--reaction-tilt", `${Math.round((Math.random() - .5) * 26)}deg`);
+  item.style.setProperty("--reaction-duration", `${(2.4 + Math.random() * .9).toFixed(2)}s`);
+  item.innerHTML = `<b>${escapeHtml(emoji)}</b><small>${escapeHtml(reaction?.singerName || "Guest")}</small>`;
+  tvReactionLayer.appendChild(item);
+  while (tvReactionLayer.children.length > 16) tvReactionLayer.firstElementChild?.remove();
+  window.setTimeout(() => item.remove(), 3800);
+}
+
+function processReactionSnapshot(value) {
+  const now = hostServerNowMs();
+  Object.values(value || {}).forEach(reaction => {
+    const nonce = String(reaction?.nonce || "");
+    const createdAt = Number(reaction?.createdAt || 0);
+    if (!nonce || seenReactionNonces.has(nonce)) return;
+    seenReactionNonces.add(nonce);
+    if (createdAt && Math.abs(now - createdAt) <= 6500) showTvReaction(reaction);
+  });
+  if (seenReactionNonces.size > 500) seenReactionNonces.clear();
+}
+
+function showDedicationForSong(song) {
+  if (!tvDedicationOverlay || !song?.queueItemId || !document.body.classList.contains("tv-mode")) return;
+  const songId = String(song.queueItemId);
+  if (lastDedicationSongId === songId) return;
+  const dedication = String(song.dedication || "").trim();
+  if (!dedication) return;
+  const startedAt = Number(song.startedAt || 0);
+  if (startedAt && hostServerTimeOffsetReady && hostServerNowMs() - startedAt > 10000) return;
+  lastDedicationSongId = songId;
+  window.clearTimeout(dedicationOverlayTimer);
+  if (tvDedicationText) tvDedicationText.textContent = dedication;
+  if (tvDedicationFrom) tvDedicationFrom.textContent = `— from ${song.singerName || "Guest"}`;
+  tvDedicationOverlay.hidden = false;
+  tvDedicationOverlay.classList.remove("is-showing");
+  void tvDedicationOverlay.offsetWidth;
+  tvDedicationOverlay.classList.add("is-showing");
+  dedicationOverlayTimer = window.setTimeout(() => {
+    tvDedicationOverlay.classList.remove("is-showing");
+    window.setTimeout(() => { if (tvDedicationOverlay) tvDedicationOverlay.hidden = true; }, 260);
+  }, 2800);
+}
+
 function renderTvQueueStrip() {
   if (!tvQueueStrip) return;
   const waiting = waitingEntries();
+  renderSingerPreview();
 
   if (!waiting.length) {
     tvQueueStrip.innerHTML = `<span class="tv-queue-empty">${currentSong ? "Waiting for more reservations…" : "Reserve a song — the first one starts automatically."}</span>`;
@@ -505,6 +572,7 @@ function renderHostQueue() {
       <div class="song-info">
         <strong>${escapeHtml(item.title)}</strong>
         <span>👤 ${escapeHtml(item.singerName)}</span>
+        ${item.dedication ? `<small class="song-dedication">💬 ${escapeHtml(item.dedication)}</small>` : ""}
       </div>
       <div class="queue-edit-actions">
         <button class="btn btn-secondary btn-small icon-action" type="button" data-move-song="${escapeHtml(id)}" data-direction="up" ${index === 0 ? "disabled" : ""} aria-label="Move song up">↑</button>
@@ -673,6 +741,7 @@ function renderCurrentSong(song) {
     playerEmpty.hidden = false;
     renderPlaybackState("idle");
     updateAmbilightForSong(null);
+    renderSingerPreview();
     renderHistory();
     return;
   }
@@ -687,6 +756,8 @@ function renderCurrentSong(song) {
   playerEmpty.hidden = true;
   renderPlaybackState(currentSong.playbackState || "playing");
   updateAmbilightForSong(currentSong);
+  renderSingerPreview();
+  showDedicationForSong(currentSong);
   renderHistory();
 }
 
@@ -822,6 +893,13 @@ function watchSingerControls(sessionId) {
   unsubscribeControlRequests = onValue(ref(db, `sessions/${sessionId}/controlRequests`), snapshot => {
     processSingerControlRequests(snapshot.val()).catch(error => console.error(error));
   });
+}
+
+function watchReactions(sessionId) {
+  unsubscribeReactions?.();
+  unsubscribeReactions = onValue(ref(db, `sessions/${sessionId}/reactions`), snapshot => {
+    processReactionSnapshot(snapshot.val());
+  }, error => console.debug("Reaction listener paused:", error?.message || error));
 }
 
 function scheduleAutoStart() {
@@ -1042,6 +1120,7 @@ async function advanceToNext(finalStatus = "skipped") {
       thumbnail: nextItem.thumbnail,
       singerName: nextItem.singerName,
       guestId: nextItem.guestId,
+      dedication: String(nextItem.dedication || "").slice(0, 80),
       startedAt: serverTimestamp(),
       playbackState: "playing"
     };
@@ -1162,6 +1241,7 @@ async function playPrevious() {
       thumbnail: previousItem.thumbnail,
       singerName: previousItem.singerName,
       guestId: previousItem.guestId,
+      dedication: String(previousItem.dedication || "").slice(0, 80),
       startedAt: serverTimestamp(),
       playbackState: "playing"
     };
@@ -1193,6 +1273,7 @@ async function showSession(sessionId) {
   watchSettings(sessionId);
   watchCurrentSong(sessionId);
   watchSingerControls(sessionId);
+  watchReactions(sessionId);
   await setupHostPresence(sessionId);
   await ensurePlayer();
   startPlaybackSyncHeartbeat();
@@ -1228,6 +1309,8 @@ async function enterTvMode() {
   document.body.classList.add("tv-mode");
   fullscreenBtn.textContent = "⛶ Exit TV";
   scheduleTvMarqueeRefresh();
+  renderSingerPreview();
+  showDedicationForSong(currentSong);
   try {
     if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
       await document.documentElement.requestFullscreen();
@@ -1293,6 +1376,7 @@ function unsubscribeRoomListeners() {
   unsubscribeSettings?.();
   unsubscribeCurrentSong?.();
   unsubscribeControlRequests?.();
+  unsubscribeReactions?.();
   unsubscribeServerTimeOffset?.();
   unsubscribeGuests = null;
   unsubscribeConnected = null;
@@ -1300,6 +1384,7 @@ function unsubscribeRoomListeners() {
   unsubscribeSettings = null;
   unsubscribeCurrentSong = null;
   unsubscribeControlRequests = null;
+  unsubscribeReactions = null;
   unsubscribeServerTimeOffset = null;
 }
 

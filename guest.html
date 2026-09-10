@@ -6,7 +6,7 @@
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Guest</title>
-  <link rel="stylesheet" href="./css/style.css?v=20260910-watchidentity1">
+  <link rel="stylesheet" href="./css/style.css?v=20260910-featurepack4">
 </head>
 <body class="guest-page">
   <header class="topbar compact-topbar">
@@ -82,6 +82,15 @@
         </div>
       </article>
 
+      <div class="guest-reaction-dock" id="guestReactionDock" aria-label="Live reactions">
+        <span class="guest-reaction-label">React</span>
+        <button type="button" class="guest-reaction-btn" data-reaction="👏" aria-label="Clap reaction">👏</button>
+        <button type="button" class="guest-reaction-btn" data-reaction="❤️" aria-label="Heart reaction">❤️</button>
+        <button type="button" class="guest-reaction-btn" data-reaction="🔥" aria-label="Fire reaction">🔥</button>
+        <button type="button" class="guest-reaction-btn" data-reaction="🎤" aria-label="Microphone reaction">🎤</button>
+        <button type="button" class="guest-reaction-btn" data-reaction="😂" aria-label="Laugh reaction">😂</button>
+      </div>
+
       <nav class="guest-mobile-tabs" id="guestMobileTabs" aria-label="Guest controller sections">
         <button class="guest-tab-btn is-active" type="button" data-guest-tab="watch">▶ <span>Watch</span></button>
         <button class="guest-tab-btn" type="button" data-guest-tab="search">🔎 <span>Search</span></button>
@@ -117,6 +126,12 @@
             <span>/</span>
             <span id="watchTimeDuration">0:00</span>
           </div>
+        </div>
+
+        <div class="guest-singer-preview" aria-label="Current and next singer">
+          <div><span>NOW</span><strong id="watchNowSingerPreview">—</strong></div>
+          <span class="guest-singer-preview-arrow" aria-hidden="true">→</span>
+          <div><span>NEXT</span><strong id="watchNextSingerPreview">Waiting…</strong></div>
         </div>
 
         <div class="guest-watch-progress" aria-hidden="true"><span id="watchProgressFill"></span></div>
@@ -156,6 +171,11 @@
           <input id="searchInput" class="text-input" maxlength="100" autocomplete="off" placeholder="BINI Pantropiko karaoke" aria-label="Search YouTube">
           <button class="btn btn-primary" id="searchBtn" type="submit">🔎 Search</button>
         </form>
+        <div class="guest-dedication-compose">
+          <label class="field-label" for="dedicationInput">💬 Song dedication <span>optional</span></label>
+          <input id="dedicationInput" class="text-input" maxlength="80" autocomplete="off" placeholder="Example: For Mama ❤️">
+          <small>Shown briefly on the TV when your song starts.</small>
+        </div>
         <p class="mini-note">Search runs only when you tap Search to reduce free API usage.</p>
         <p class="form-message" id="searchMessage" aria-live="polite"></p>
         <div id="searchResults" class="search-results empty-state">Search for a karaoke song.</div>
@@ -218,6 +238,15 @@
     </section>
   </div>
 
-  <script type="module" src="./js/guest.js?v=20260910-precision-sync1"></script>
+  <div class="guest-turn-alert" id="guestTurnAlert" hidden role="status" aria-live="assertive">
+    <div class="guest-turn-alert-icon" id="guestTurnAlertIcon">🔔</div>
+    <div class="guest-turn-alert-copy">
+      <strong id="guestTurnAlertTitle">You’re next!</strong>
+      <span id="guestTurnAlertText">Get ready to sing.</span>
+    </div>
+    <button type="button" id="guestTurnAlertClose" aria-label="Dismiss alert">×</button>
+  </div>
+
+  <script type="module" src="./js/guest.js?v=20260910-featurepack4"></script>
 </body>
 </html>

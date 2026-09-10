@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Host</title>
-  <link rel="stylesheet" href="./css/style.css?v=20260910-watchdisplay1">
+  <link rel="stylesheet" href="./css/style.css?v=20260910-featurepack4">
 </head>
 <body class="host-page">
   <header class="topbar">
@@ -100,6 +100,11 @@
               <span class="tv-queue-empty">Waiting for reservations…</span>
             </div>
           </div>
+          <div class="tv-singer-preview" aria-label="Current and next singer">
+            <span><b>NOW</b><strong id="tvNowSingerPreview">—</strong></span>
+            <i aria-hidden="true">→</i>
+            <span><b>NEXT</b><strong id="tvNextSingerPreview">Waiting…</strong></span>
+          </div>
           <div class="tv-header-actions">
             <label class="tv-theme-quick" title="Change TV theme">
               <span>🎨</span>
@@ -154,6 +159,12 @@
               <strong>No song playing</strong>
               <span>The first reserved song starts automatically.</span>
             </div>
+          </div>
+          <div class="tv-reaction-layer" id="tvReactionLayer" aria-hidden="true"></div>
+          <div class="tv-dedication-overlay" id="tvDedicationOverlay" hidden aria-live="polite">
+            <span class="tv-dedication-kicker">💬 DEDICATION</span>
+            <strong id="tvDedicationText"></strong>
+            <small id="tvDedicationFrom"></small>
           </div>
         </div>
 
@@ -337,6 +348,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module" src="./js/host.js?v=20260910-precision-sync1"></script>
+  <script type="module" src="./js/host.js?v=20260910-featurepack4"></script>
 </body>
 </html>

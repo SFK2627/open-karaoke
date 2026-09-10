@@ -22,7 +22,7 @@ import {
   youtubePlayerErrorMessage
 } from "./youtube.js?v=20260910-watchidentity1";
 
-const GUEST_BUILD = "20260910-precision-sync1";
+const GUEST_BUILD = "20260910-featurepack4";
 
 function uniqueReservationId(guestId, videoId) {
   const randomPart = globalThis.crypto?.randomUUID
@@ -95,6 +95,15 @@ const watchFocusBtn = document.querySelector("#watchFocusBtn");
 const watchSingerControls = document.querySelector("#watchSingerControls");
 const watchPlayPauseBtn = document.querySelector("#watchPlayPauseBtn");
 const watchSkipBtn = document.querySelector("#watchSkipBtn");
+const watchNowSingerPreview = document.querySelector("#watchNowSingerPreview");
+const watchNextSingerPreview = document.querySelector("#watchNextSingerPreview");
+const dedicationInput = document.querySelector("#dedicationInput");
+const guestReactionDock = document.querySelector("#guestReactionDock");
+const guestTurnAlert = document.querySelector("#guestTurnAlert");
+const guestTurnAlertIcon = document.querySelector("#guestTurnAlertIcon");
+const guestTurnAlertTitle = document.querySelector("#guestTurnAlertTitle");
+const guestTurnAlertText = document.querySelector("#guestTurnAlertText");
+const guestTurnAlertClose = document.querySelector("#guestTurnAlertClose");
 
 const TV_THEME_IDS = new Set(["classic", "neon", "studio", "disco", "ocean", "christmas", "spider", "gold", "pink", "minimal", "maximal", "futuristic", "vector", "collage", "retro", "cyberpunk", "popart", "glass", "clay", "pixel", "editorial", "y2k", "swiss", "surreal", "bohemian", "victorian", "graffiti", "aurora", "handwritten"]);
 const TV_THEME_LABELS = {
@@ -207,6 +216,11 @@ let watchLoadStartedAt = 0;
 let watchLastPlayCommandAt = 0;
 let watchLastCorrectionAt = 0;
 let watchAppliedPlaybackRate = 1;
+let lastReactionAt = 0;
+let lastTurnAwareness = "idle";
+let turnAlertTimer = null;
+let queueSnapshotReady = false;
+let currentSongSnapshotReady = false;
 // Precision thresholds are intentionally much tighter than the first Watch
 // build. Soft drift is corrected by briefly nudging the muted Guest player's
 // playback rate; larger drift uses a single seek. This avoids visible 1s+ lag
@@ -323,6 +337,73 @@ function setGuestTab(tabName, { scroll = false } = {}) {
   }
 }
 
+function cleanDedication(value) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, 80);
+}
+
+function updateGuestSingerPreview() {
+  const waiting = currentQueue.filter(([, item]) => item?.status === "waiting");
+  if (watchNowSingerPreview) watchNowSingerPreview.textContent = currentSong?.singerName || "—";
+  if (watchNextSingerPreview) watchNextSingerPreview.textContent = waiting[0]?.[1]?.singerName || "Waiting…";
+}
+
+function showTurnAlert(kind) {
+  if (!guestTurnAlert) return;
+  window.clearTimeout(turnAlertTimer);
+  const yourTurn = kind === "turn";
+  if (guestTurnAlertIcon) guestTurnAlertIcon.textContent = yourTurn ? "🎤" : "🔔";
+  if (guestTurnAlertTitle) guestTurnAlertTitle.textContent = yourTurn ? "YOUR TURN!" : "You’re next!";
+  if (guestTurnAlertText) guestTurnAlertText.textContent = yourTurn ? "Your song is playing now." : "Get ready — one song before your turn.";
+  guestTurnAlert.dataset.kind = kind;
+  guestTurnAlert.hidden = false;
+  guestTurnAlert.classList.remove("is-showing");
+  void guestTurnAlert.offsetWidth;
+  guestTurnAlert.classList.add("is-showing");
+  try {
+    navigator.vibrate?.(yourTurn ? [220, 90, 220, 90, 360] : [160, 80, 190]);
+  } catch {}
+  turnAlertTimer = window.setTimeout(() => {
+    guestTurnAlert.classList.remove("is-showing");
+    window.setTimeout(() => { if (guestTurnAlert) guestTurnAlert.hidden = true; }, 220);
+  }, yourTurn ? 9000 : 7000);
+}
+
+function updateTurnAwareness() {
+  updateGuestSingerPreview();
+  if (!queueSnapshotReady || !currentSongSnapshotReady || !user?.uid || !activeSessionId) return;
+  const waiting = currentQueue.filter(([, item]) => item?.status === "waiting");
+  let stateKey = "idle";
+  let alertKind = null;
+  if (currentSong?.guestId === user.uid) {
+    alertKind = "turn";
+    stateKey = `turn:${currentSong.queueItemId || currentSong.youtubeVideoId || "current"}`;
+  } else if (currentSong && waiting[0]?.[1]?.guestId === user.uid) {
+    alertKind = "next";
+    stateKey = `next:${waiting[0][0]}`;
+  }
+  if (stateKey !== lastTurnAwareness) {
+    lastTurnAwareness = stateKey;
+    if (alertKind) showTurnAlert(alertKind);
+  }
+}
+
+async function sendLiveReaction(emoji) {
+  if (!activeSessionId || !db || !user?.uid || !activeName) return;
+  const allowed = new Set(["👏", "❤️", "🔥", "🎤", "😂"]);
+  if (!allowed.has(emoji)) return;
+  const now = Date.now();
+  if (now - lastReactionAt < 1200) return;
+  lastReactionAt = now;
+  const nonce = `${now.toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+  await set(ref(db, `sessions/${activeSessionId}/reactions/${user.uid}`), {
+    emoji,
+    guestId: user.uid,
+    singerName: activeName,
+    nonce,
+    createdAt: serverTimestamp()
+  });
+}
+
 function renderQueue() {
   const waiting = currentQueue.filter(([, item]) => item?.status === "waiting");
   const mine = waiting.filter(([, item]) => item.guestId === user?.uid);
@@ -354,6 +435,7 @@ function renderQueue() {
           <div class="song-info">
             <strong>${escapeHtml(item.title)}</strong>
             <span>👤 ${escapeHtml(item.singerName)} ${isMine ? '<b class="mine-badge">YOU</b>' : ""}</span>
+            ${item.dedication ? `<small class="song-dedication">💬 ${escapeHtml(item.dedication)}</small>` : ""}
           </div>
         </div>`;
     }).join("");
@@ -372,11 +454,13 @@ function renderQueue() {
           <div class="song-info">
             <strong>${escapeHtml(item.title)}</strong>
             <span>#${overallIndex} in queue</span>
+            ${item.dedication ? `<small class="song-dedication">💬 ${escapeHtml(item.dedication)}</small>` : ""}
           </div>
           <button class="btn btn-danger btn-small" data-cancel-song="${escapeHtml(id)}">Cancel</button>
         </div>`;
     }).join("");
   }
+  updateTurnAwareness();
 }
 
 function renderSingerControls(state = "idle") {
@@ -959,6 +1043,7 @@ function renderCurrentSong(song) {
     <div class="guest-now-info">
       <strong>${escapeHtml(currentSong.title || "Untitled song")}</strong>
       <span>👤 ${escapeHtml(currentSong.singerName || "Guest")}</span>
+      ${currentSong.dedication ? `<small class="song-dedication">💬 ${escapeHtml(currentSong.dedication)}</small>` : ""}
     </div>`;
   renderSingerControls(state);
   updateWatchSongInfo();
@@ -1088,6 +1173,8 @@ function roomListenerError(scope, generation) {
 function restartRoomListeners() {
   if (!activeSessionId || !db || !user?.uid) return;
   unsubscribeRoomListeners();
+  queueSnapshotReady = false;
+  currentSongSnapshotReady = false;
   const generation = ++roomListenerGeneration;
   const sessionId = activeSessionId;
 
@@ -1120,11 +1207,13 @@ function restartRoomListeners() {
   unsubscribeQueue = onValue(queueRef, snapshot => {
     if (generation !== roomListenerGeneration) return;
     currentQueue = sortQueueEntries(snapshot.val());
+    queueSnapshotReady = true;
     renderQueue();
   }, roomListenerError("queue", generation));
 
   unsubscribeCurrentSong = onValue(currentSongRef, snapshot => {
     if (generation !== roomListenerGeneration) return;
+    currentSongSnapshotReady = true;
     renderCurrentSong(snapshot.val());
   }, roomListenerError("current-song", generation));
 
@@ -1159,7 +1248,7 @@ async function resyncRoomState() {
     roomResyncInFlight = false;
   }
 }
-async function reserveSongById(title, videoId, thumbnail = "") {
+async function reserveSongById(title, videoId, thumbnail = "", dedication = cleanDedication(dedicationInput?.value)) {
   if (!activeSessionId || !user) throw new Error("Join a karaoke session first.");
   if (reservationsLocked) throw new Error("Reservations are currently locked by the Host.");
 
@@ -1182,9 +1271,11 @@ async function reserveSongById(title, videoId, thumbnail = "") {
     thumbnail: thumbnail || youtubeThumbnail(videoId),
     singerName: activeName,
     guestId: user.uid,
+    dedication,
     addedAt: Date.now(),
     status: "waiting"
   });
+  if (dedicationInput) dedicationInput.value = "";
 }
 
 async function reserveSongFromInput(title, rawYoutubeValue) {
@@ -1405,6 +1496,23 @@ document.addEventListener("fullscreenchange", () => {
   }
 });
 
+guestReactionDock?.addEventListener("click", event => {
+  const button = event.target.closest("[data-reaction]");
+  if (!button) return;
+  sendLiveReaction(button.dataset.reaction).then(() => {
+    button.classList.remove("is-popped");
+    void button.offsetWidth;
+    button.classList.add("is-popped");
+    window.setTimeout(() => button.classList.remove("is-popped"), 300);
+  }).catch(error => console.debug("Reaction skipped:", error?.message || error));
+});
+
+guestTurnAlertClose?.addEventListener("click", () => {
+  window.clearTimeout(turnAlertTimer);
+  guestTurnAlert?.classList.remove("is-showing");
+  if (guestTurnAlert) guestTurnAlert.hidden = true;
+});
+
 searchForm.addEventListener("submit", async event => {
   event.preventDefault();
   const query = searchInput.value.trim();
@@ -1601,6 +1709,11 @@ leaveBtn.addEventListener("click", async () => {
   currentQueue = [];
   currentSong = null;
   playbackSync = null;
+  queueSnapshotReady = false;
+  currentSongSnapshotReady = false;
+  lastTurnAwareness = "idle";
+  window.clearTimeout(turnAlertTimer);
+  if (guestTurnAlert) guestTurnAlert.hidden = true;
   renderQueue();
   stopWatchSyncTicker();
   if (watchFocusActive) await setWatchFocus(false);
