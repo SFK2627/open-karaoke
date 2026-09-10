@@ -50,6 +50,8 @@ const clearQueueBtn = document.querySelector("#clearQueueBtn");
 const clearHistoryBtn = document.querySelector("#clearHistoryBtn");
 const endSessionBtn = document.querySelector("#endSessionBtn");
 const lockHostBtn = document.querySelector("#lockHostBtn");
+const tvThemeSelect = document.querySelector("#tvThemeSelect");
+const tvThemeQuickSelect = document.querySelector("#tvThemeQuickSelect");
 const fullscreenBtn = document.querySelector("#fullscreenBtn");
 const copyCodeBtn = document.querySelector("#copyCodeBtn");
 const copyLinkBtn = document.querySelector("#copyLinkBtn");
@@ -83,6 +85,8 @@ const tvQrSessionCode = document.querySelector("#tvQrSessionCode");
 let db;
 let user;
 let activeSessionId = null;
+const TV_THEME_IDS = new Set(["classic", "neon", "studio", "disco", "ocean"]);
+let activeTvTheme = "classic";
 let reservationsLocked = false;
 let queueEntries = [];
 let currentSong = null;
@@ -305,6 +309,23 @@ function makeSessionCode() {
   return `KARAOKE-${code}`;
 }
 
+function normalizeTvTheme(value) {
+  return TV_THEME_IDS.has(value) ? value : "classic";
+}
+
+function savedTvTheme() {
+  return normalizeTvTheme(localStorage.getItem("openKaraokeTvTheme") || "classic");
+}
+
+function applyTvTheme(theme) {
+  const normalized = normalizeTvTheme(theme);
+  activeTvTheme = normalized;
+  document.body.dataset.tvTheme = normalized;
+  if (tvThemeSelect && tvThemeSelect.value !== normalized) tvThemeSelect.value = normalized;
+  if (tvThemeQuickSelect && tvThemeQuickSelect.value !== normalized) tvThemeQuickSelect.value = normalized;
+  localStorage.setItem("openKaraokeTvTheme", normalized);
+}
+
 async function createUniqueSession() {
   for (let attempt = 0; attempt < 12; attempt += 1) {
     const sessionId = makeSessionCode();
@@ -320,7 +341,8 @@ async function createUniqueSession() {
           hostLastSeen: serverTimestamp()
         },
         settings: {
-          reservationsLocked: false
+          reservationsLocked: false,
+          tvTheme: savedTvTheme()
         }
       };
     }, { applyLocally: false });
@@ -605,8 +627,10 @@ function watchQueue(sessionId) {
 
 function watchSettings(sessionId) {
   unsubscribeSettings?.();
-  unsubscribeSettings = onValue(ref(db, `sessions/${sessionId}/settings/reservationsLocked`), snapshot => {
-    renderReservationState(snapshot.val() === true);
+  unsubscribeSettings = onValue(ref(db, `sessions/${sessionId}/settings`), snapshot => {
+    const settings = snapshot.val() || {};
+    renderReservationState(settings.reservationsLocked === true);
+    applyTvTheme(settings.tvTheme || savedTvTheme());
   });
 }
 
@@ -1329,6 +1353,32 @@ volumeSlider.addEventListener("input", () => {
   }
 });
 
+
+async function saveTvThemeFromControl(control) {
+  const previousTheme = activeTvTheme;
+  const nextTheme = normalizeTvTheme(control?.value);
+  applyTvTheme(nextTheme);
+  if (!activeSessionId) return;
+
+  if (tvThemeSelect) tvThemeSelect.disabled = true;
+  if (tvThemeQuickSelect) tvThemeQuickSelect.disabled = true;
+  try {
+    await update(ref(db, `sessions/${activeSessionId}/settings`), {
+      tvTheme: nextTheme
+    });
+  } catch (error) {
+    console.error(error);
+    applyTvTheme(previousTheme);
+    window.alert("Could not save the TV theme. Please try again.");
+  } finally {
+    if (tvThemeSelect) tvThemeSelect.disabled = false;
+    if (tvThemeQuickSelect) tvThemeQuickSelect.disabled = false;
+  }
+}
+
+tvThemeSelect?.addEventListener("change", () => saveTvThemeFromControl(tvThemeSelect));
+tvThemeQuickSelect?.addEventListener("change", () => saveTvThemeFromControl(tvThemeQuickSelect));
+
 lockReservationsBtn.addEventListener("click", async () => {
   if (!activeSessionId) return;
   lockReservationsBtn.disabled = true;
@@ -1482,5 +1532,7 @@ document.addEventListener("keydown", event => {
 });
 
 setAmbilightPalette(DEFAULT_AMBILIGHT_COLORS, "idle");
+
+applyTvTheme(savedTvTheme());
 
 init();
