@@ -2815,3 +2815,326 @@ body.tv-mode .tv-shortcut-hint {
     padding: 3px 7px;
   }
 }
+
+
+/* =========================================================
+   TV MODE v6 - BIGGER VIDEO + THINNER RETRO BAR FIX
+   Final override so the video remains dominant and the lower bar stays compact.
+   ========================================================= */
+body.tv-mode .player-card {
+  grid-template-rows: 62px minmax(0, 1fr) 84px;
+  grid-template-columns: minmax(0, 1fr);
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.tv-mode .tv-karaoke-header {
+  min-height: 62px;
+  height: 62px;
+  padding: 6px 10px;
+}
+
+body.tv-mode .player-shell {
+  position: relative;
+  grid-row: 2;
+  align-self: center;
+  justify-self: center;
+  width: min(calc(100vw - 20px), calc((100dvh - 160px) * 1.7777778));
+  max-width: calc(100vw - 20px);
+  max-height: calc(100dvh - 160px);
+  aspect-ratio: 16 / 9;
+  margin: 2px auto;
+  border-radius: 14px;
+}
+
+body.tv-mode .tv-retro-bar {
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr) 150px;
+  align-items: stretch;
+  gap: 0;
+  padding: 0 10px 10px;
+  margin: 0;
+  min-height: 74px;
+  max-height: 84px;
+}
+
+body.tv-mode .tv-retro-controls,
+body.tv-mode .tv-retro-info,
+body.tv-mode .tv-retro-status {
+  min-height: 74px;
+  max-height: 84px;
+  border-top: 1px solid rgba(255, 132, 0, .82);
+  border-bottom: 1px solid rgba(255, 132, 0, .82);
+  background:
+    linear-gradient(180deg, rgba(24, 20, 24, .97) 0%, rgba(10, 10, 12, .98) 100%),
+    radial-gradient(circle at top left, rgba(255, 150, 40, .12), transparent 58%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 160, 55, .2),
+    0 10px 24px rgba(0, 0, 0, .18);
+}
+
+body.tv-mode .tv-retro-controls {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  width: auto;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  padding: 20px 8px 8px;
+  margin: 0;
+  border-left: 1px solid rgba(255, 132, 0, .82);
+  border-right: 1px solid rgba(255, 132, 0, .38);
+  border-radius: 14px 0 0 14px;
+  overflow: hidden;
+}
+
+body.tv-mode .tv-retro-controls::before {
+  content: "KARAOKE CONTROL";
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  font-size: .52rem;
+  letter-spacing: .18em;
+  color: rgba(255, 188, 93, .84);
+}
+
+body.tv-mode .tv-retro-controls .btn {
+  align-self: end;
+  min-height: 42px;
+  height: 42px;
+  padding: 5px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 165, 74, .42);
+  background: linear-gradient(180deg, rgba(34, 36, 44, .95) 0%, rgba(12, 13, 18, .98) 100%);
+  color: #fff1cf;
+  font-size: .62rem;
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 4px 10px rgba(0,0,0,.24);
+  white-space: nowrap;
+}
+
+body.tv-mode .tv-retro-controls #playBtn,
+body.tv-mode .tv-retro-controls #nextBtn {
+  background: linear-gradient(180deg, rgba(145, 92, 255, .95) 0%, rgba(95, 57, 218, .98) 100%);
+  border-color: rgba(182, 145, 255, .62);
+  color: #fff;
+}
+
+body.tv-mode .tv-retro-info {
+  position: static;
+  width: auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(170px, .8fr);
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border-left: 0;
+  border-right: 1px solid rgba(255, 132, 0, .38);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.tv-mode .tv-retro-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 8px 14px;
+  background: transparent;
+}
+
+body.tv-mode .tv-retro-panel + .tv-retro-panel {
+  border-left: 1px solid rgba(255, 132, 0, .38);
+}
+
+body.tv-mode .tv-retro-label {
+  margin: 0 0 4px;
+  color: #ffab3d;
+  font-size: .62rem;
+  letter-spacing: .12em;
+}
+
+body.tv-mode #nowPlayingTitle {
+  margin: 0;
+  color: #ff7f11;
+  text-transform: uppercase;
+  font-size: clamp(.95rem, 1.75vw, 1.55rem);
+  line-height: 1.02;
+  font-weight: 900;
+  text-shadow: 0 0 10px rgba(255, 106, 0, .18);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.tv-mode #nowPlayingSinger {
+  margin: 0;
+  color: #fff2dd;
+  font-size: clamp(.74rem, 1.05vw, .98rem);
+  font-weight: 700;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.tv-mode .tv-retro-status {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border-left: 0;
+  border-right: 1px solid rgba(255, 132, 0, .82);
+  border-radius: 0 14px 14px 0;
+}
+
+body.tv-mode .tv-equalizer {
+  min-height: 24px;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+body.tv-mode .tv-eq-bar {
+  width: 6px;
+}
+
+body.tv-mode .tv-retro-chip,
+body.tv-mode .playback-chip {
+  min-height: 24px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: .6rem;
+  letter-spacing: .12em;
+}
+
+body.tv-mode .tv-shortcut-hint {
+  display: none !important;
+}
+
+@media (max-width: 1200px) {
+  body.tv-mode .player-card {
+    grid-template-rows: 60px minmax(0, 1fr) 80px;
+  }
+  body.tv-mode .tv-karaoke-header {
+    min-height: 60px;
+    height: 60px;
+    padding: 5px 8px;
+  }
+  body.tv-mode .player-shell {
+    width: min(calc(100vw - 14px), calc((100dvh - 152px) * 1.7777778));
+    max-width: calc(100vw - 14px);
+    max-height: calc(100dvh - 152px);
+  }
+  body.tv-mode .tv-retro-bar {
+    grid-template-columns: 255px minmax(0, 1fr) 136px;
+    padding: 0 7px 7px;
+    min-height: 70px;
+    max-height: 80px;
+  }
+  body.tv-mode .tv-retro-controls,
+  body.tv-mode .tv-retro-info,
+  body.tv-mode .tv-retro-status {
+    min-height: 70px;
+    max-height: 80px;
+  }
+  body.tv-mode .tv-retro-controls {
+    gap: 5px;
+    padding: 18px 6px 6px;
+  }
+  body.tv-mode .tv-retro-controls .btn {
+    min-height: 40px;
+    height: 40px;
+    padding: 4px 5px;
+    font-size: .56rem;
+  }
+  body.tv-mode .tv-retro-panel {
+    padding: 7px 10px;
+  }
+  body.tv-mode #nowPlayingTitle {
+    font-size: clamp(.88rem, 1.5vw, 1.28rem);
+  }
+  body.tv-mode #nowPlayingSinger {
+    font-size: clamp(.68rem, .95vw, .9rem);
+  }
+}
+
+@media (max-width: 900px) {
+  body.tv-mode .player-card {
+    grid-template-rows: 56px minmax(0, 1fr) 76px;
+  }
+  body.tv-mode .tv-karaoke-header {
+    min-height: 56px;
+    height: 56px;
+    padding: 4px 6px;
+  }
+  body.tv-mode .player-shell {
+    width: min(calc(100vw - 8px), calc((100dvh - 140px) * 1.7777778));
+    max-width: calc(100vw - 8px);
+    max-height: calc(100dvh - 140px);
+  }
+  body.tv-mode .tv-retro-bar {
+    grid-template-columns: 1.12fr 1.5fr 118px;
+    padding: 0 4px 4px;
+    min-height: 66px;
+    max-height: 76px;
+  }
+  body.tv-mode .tv-retro-controls,
+  body.tv-mode .tv-retro-info,
+  body.tv-mode .tv-retro-status {
+    min-height: 66px;
+    max-height: 76px;
+  }
+  body.tv-mode .tv-retro-controls {
+    gap: 4px;
+    padding: 16px 5px 5px;
+  }
+  body.tv-mode .tv-retro-controls::before {
+    top: 5px;
+    left: 8px;
+    font-size: .45rem;
+  }
+  body.tv-mode .tv-retro-controls .btn {
+    min-height: 36px;
+    height: 36px;
+    padding: 3px 3px;
+    font-size: .5rem;
+    border-radius: 8px;
+  }
+  body.tv-mode .tv-retro-info {
+    grid-template-columns: minmax(0, 1.2fr) minmax(90px, .8fr);
+  }
+  body.tv-mode .tv-retro-panel {
+    padding: 6px 8px;
+  }
+  body.tv-mode .tv-retro-label {
+    font-size: .5rem;
+    margin-bottom: 2px;
+  }
+  body.tv-mode #nowPlayingTitle {
+    font-size: .78rem;
+  }
+  body.tv-mode #nowPlayingSinger {
+    font-size: .62rem;
+  }
+  body.tv-mode .tv-equalizer {
+    min-height: 18px;
+    gap: 3px;
+  }
+  body.tv-mode .tv-eq-bar {
+    width: 4px;
+  }
+  body.tv-mode .tv-retro-chip,
+  body.tv-mode .playback-chip {
+    min-height: 19px;
+    font-size: .5rem;
+    padding: 2px 6px;
+  }
+}
