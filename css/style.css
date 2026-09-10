@@ -6791,3 +6791,151 @@ body.guest-page[data-tv-theme="pink"] { --guest-accent:#cc729e; --guest-accent-2
 body.guest-page[data-tv-theme="maximal"] { --guest-bg-a:#32173a; --guest-bg-b:#150a19; --guest-panel-a:rgba(55,27,63,.96); --guest-panel-b:rgba(22,12,27,.98); --guest-accent:#c45b99; --guest-accent-2:#9dcc6a; --guest-muted:#d2c5d5; }
 body.guest-page[data-tv-theme="cyberpunk"] { --guest-accent:#59c7ce; --guest-accent-2:#c8d15d; --guest-border-strong:#c9d25c; }
 body.guest-page[data-tv-theme="graffiti"] { --guest-accent:#c95a91; --guest-accent-2:#91c972; --guest-border-strong:#8ec66c; }
+
+/* =========================================================
+   THEME SELECTOR FOLLOW FIX v3
+   The Host theme picker follows the active room theme again,
+   while keeping strong contrast for both the closed control and native list.
+   ========================================================= */
+body[data-tv-theme] {
+  --theme-picker-bg: #121827;
+  --theme-picker-bg-2: #0b1020;
+  --theme-picker-text: #f8fafc;
+  --theme-picker-muted: #d7dfef;
+  --theme-picker-border: #7c8ca7;
+  --theme-picker-accent: #9aa9c3;
+  --theme-picker-menu-bg: #0d1424;
+  --theme-picker-menu-text: #f8fafc;
+  --theme-picker-shadow: rgba(0,0,0,.25);
+}
+
+/* Existing / immersive themes */
+body[data-tv-theme="classic"] { --theme-picker-bg:#342418; --theme-picker-bg-2:#17100c; --theme-picker-text:#fff4df; --theme-picker-muted:#f0d1a9; --theme-picker-border:#c47a26; --theme-picker-accent:#ff9b28; --theme-picker-menu-bg:#20150e; --theme-picker-menu-text:#fff4df; }
+body[data-tv-theme="neon"] { --theme-picker-bg:#251a4a; --theme-picker-bg-2:#0c1023; --theme-picker-text:#f8f5ff; --theme-picker-muted:#cdd4ef; --theme-picker-border:#6bdde7; --theme-picker-accent:#8c70e8; --theme-picker-menu-bg:#11132a; --theme-picker-menu-text:#f8f5ff; }
+body[data-tv-theme="studio"] { --theme-picker-bg:#fffaf0; --theme-picker-bg-2:#eadbc4; --theme-picker-text:#2b251f; --theme-picker-muted:#5f554a; --theme-picker-border:#aa7a39; --theme-picker-accent:#c08b43; --theme-picker-menu-bg:#fffaf0; --theme-picker-menu-text:#2b251f; }
+body[data-tv-theme="disco"] { --theme-picker-bg:#3a163f; --theme-picker-bg-2:#15101c; --theme-picker-text:#fff7ff; --theme-picker-muted:#decce3; --theme-picker-border:#cf6eae; --theme-picker-accent:#d85da9; --theme-picker-menu-bg:#201124; --theme-picker-menu-text:#fff7ff; }
+body[data-tv-theme="ocean"] { --theme-picker-bg:#16495a; --theme-picker-bg-2:#082631; --theme-picker-text:#efffff; --theme-picker-muted:#c5e5e8; --theme-picker-border:#55c6d4; --theme-picker-accent:#4fc0d5; --theme-picker-menu-bg:#0d3441; --theme-picker-menu-text:#efffff; }
+body[data-tv-theme="christmas"] { --theme-picker-bg:#174936; --theme-picker-bg-2:#0b291f; --theme-picker-text:#fff9ed; --theme-picker-muted:#f2e7d0; --theme-picker-border:#d1ad58; --theme-picker-accent:#d9b85f; --theme-picker-menu-bg:#103527; --theme-picker-menu-text:#fff9ed; }
+body[data-tv-theme="spider"] { --theme-picker-bg:#29345a; --theme-picker-bg-2:#111a36; --theme-picker-text:#fff7f7; --theme-picker-muted:#d7dff3; --theme-picker-border:#d15861; --theme-picker-accent:#d95860; --theme-picker-menu-bg:#171f40; --theme-picker-menu-text:#fff7f7; }
+body[data-tv-theme="gold"] { --theme-picker-bg:#33291a; --theme-picker-bg-2:#17120c; --theme-picker-text:#fff8e7; --theme-picker-muted:#e4d4b0; --theme-picker-border:#c9a24f; --theme-picker-accent:#d4ae58; --theme-picker-menu-bg:#221a10; --theme-picker-menu-text:#fff8e7; }
+body[data-tv-theme="pink"] { --theme-picker-bg:#743b67; --theme-picker-bg-2:#311c31; --theme-picker-text:#fff7fd; --theme-picker-muted:#f0d8eb; --theme-picker-border:#d98bc5; --theme-picker-accent:#df8fc9; --theme-picker-menu-bg:#43243e; --theme-picker-menu-text:#fff7fd; }
+
+/* Style Pack 20 */
+body[data-tv-theme="minimal"] { --theme-picker-bg:#ffffff; --theme-picker-bg-2:#ebeae5; --theme-picker-text:#141a23; --theme-picker-muted:#59616d; --theme-picker-border:#303846; --theme-picker-accent:#1f2937; --theme-picker-menu-bg:#faf9f6; --theme-picker-menu-text:#141a23; }
+body[data-tv-theme="maximal"] { --theme-picker-bg:#60256d; --theme-picker-bg-2:#2b1133; --theme-picker-text:#fff9ef; --theme-picker-muted:#f0dfef; --theme-picker-border:#d7a937; --theme-picker-accent:#d54d9f; --theme-picker-menu-bg:#38173f; --theme-picker-menu-text:#fff9ef; }
+body[data-tv-theme="futuristic"] { --theme-picker-bg:#123442; --theme-picker-bg-2:#071923; --theme-picker-text:#effdff; --theme-picker-muted:#c1e2e5; --theme-picker-border:#65dce5; --theme-picker-accent:#4fd4e7; --theme-picker-menu-bg:#0a2631; --theme-picker-menu-text:#effdff; }
+body[data-tv-theme="vector"] { --theme-picker-bg:#286092; --theme-picker-bg-2:#163b62; --theme-picker-text:#ffffff; --theme-picker-muted:#deebf6; --theme-picker-border:#dfc44d; --theme-picker-accent:#e46656; --theme-picker-menu-bg:#1c4a75; --theme-picker-menu-text:#ffffff; }
+body[data-tv-theme="collage"] { --theme-picker-bg:#f8efdd; --theme-picker-bg-2:#d9c7aa; --theme-picker-text:#302a25; --theme-picker-muted:#655b52; --theme-picker-border:#765745; --theme-picker-accent:#b85249; --theme-picker-menu-bg:#f7efdf; --theme-picker-menu-text:#302a25; }
+body[data-tv-theme="retro"] { --theme-picker-bg:#74482e; --theme-picker-bg-2:#382116; --theme-picker-text:#fff2cf; --theme-picker-muted:#e7d0ad; --theme-picker-border:#d5a544; --theme-picker-accent:#d87532; --theme-picker-menu-bg:#4b2c1c; --theme-picker-menu-text:#fff2cf; }
+body[data-tv-theme="cyberpunk"] { --theme-picker-bg:#20242e; --theme-picker-bg-2:#090b10; --theme-picker-text:#fbfff7; --theme-picker-muted:#ced8d5; --theme-picker-border:#c9d000; --theme-picker-accent:#28cbd2; --theme-picker-menu-bg:#11151c; --theme-picker-menu-text:#fbfff7; }
+body[data-tv-theme="popart"] { --theme-picker-bg:#ffe87a; --theme-picker-bg-2:#f7bb45; --theme-picker-text:#111111; --theme-picker-muted:#453a30; --theme-picker-border:#111111; --theme-picker-accent:#d93649; --theme-picker-menu-bg:#fff2a3; --theme-picker-menu-text:#111111; }
+body[data-tv-theme="glass"] { --theme-picker-bg:rgba(69,91,128,.88); --theme-picker-bg-2:rgba(28,43,73,.92); --theme-picker-text:#f7fbff; --theme-picker-muted:#d8e2f0; --theme-picker-border:#b6d0ef; --theme-picker-accent:#9ebfe8; --theme-picker-menu-bg:#263a5d; --theme-picker-menu-text:#f7fbff; }
+body[data-tv-theme="clay"] { --theme-picker-bg:#f2d8cf; --theme-picker-bg-2:#d5b4ac; --theme-picker-text:#493a38; --theme-picker-muted:#6e5956; --theme-picker-border:#a9776c; --theme-picker-accent:#c46f69; --theme-picker-menu-bg:#f5e0d8; --theme-picker-menu-text:#493a38; }
+body[data-tv-theme="pixel"] { --theme-picker-bg:#292649; --theme-picker-bg-2:#111026; --theme-picker-text:#f5fff0; --theme-picker-muted:#cad7c5; --theme-picker-border:#69ce4e; --theme-picker-accent:#75dc59; --theme-picker-menu-bg:#18162f; --theme-picker-menu-text:#f5fff0; }
+body[data-tv-theme="editorial"] { --theme-picker-bg:#fffdf7; --theme-picker-bg-2:#e5e0d6; --theme-picker-text:#151515; --theme-picker-muted:#5e5a55; --theme-picker-border:#252525; --theme-picker-accent:#a5292e; --theme-picker-menu-bg:#faf7ef; --theme-picker-menu-text:#151515; }
+body[data-tv-theme="y2k"] { --theme-picker-bg:#e8f2fb; --theme-picker-bg-2:#bdcde1; --theme-picker-text:#1d2944; --theme-picker-muted:#56637d; --theme-picker-border:#7670cf; --theme-picker-accent:#7c74dc; --theme-picker-menu-bg:#edf6ff; --theme-picker-menu-text:#1d2944; }
+body[data-tv-theme="swiss"] { --theme-picker-bg:#ffffff; --theme-picker-bg-2:#e8e8e5; --theme-picker-text:#111111; --theme-picker-muted:#555555; --theme-picker-border:#222222; --theme-picker-accent:#cf2731; --theme-picker-menu-bg:#fbfbf8; --theme-picker-menu-text:#111111; }
+body[data-tv-theme="surreal"] { --theme-picker-bg:#57387b; --theme-picker-bg-2:#25183e; --theme-picker-text:#fff8f0; --theme-picker-muted:#e0d7e6; --theme-picker-border:#d38e49; --theme-picker-accent:#4fc4aa; --theme-picker-menu-bg:#34204f; --theme-picker-menu-text:#fff8f0; }
+body[data-tv-theme="bohemian"] { --theme-picker-bg:#79513e; --theme-picker-bg-2:#3a2a22; --theme-picker-text:#fff2dc; --theme-picker-muted:#e4d1b9; --theme-picker-border:#c79b61; --theme-picker-accent:#c77658; --theme-picker-menu-bg:#51382d; --theme-picker-menu-text:#fff2dc; }
+body[data-tv-theme="victorian"] { --theme-picker-bg:#432728; --theme-picker-bg-2:#1e1112; --theme-picker-text:#f7ead6; --theme-picker-muted:#dac8b5; --theme-picker-border:#ad8e55; --theme-picker-accent:#9e4050; --theme-picker-menu-bg:#2c191a; --theme-picker-menu-text:#f7ead6; }
+body[data-tv-theme="graffiti"] { --theme-picker-bg:#30333c; --theme-picker-bg-2:#15171d; --theme-picker-text:#ffffff; --theme-picker-muted:#d2d5dc; --theme-picker-border:#6dcc52; --theme-picker-accent:#d74a8c; --theme-picker-menu-bg:#20232a; --theme-picker-menu-text:#ffffff; }
+body[data-tv-theme="aurora"] { --theme-picker-bg:#183b48; --theme-picker-bg-2:#081b23; --theme-picker-text:#f0fffb; --theme-picker-muted:#d0e6e3; --theme-picker-border:#60cdb2; --theme-picker-accent:#7574da; --theme-picker-menu-bg:#102a34; --theme-picker-menu-text:#f0fffb; }
+body[data-tv-theme="handwritten"] { --theme-picker-bg:#fffaf0; --theme-picker-bg-2:#ddd3bc; --theme-picker-text:#28333e; --theme-picker-muted:#686861; --theme-picker-border:#465867; --theme-picker-accent:#3c64a1; --theme-picker-menu-bg:#f8f2e4; --theme-picker-menu-text:#28333e; }
+
+/* Replace the old fixed-dark readability rule with theme-aware surfaces. */
+body[data-tv-theme] .tv-theme-picker {
+  color: var(--theme-picker-text) !important;
+  background: linear-gradient(180deg, var(--theme-picker-bg), var(--theme-picker-bg-2)) !important;
+  border-color: color-mix(in srgb, var(--theme-picker-border) 72%, transparent) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    0 4px 12px var(--theme-picker-shadow) !important;
+  font-family: var(--karaoke-ui-font) !important;
+  transition: background .28s ease, border-color .28s ease, color .28s ease, box-shadow .28s ease !important;
+}
+
+body[data-tv-theme] .tv-theme-picker > span {
+  color: var(--theme-picker-muted) !important;
+  font-family: var(--karaoke-ui-font) !important;
+}
+
+body[data-tv-theme] .tv-theme-picker select {
+  background-color: var(--theme-picker-menu-bg) !important;
+  color: var(--theme-picker-menu-text) !important;
+  -webkit-text-fill-color: var(--theme-picker-menu-text) !important;
+  border: 1px solid color-mix(in srgb, var(--theme-picker-border) 76%, transparent) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07) !important;
+  text-shadow: none !important;
+  font-family: var(--karaoke-ui-font) !important;
+  transition: background-color .28s ease, border-color .28s ease, color .28s ease !important;
+}
+
+body[data-tv-theme] .tv-theme-picker select:focus {
+  border-color: var(--theme-picker-accent) !important;
+  outline: 2px solid color-mix(in srgb, var(--theme-picker-accent) 28%, transparent) !important;
+  outline-offset: 1px !important;
+}
+
+body[data-tv-theme] .tv-theme-picker select option {
+  background-color: var(--theme-picker-menu-bg) !important;
+  color: var(--theme-picker-menu-text) !important;
+  -webkit-text-fill-color: var(--theme-picker-menu-text) !important;
+  font-family: var(--karaoke-ui-font) !important;
+  font-weight: 700 !important;
+}
+
+/* Native select popup color-scheme needs to match bright/dark theme families. */
+body[data-tv-theme="studio"] .tv-theme-picker select,
+body[data-tv-theme="minimal"] .tv-theme-picker select,
+body[data-tv-theme="collage"] .tv-theme-picker select,
+body[data-tv-theme="popart"] .tv-theme-picker select,
+body[data-tv-theme="clay"] .tv-theme-picker select,
+body[data-tv-theme="editorial"] .tv-theme-picker select,
+body[data-tv-theme="y2k"] .tv-theme-picker select,
+body[data-tv-theme="swiss"] .tv-theme-picker select,
+body[data-tv-theme="handwritten"] .tv-theme-picker select {
+  color-scheme: light !important;
+}
+
+body[data-tv-theme="classic"] .tv-theme-picker select,
+body[data-tv-theme="neon"] .tv-theme-picker select,
+body[data-tv-theme="disco"] .tv-theme-picker select,
+body[data-tv-theme="ocean"] .tv-theme-picker select,
+body[data-tv-theme="christmas"] .tv-theme-picker select,
+body[data-tv-theme="spider"] .tv-theme-picker select,
+body[data-tv-theme="gold"] .tv-theme-picker select,
+body[data-tv-theme="pink"] .tv-theme-picker select,
+body[data-tv-theme="maximal"] .tv-theme-picker select,
+body[data-tv-theme="futuristic"] .tv-theme-picker select,
+body[data-tv-theme="vector"] .tv-theme-picker select,
+body[data-tv-theme="retro"] .tv-theme-picker select,
+body[data-tv-theme="cyberpunk"] .tv-theme-picker select,
+body[data-tv-theme="glass"] .tv-theme-picker select,
+body[data-tv-theme="pixel"] .tv-theme-picker select,
+body[data-tv-theme="surreal"] .tv-theme-picker select,
+body[data-tv-theme="bohemian"] .tv-theme-picker select,
+body[data-tv-theme="victorian"] .tv-theme-picker select,
+body[data-tv-theme="graffiti"] .tv-theme-picker select,
+body[data-tv-theme="aurora"] .tv-theme-picker select {
+  color-scheme: dark !important;
+}
+
+/* Keep the in-TV custom Theme button/menu themed too, with reliable contrast. */
+body.tv-mode[data-tv-theme] .tv-theme-trigger,
+body.tv-mode[data-tv-theme] .tv-theme-menu {
+  color: var(--theme-picker-text) !important;
+}
+body.tv-mode[data-tv-theme] .tv-theme-menu {
+  background: linear-gradient(180deg, var(--theme-picker-bg), var(--theme-picker-bg-2)) !important;
+  border-color: color-mix(in srgb, var(--theme-picker-border) 72%, transparent) !important;
+}
+body.tv-mode[data-tv-theme] .tv-theme-option {
+  color: var(--theme-picker-text) !important;
+  background: color-mix(in srgb, var(--theme-picker-menu-bg) 94%, transparent) !important;
+  border-color: color-mix(in srgb, var(--theme-picker-border) 54%, transparent) !important;
+}
+body.tv-mode[data-tv-theme] .tv-theme-option.active,
+body.tv-mode[data-tv-theme] .tv-theme-option:hover {
+  border-color: var(--theme-picker-accent) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-picker-accent) 18%, transparent), 0 5px 14px rgba(0,0,0,.12) !important;
+}
