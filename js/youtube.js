@@ -38,22 +38,29 @@ export function loadYouTubeIframeApi() {
   return iframeApiPromise;
 }
 
-export async function createYouTubePlayer(elementId, handlers = {}) {
+export async function createYouTubePlayer(elementId, handlers = {}, options = {}) {
   const YT = await loadYouTubeIframeApi();
-  return new YT.Player(elementId, {
+  const pageOrigin = /^https?:$/i.test(window.location.protocol) ? window.location.origin : "";
+  const playerVars = {
+    playsinline: 1,
+    rel: 0,
+    modestbranding: 1,
+    ...(pageOrigin ? { origin: pageOrigin } : {}),
+    ...(options.playerVars || {})
+  };
+  const config = {
     width: "100%",
     height: "100%",
-    playerVars: {
-      playsinline: 1,
-      rel: 0,
-      modestbranding: 1
-    },
+    playerVars,
     events: {
       onReady: event => handlers.onReady?.(event),
       onStateChange: event => handlers.onStateChange?.(event),
-      onError: event => handlers.onError?.(event)
+      onError: event => handlers.onError?.(event),
+      onAutoplayBlocked: event => handlers.onAutoplayBlocked?.(event)
     }
-  });
+  };
+  if (options.videoId) config.videoId = String(options.videoId);
+  return new YT.Player(elementId, config);
 }
 
 function decodeEntities(value) {
@@ -137,5 +144,6 @@ export function youtubePlayerErrorMessage(code) {
   if (code === 5) return "This video could not be played in the HTML5 player.";
   if (code === 100) return "This YouTube video is unavailable, private, or deleted.";
   if (code === 101 || code === 150) return "This YouTube video does not allow embedded playback. Skip it and choose another karaoke video.";
-  return "This YouTube video cannot be played. Please choose another song.";
+  if (code === 153) return "YouTube rejected the embedded player identity. Re-sync the Watch display or allow normal referrer information for this site.";
+  return `This YouTube video cannot be played (error ${Number(code) || "unknown"}). Please try Re-sync or choose another song.`;
 }
