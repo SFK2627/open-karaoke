@@ -20,7 +20,7 @@ import {
   searchYouTubeVideos
 } from "./youtube.js";
 
-const GUEST_BUILD = "20260909-realtimesync1";
+const GUEST_BUILD = "20260910-themesync1";
 
 function uniqueReservationId(guestId, videoId) {
   const randomPart = globalThis.crypto?.randomUUID
@@ -73,6 +73,32 @@ const closePreviewBtn = document.querySelector("#closePreviewBtn");
 const guestMobileTabs = document.querySelector("#guestMobileTabs");
 const guestTabButtons = [...document.querySelectorAll("[data-guest-tab]")];
 const guestTabPanels = [...document.querySelectorAll("[data-guest-panel]")];
+const guestThemeBadge = document.querySelector("#guestThemeBadge");
+const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+
+const TV_THEME_IDS = new Set(["classic", "neon", "studio", "disco", "ocean", "christmas", "spider", "gold", "pink"]);
+const TV_THEME_LABELS = {
+  classic: "Classic Videoke",
+  neon: "Neon Night",
+  studio: "Light Studio",
+  disco: "Disco RGB",
+  ocean: "Ocean Blue",
+  christmas: "Christmas",
+  spider: "Spider Hero",
+  gold: "Gold Luxury",
+  pink: "Pink Cute"
+};
+const TV_THEME_META_COLORS = {
+  classic: "#090a0e",
+  neon: "#08051a",
+  studio: "#f7efe2",
+  disco: "#170022",
+  ocean: "#082b3a",
+  christmas: "#0b2418",
+  spider: "#071b36",
+  gold: "#17120a",
+  pink: "#3a1730"
+};
 
 let db;
 let user;
@@ -97,6 +123,38 @@ let guestDisconnectAction = null;
 let roomResyncTimer = null;
 let roomResyncInFlight = false;
 let roomListenerGeneration = 0;
+let activeGuestTheme = "classic";
+let guestThemeTransitionTimer = null;
+
+function normalizeGuestTheme(value) {
+  return TV_THEME_IDS.has(value) ? value : "classic";
+}
+
+function savedGuestTheme() {
+  return normalizeGuestTheme(localStorage.getItem("openKaraokeGuestTheme") || "classic");
+}
+
+function applyGuestTheme(theme, { animate = true } = {}) {
+  const normalized = normalizeGuestTheme(theme);
+  const changed = normalized !== activeGuestTheme;
+  activeGuestTheme = normalized;
+  document.body.dataset.tvTheme = normalized;
+  document.body.dataset.guestTheme = normalized;
+  localStorage.setItem("openKaraokeGuestTheme", normalized);
+
+  if (guestThemeBadge) guestThemeBadge.textContent = TV_THEME_LABELS[normalized] || "Karaoke Theme";
+  if (themeColorMeta) themeColorMeta.setAttribute("content", TV_THEME_META_COLORS[normalized] || "#0b1020");
+
+  if (changed && animate) {
+    document.body.classList.remove("guest-theme-switching");
+    void document.body.offsetWidth;
+    document.body.classList.add("guest-theme-switching");
+    window.clearTimeout(guestThemeTransitionTimer);
+    guestThemeTransitionTimer = window.setTimeout(() => {
+      document.body.classList.remove("guest-theme-switching");
+    }, 680);
+  }
+}
 
 function normalizeSession(value) {
   let raw = String(value || "").trim();
@@ -411,7 +469,7 @@ function restartRoomListeners() {
 
   const hostRef = ref(db, `sessions/${sessionId}/meta/hostOnline`);
   const guestsRef = ref(db, `sessions/${sessionId}/guests`);
-  const settingsRef = ref(db, `sessions/${sessionId}/settings/reservationsLocked`);
+  const settingsRef = ref(db, `sessions/${sessionId}/settings`);
   const queueRef = ref(db, `sessions/${sessionId}/queue`);
   const currentSongRef = ref(db, `sessions/${sessionId}/currentSong`);
 
@@ -429,7 +487,9 @@ function restartRoomListeners() {
 
   unsubscribeSettings = onValue(settingsRef, snapshot => {
     if (generation !== roomListenerGeneration) return;
-    setReservationLockState(snapshot.val() === true);
+    const settings = snapshot.val() || {};
+    setReservationLockState(settings.reservationsLocked === true);
+    applyGuestTheme(settings.tvTheme || savedGuestTheme());
   }, roomListenerError("settings", generation));
 
   unsubscribeQueue = onValue(queueRef, snapshot => {
@@ -788,6 +848,7 @@ leaveBtn.addEventListener("click", async () => {
   currentSong = null;
   roomPanel.hidden = true;
   joinPanel.hidden = false;
+  applyGuestTheme("classic");
   setGuestTab("search");
   joinForm.querySelector("button").disabled = false;
   leaveBtn.disabled = false;
@@ -809,5 +870,7 @@ window.addEventListener("online", () => {
   if (activeSessionId) scheduleRoomResync(40);
 });
 
+
+applyGuestTheme(savedGuestTheme(), { animate: false });
 
 init();
