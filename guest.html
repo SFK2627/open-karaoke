@@ -5,12 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Guest</title>
-  <link rel="stylesheet" href="./css/style.css?v=20260910-watch1">
+  <link rel="stylesheet" href="./css/style.css?v=20260910-watchdisplay1">
 </head>
 <body class="guest-page">
   <header class="topbar compact-topbar">
     <a class="brand" href="./index.html">🎤 <span>Open Karaoke</span></a>
-    <div class="status-pill guest-status-pill" id="connectionStatus" data-state="loading">…</div>
+    <div class="guest-topbar-actions">
+      <span class="guest-theme-badge" id="guestThemeBadge">Classic Videoke</span>
+      <div class="status-pill guest-status-pill" id="connectionStatus" data-state="loading">…</div>
+    </div>
   </header>
 
   <main class="page-shell guest-shell">
@@ -79,27 +82,60 @@
       </article>
 
       <nav class="guest-mobile-tabs" id="guestMobileTabs" aria-label="Guest controller sections">
-        <button class="guest-tab-btn" type="button" data-guest-tab="watch">▶ <span>Watch</span></button>
-        <button class="guest-tab-btn is-active" type="button" data-guest-tab="search">🔎 <span>Search</span></button>
+        <button class="guest-tab-btn is-active" type="button" data-guest-tab="watch">▶ <span>Watch</span></button>
+        <button class="guest-tab-btn" type="button" data-guest-tab="search">🔎 <span>Search</span></button>
         <button class="guest-tab-btn" type="button" data-guest-tab="queue">≡ <span>Queue</span></button>
         <button class="guest-tab-btn" type="button" data-guest-tab="mine">♪ <span>My Songs</span></button>
       </nav>
 
-      <article class="panel watch-panel guest-tab-panel" data-guest-panel="watch">
-        <div class="section-heading">
+      <article class="panel guest-watch-panel guest-tab-panel is-active" data-guest-panel="watch">
+        <div class="section-heading guest-watch-heading">
           <div>
-            <p class="eyebrow">LIVE WATCH</p>
-            <h2>Watching Karaoke</h2>
+            <p class="eyebrow">LIVE KARAOKE DISPLAY</p>
+            <h2 id="watchTitle">Waiting for a song…</h2>
           </div>
-          <span class="playback-chip" id="watchSyncState">LIVE</span>
+          <span class="watch-sync-chip" id="watchSyncState" data-state="idle">WAITING</span>
         </div>
-        <div class="watch-frame-wrap">
-          <div id="watchPlayer"></div>
+
+        <div class="guest-watch-stage" id="guestWatchStage">
+          <div id="guestWatchPlayer" class="guest-watch-player" aria-label="Synchronized karaoke video"></div>
+          <div class="guest-watch-input-shield" aria-hidden="true"></div>
+          <div class="guest-watch-empty" id="watchEmpty">
+            <span class="guest-watch-empty-icon">🎤</span>
+            <strong>Waiting for the Host</strong>
+            <small>The karaoke video will appear here automatically.</small>
+          </div>
         </div>
-        <div class="watch-info" id="watchInfo">Waiting for the Host to start a song.</div>
+
+        <div class="guest-watch-livebar">
+          <div class="guest-watch-livecopy">
+            <span id="watchRoleChip" class="watch-role-chip">👀 WATCHING LIVE</span>
+            <strong id="watchSinger">No singer yet</strong>
+          </div>
+          <div class="guest-watch-timebox">
+            <span id="watchTimeCurrent">0:00</span>
+            <span>/</span>
+            <span id="watchTimeDuration">0:00</span>
+          </div>
+        </div>
+
+        <div class="guest-watch-progress" aria-hidden="true"><span id="watchProgressFill"></span></div>
+
+        <div class="guest-watch-actions">
+          <button class="btn btn-secondary guest-watch-action" id="watchResyncBtn" type="button">↻ Re-sync</button>
+          <button class="btn btn-secondary guest-watch-action" id="watchFocusBtn" type="button">⛶ Focus</button>
+        </div>
+
+        <div class="guest-watch-singer-controls" id="watchSingerControls" hidden>
+          <span class="guest-own-turn">🎤 YOUR TURN</span>
+          <button class="btn btn-secondary guest-own-control-btn" id="watchPlayPauseBtn" type="button">⏸ Pause</button>
+          <button class="btn btn-danger guest-own-control-btn" id="watchSkipBtn" type="button">⏭ Skip My Song</button>
+        </div>
+
+        <p class="mini-note guest-watch-note">Synced video is muted on this phone to prevent echo. The TV remains the room audio source.</p>
       </article>
 
-      <article class="panel reserve-card guest-tab-panel is-active" data-guest-panel="search">
+      <article class="panel reserve-card guest-tab-panel" data-guest-panel="search">
         <div class="section-heading mobile-stack-heading">
           <div>
             <p class="eyebrow">FIND A KARAOKE SONG</p>
@@ -182,6 +218,6 @@
     </section>
   </div>
 
-  <script type="module" src="./js/guest.js?v=20260909-realtimesync1"></script>
+  <script type="module" src="./js/guest.js?v=20260910-watchdisplay1"></script>
 </body>
 </html>

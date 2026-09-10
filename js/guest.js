@@ -17,10 +17,12 @@ import {
 } from "./queue.js?v=20260909-singerremote1";
 import {
   isYouTubeSearchConfigured,
-  searchYouTubeVideos
+  searchYouTubeVideos,
+  createYouTubePlayer,
+  youtubePlayerErrorMessage
 } from "./youtube.js";
 
-const GUEST_BUILD = "20260909-realtimesync1";
+const GUEST_BUILD = "20260910-watchdisplay1";
 
 function uniqueReservationId(guestId, videoId) {
   const randomPart = globalThis.crypto?.randomUUID
@@ -53,9 +55,6 @@ const guestQueue = document.querySelector("#guestQueue");
 const mySongs = document.querySelector("#mySongs");
 const queueCount = document.querySelector("#queueCount");
 const guestNowTitle = document.querySelector("#guestNowTitle");
-const watchPlayerEl = document.querySelector("#watchPlayer");
-const watchInfo = document.querySelector("#watchInfo");
-const watchSyncState = document.querySelector("#watchSyncState");
 const guestNowBody = document.querySelector("#guestNowBody");
 const guestPlaybackState = document.querySelector("#guestPlaybackState");
 const guestOwnControls = document.querySelector("#guestOwnControls");
@@ -76,6 +75,86 @@ const closePreviewBtn = document.querySelector("#closePreviewBtn");
 const guestMobileTabs = document.querySelector("#guestMobileTabs");
 const guestTabButtons = [...document.querySelectorAll("[data-guest-tab]")];
 const guestTabPanels = [...document.querySelectorAll("[data-guest-panel]")];
+const guestThemeBadge = document.querySelector("#guestThemeBadge");
+const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+const guestWatchStage = document.querySelector("#guestWatchStage");
+const watchEmpty = document.querySelector("#watchEmpty");
+const watchTitle = document.querySelector("#watchTitle");
+const watchSinger = document.querySelector("#watchSinger");
+const watchRoleChip = document.querySelector("#watchRoleChip");
+const watchSyncState = document.querySelector("#watchSyncState");
+const watchTimeCurrent = document.querySelector("#watchTimeCurrent");
+const watchTimeDuration = document.querySelector("#watchTimeDuration");
+const watchProgressFill = document.querySelector("#watchProgressFill");
+const watchResyncBtn = document.querySelector("#watchResyncBtn");
+const watchFocusBtn = document.querySelector("#watchFocusBtn");
+const watchSingerControls = document.querySelector("#watchSingerControls");
+const watchPlayPauseBtn = document.querySelector("#watchPlayPauseBtn");
+const watchSkipBtn = document.querySelector("#watchSkipBtn");
+
+const TV_THEME_IDS = new Set(["classic", "neon", "studio", "disco", "ocean", "christmas", "spider", "gold", "pink", "minimal", "maximal", "futuristic", "vector", "collage", "retro", "cyberpunk", "popart", "glass", "clay", "pixel", "editorial", "y2k", "swiss", "surreal", "bohemian", "victorian", "graffiti", "aurora", "handwritten"]);
+const TV_THEME_LABELS = {
+  classic: "Classic Videoke",
+  neon: "Neon Night",
+  studio: "Light Studio",
+  disco: "Disco RGB",
+  ocean: "Ocean Blue",
+  christmas: "Christmas",
+  spider: "Spider Hero",
+  gold: "Gold Luxury",
+  pink: "Pink Cute",
+  minimal: "Minimalism",
+  maximal: "Maximalism",
+  futuristic: "Futuristic",
+  vector: "Vector Art",
+  collage: "Collage Art",
+  retro: "Retro",
+  cyberpunk: "Cyberpunk",
+  popart: "Pop Art",
+  glass: "Glass Morphism",
+  clay: "Clay Style",
+  pixel: "Pixel Art",
+  editorial: "Editorial",
+  y2k: "Y2K",
+  swiss: "Swiss Design",
+  surreal: "Surreal Design",
+  bohemian: "Bohemian",
+  victorian: "Victorian Style",
+  graffiti: "Graffiti",
+  aurora: "Aurora",
+  handwritten: "Handwritten"
+};
+const TV_THEME_META_COLORS = {
+  classic: "#090a0e",
+  neon: "#08051a",
+  studio: "#f7efe2",
+  disco: "#170022",
+  ocean: "#082b3a",
+  christmas: "#0b2418",
+  spider: "#071b36",
+  gold: "#17120a",
+  pink: "#3a1730",
+  minimal: "#f2f1ed",
+  maximal: "#43114f",
+  futuristic: "#06131c",
+  vector: "#143d6b",
+  collage: "#e8dcc7",
+  retro: "#5b321c",
+  cyberpunk: "#0b0b12",
+  popart: "#ffd93b",
+  glass: "#18243e",
+  clay: "#f4d7c9",
+  pixel: "#111022",
+  editorial: "#f4f0e8",
+  y2k: "#d7e7f4",
+  swiss: "#f7f7f5",
+  surreal: "#331b63",
+  bohemian: "#6f3f2f",
+  victorian: "#241613",
+  graffiti: "#191a20",
+  aurora: "#071521",
+  handwritten: "#f1ead8"
+};
 
 let db;
 let user;
@@ -86,9 +165,6 @@ let guestRef = null;
 let reservationsLocked = false;
 let currentQueue = [];
 let currentSong = null;
-let watchPlayer = null;
-let watchPlayerReady = false;
-let watchLoadedId = null;
 let currentSearchResults = new Map();
 let previewVideo = null;
 let lastSearchAt = 0;
@@ -103,6 +179,51 @@ let guestDisconnectAction = null;
 let roomResyncTimer = null;
 let roomResyncInFlight = false;
 let roomListenerGeneration = 0;
+let activeGuestTheme = "classic";
+let guestThemeTransitionTimer = null;
+let playbackSync = null;
+let unsubscribePlaybackSync = null;
+let unsubscribeServerTimeOffset = null;
+let serverTimeOffsetMs = 0;
+let watchPlayer = null;
+let watchPlayerReady = false;
+let watchLoadedVideoId = null;
+let watchSyncTickTimer = null;
+let watchApplyTimer = null;
+let watchFocusActive = false;
+let watchWakeLock = null;
+const WATCH_DRIFT_SEEK_SECONDS = 1.15;
+const WATCH_SYNC_TICK_MS = 900;
+
+function normalizeGuestTheme(value) {
+  return TV_THEME_IDS.has(value) ? value : "classic";
+}
+
+function savedGuestTheme() {
+  return normalizeGuestTheme(localStorage.getItem("openKaraokeGuestTheme") || "classic");
+}
+
+function applyGuestTheme(theme, { animate = true } = {}) {
+  const normalized = normalizeGuestTheme(theme);
+  const changed = normalized !== activeGuestTheme;
+  activeGuestTheme = normalized;
+  document.body.dataset.tvTheme = normalized;
+  document.body.dataset.guestTheme = normalized;
+  localStorage.setItem("openKaraokeGuestTheme", normalized);
+
+  if (guestThemeBadge) guestThemeBadge.textContent = TV_THEME_LABELS[normalized] || "Karaoke Theme";
+  if (themeColorMeta) themeColorMeta.setAttribute("content", TV_THEME_META_COLORS[normalized] || "#0b1020");
+
+  if (changed && animate) {
+    document.body.classList.remove("guest-theme-switching");
+    void document.body.offsetWidth;
+    document.body.classList.add("guest-theme-switching");
+    window.clearTimeout(guestThemeTransitionTimer);
+    guestThemeTransitionTimer = window.setTimeout(() => {
+      document.body.classList.remove("guest-theme-switching");
+    }, 680);
+  }
+}
 
 function normalizeSession(value) {
   let raw = String(value || "").trim();
@@ -153,7 +274,8 @@ function setConnection(isOnline) {
 }
 
 function setGuestTab(tabName, { scroll = false } = {}) {
-  const valid = ["search", "queue", "mine"].includes(tabName) ? tabName : "search";
+  const valid = ["watch", "search", "queue", "mine"].includes(tabName) ? tabName : "watch";
+  document.body.dataset.guestSection = valid;
   guestTabButtons.forEach(button => {
     const active = button.dataset.guestTab === valid;
     button.classList.toggle("is-active", active);
@@ -163,6 +285,12 @@ function setGuestTab(tabName, { scroll = false } = {}) {
     const active = panel.dataset.guestPanel === valid;
     panel.classList.toggle("is-active", active);
   });
+  if (valid === "watch") {
+    ensureWatchPlayer().then(() => forceWatchResync()).catch(error => console.debug("Watch player init:", error?.message || error));
+  } else if (watchPlayerReady && watchPlayer && !watchFocusActive) {
+    // Save mobile data/CPU when the guest is using Search/Queue/My Songs.
+    try { watchPlayer.pauseVideo?.(); } catch {}
+  }
   if (scroll && guestMobileTabs && window.matchMedia("(max-width: 620px)").matches) {
     guestMobileTabs.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -215,21 +343,36 @@ function renderQueue() {
 function renderSingerControls(state = "idle") {
   const ownsCurrentSong = Boolean(currentSong && user?.uid && currentSong.guestId === user.uid);
   guestOwnControls.hidden = !ownsCurrentSong;
+  if (watchSingerControls) watchSingerControls.hidden = !ownsCurrentSong;
 
   if (!ownsCurrentSong) {
     singerControlBusy = false;
     guestPlayPauseBtn.disabled = false;
     guestSkipBtn.disabled = false;
     guestSkipBtn.textContent = "⏭ Skip My Song";
+    if (watchPlayPauseBtn) { watchPlayPauseBtn.disabled = false; watchPlayPauseBtn.textContent = "▶ Play"; watchPlayPauseBtn.dataset.action = "play"; }
+    if (watchSkipBtn) { watchSkipBtn.disabled = false; watchSkipBtn.textContent = "⏭ Skip My Song"; }
     return;
   }
 
   const isPlaying = state === "playing";
-  guestPlayPauseBtn.textContent = isPlaying ? "⏸ Pause" : "▶ Play";
-  guestPlayPauseBtn.dataset.action = isPlaying ? "pause" : "play";
+  const playPauseText = isPlaying ? "⏸ Pause" : "▶ Play";
+  const playPauseAction = isPlaying ? "pause" : "play";
+  guestPlayPauseBtn.textContent = playPauseText;
+  guestPlayPauseBtn.dataset.action = playPauseAction;
   guestPlayPauseBtn.disabled = singerControlBusy;
   guestSkipBtn.disabled = singerControlBusy;
   guestSkipBtn.textContent = singerControlBusy ? "Please wait…" : "⏭ Skip My Song";
+
+  if (watchPlayPauseBtn) {
+    watchPlayPauseBtn.textContent = playPauseText;
+    watchPlayPauseBtn.dataset.action = playPauseAction;
+    watchPlayPauseBtn.disabled = singerControlBusy;
+  }
+  if (watchSkipBtn) {
+    watchSkipBtn.disabled = singerControlBusy;
+    watchSkipBtn.textContent = singerControlBusy ? "Please wait…" : "⏭ Skip My Song";
+  }
 }
 function singerRequestId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID().replaceAll("-", "");
@@ -257,34 +400,242 @@ async function sendSingerControl(action) {
   });
 }
 
-function initWatchPlayer() {
-  if (watchPlayer || !watchPlayerEl) return;
-  createYouTubePlayer("watchPlayer", {
-    onReady: () => { watchPlayerReady = true; },
-    onStateChange: () => {}
-  }).then(player => { watchPlayer = player; }).catch(error => console.error(error));
+function formatWatchTime(value) {
+  const seconds = Math.max(0, Math.floor(Number(value) || 0));
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${minutes}:${String(remainder).padStart(2, "0")}`;
 }
 
-function syncWatchPlayer(song) {
-  if (!watchPlayerEl || !song?.youtubeVideoId) {
-    if (watchInfo) watchInfo.textContent = "Waiting for the Host to start a song.";
+function serverNowMs() {
+  return Date.now() + Number(serverTimeOffsetMs || 0);
+}
+
+function expectedWatchPosition(sync = playbackSync, stateOverride = null) {
+  if (!sync || !Number.isFinite(Number(sync.position))) return 0;
+  let position = Math.max(0, Number(sync.position));
+  const effectiveState = stateOverride || sync.state;
+  if (effectiveState === "playing" && Number.isFinite(Number(sync.updatedAt))) {
+    const elapsed = Math.max(0, (serverNowMs() - Number(sync.updatedAt)) / 1000);
+    position += elapsed * (Number(sync.rate) || 1);
+  }
+  const duration = Number(sync.duration) || 0;
+  if (duration > 0) position = Math.min(duration, position);
+  return position;
+}
+
+function setWatchSyncUi(state, text) {
+  if (!watchSyncState) return;
+  watchSyncState.dataset.state = state;
+  watchSyncState.textContent = text;
+}
+
+function updateWatchSongInfo() {
+  const song = currentSong;
+  if (!song) {
+    if (watchTitle) watchTitle.textContent = "Waiting for a song…";
+    if (watchSinger) watchSinger.textContent = "No singer yet";
+    if (watchRoleChip) { watchRoleChip.textContent = "👀 WATCHING LIVE"; watchRoleChip.dataset.role = "viewer"; }
+    if (watchEmpty) {
+      watchEmpty.hidden = false;
+      watchEmpty.innerHTML = '<span class="guest-watch-empty-icon">🎤</span><strong>Waiting for the Host</strong><small>The karaoke video will appear here automatically.</small>';
+    }
+    if (watchTimeCurrent) watchTimeCurrent.textContent = "0:00";
+    if (watchTimeDuration) watchTimeDuration.textContent = "0:00";
+    if (watchProgressFill) watchProgressFill.style.width = "0%";
+    setWatchSyncUi("idle", "WAITING");
     return;
   }
-  initWatchPlayer();
-  if (watchInfo) watchInfo.textContent = `${song.title || "Untitled"} • ${song.singerName || "Guest"}`;
-  if (!watchPlayerReady || !watchPlayer) return;
-  const target = song.playbackState === "playing" ? "playing" : song.playbackState;
-  if (watchLoadedId !== song.youtubeVideoId) {
-    watchLoadedId = song.youtubeVideoId;
-    watchPlayer.loadVideoById(song.youtubeVideoId);
+
+  if (watchTitle) watchTitle.textContent = song.title || "Untitled song";
+  if (watchSinger) watchSinger.textContent = `Reserved by ${song.singerName || "Guest"}`;
+  const ownsSong = Boolean(user?.uid && song.guestId === user.uid);
+  if (watchRoleChip) {
+    watchRoleChip.textContent = ownsSong ? "🎤 YOUR TURN" : "👀 WATCHING LIVE";
+    watchRoleChip.dataset.role = ownsSong ? "singer" : "viewer";
   }
-  setTimeout(() => {
+  if (watchEmpty && (!watchPlayerReady || watchLoadedVideoId !== song.youtubeVideoId)) {
+    watchEmpty.hidden = false;
+    watchEmpty.innerHTML = '<span class="guest-watch-empty-icon">↻</span><strong>Syncing live display…</strong><small>Matching this phone to the karaoke TV.</small>';
+  }
+}
+
+async function ensureWatchPlayer() {
+  if (watchPlayer) return watchPlayer;
+  if (!document.querySelector("#guestWatchPlayer")) return null;
+
+  try {
+    watchPlayer = await createYouTubePlayer("guestWatchPlayer", {
+      onReady: event => {
+        watchPlayerReady = true;
+        try { event.target.mute?.(); } catch {}
+        try { event.target.setVolume?.(0); } catch {}
+        try { event.target.getIframe()?.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture; fullscreen"); } catch {}
+        forceWatchResync();
+      },
+      onStateChange: () => {
+        if (document.body.dataset.guestSection === "watch") updateWatchProgressUi();
+      },
+      onError: event => {
+        setWatchSyncUi("error", "VIDEO ERROR");
+        if (watchEmpty) {
+          watchEmpty.hidden = false;
+          watchEmpty.innerHTML = `<span class="guest-watch-empty-icon">⚠️</span><strong>Video unavailable</strong><small>${escapeHtml(youtubePlayerErrorMessage(event.data))}</small>`;
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Guest Watch player failed:", error);
+    setWatchSyncUi("error", "PLAYER ERROR");
+  }
+  return watchPlayer;
+}
+
+function updateWatchProgressUi() {
+  const sync = playbackSync;
+  const effectiveState = currentSong?.playbackState || sync?.state || "playing";
+  const expected = expectedWatchPosition(sync, effectiveState);
+  let duration = Math.max(0, Number(sync?.duration) || 0);
+  if (!duration && watchPlayerReady && watchPlayer) {
+    try { duration = Math.max(0, Number(watchPlayer.getDuration?.()) || 0); } catch {}
+  }
+  if (watchTimeCurrent) watchTimeCurrent.textContent = formatWatchTime(expected);
+  if (watchTimeDuration) watchTimeDuration.textContent = formatWatchTime(duration);
+  if (watchProgressFill) {
+    const percent = duration > 0 ? Math.max(0, Math.min(100, (expected / duration) * 100)) : 0;
+    watchProgressFill.style.width = `${percent.toFixed(2)}%`;
+  }
+}
+
+function applyWatchSync({ force = false } = {}) {
+  updateWatchSongInfo();
+  updateWatchProgressUi();
+  const watchVisible = document.body.dataset.guestSection === "watch" || watchFocusActive;
+  if (!watchVisible && !force) return;
+  if (!currentSong?.youtubeVideoId) {
+    if (watchPlayerReady && watchPlayer && watchLoadedVideoId) {
+      try { watchPlayer.stopVideo?.(); } catch {}
+    }
+    watchLoadedVideoId = null;
+    return;
+  }
+
+  ensureWatchPlayer().then(() => {
+    if (!watchPlayerReady || !watchPlayer || !currentSong?.youtubeVideoId) return;
+    const sync = playbackSync;
+    // currentSong is authoritative for the video and playback state. playbackSync
+    // only contributes the precise timestamp when it belongs to the same song.
+    const targetVideoId = String(currentSong.youtubeVideoId || "");
+    if (!targetVideoId) return;
+    const syncMatchesSong = Boolean(sync?.videoId && sync.videoId === targetVideoId);
+    const desiredState = currentSong.playbackState || (syncMatchesSong ? sync?.state : null) || "playing";
+    const expected = syncMatchesSong ? expectedWatchPosition(sync, desiredState) : 0;
+
     try {
-      if (Number.isFinite(song.currentTime)) watchPlayer.seekTo(song.currentTime, true);
-      if (target === "playing") watchPlayer.playVideo();
-      if (target === "paused") watchPlayer.pauseVideo();
+      watchPlayer.mute?.();
+      watchPlayer.setVolume?.(0);
+
+      if (watchLoadedVideoId !== targetVideoId) {
+        watchLoadedVideoId = targetVideoId;
+        if (desiredState === "playing") {
+          watchPlayer.loadVideoById({ videoId: targetVideoId, startSeconds: Math.max(0, expected) });
+        } else {
+          watchPlayer.cueVideoById({ videoId: targetVideoId, startSeconds: Math.max(0, expected) });
+        }
+        if (watchEmpty) watchEmpty.hidden = true;
+        setWatchSyncUi("adjusting", "SYNCING…");
+        return;
+      }
+
+      let localTime = 0;
+      try { localTime = Number(watchPlayer.getCurrentTime?.()) || 0; } catch {}
+      const drift = Math.abs(localTime - expected);
+
+      if (desiredState === "playing") {
+        if (force || drift > WATCH_DRIFT_SEEK_SECONDS) watchPlayer.seekTo(Math.max(0, expected), true);
+        const playerState = watchPlayer.getPlayerState?.();
+        if (playerState !== window.YT?.PlayerState?.PLAYING && playerState !== window.YT?.PlayerState?.BUFFERING) {
+          watchPlayer.playVideo?.();
+        }
+      } else if (desiredState === "paused") {
+        if (force || drift > 0.45) watchPlayer.seekTo(Math.max(0, expected), true);
+        watchPlayer.pauseVideo?.();
+      } else if (desiredState === "stopped" || desiredState === "error") {
+        if (force || drift > 0.45) watchPlayer.seekTo(Math.max(0, expected), true);
+        watchPlayer.pauseVideo?.();
+      }
+
+      const heartbeatAge = sync?.updatedAt ? Math.max(0, serverNowMs() - Number(sync.updatedAt)) : Infinity;
+      if (!syncMatchesSong || !sync?.updatedAt) {
+        setWatchSyncUi("adjusting", "SYNCING…");
+      } else if (desiredState === "playing" && heartbeatAge > 12000) {
+        setWatchSyncUi("reconnecting", "RECONNECTING");
+      } else if (drift > WATCH_DRIFT_SEEK_SECONDS) {
+        setWatchSyncUi("adjusting", "ADJUSTING…");
+      } else if (desiredState === "paused") {
+        setWatchSyncUi("paused", "PAUSED");
+      } else if (desiredState === "stopped") {
+        setWatchSyncUi("paused", "STOPPED");
+      } else {
+        setWatchSyncUi("synced", "● LIVE SYNCED");
+      }
+    } catch (error) {
+      console.debug("Guest Watch sync retry:", error?.message || error);
+      setWatchSyncUi("adjusting", "SYNCING…");
+    }
+  }).catch(() => {});
+}
+
+function scheduleWatchApply(delay = 80, force = false) {
+  window.clearTimeout(watchApplyTimer);
+  watchApplyTimer = window.setTimeout(() => applyWatchSync({ force }), delay);
+}
+
+function forceWatchResync() {
+  if (document.body.dataset.guestSection !== "watch" && !watchFocusActive) return;
+  scheduleWatchApply(0, true);
+}
+
+function startWatchSyncTicker() {
+  if (watchSyncTickTimer) return;
+  watchSyncTickTimer = window.setInterval(() => {
+    if (!activeSessionId || document.visibilityState === "hidden") return;
+    updateWatchProgressUi();
+    if (document.body.dataset.guestSection === "watch" || watchFocusActive) applyWatchSync();
+  }, WATCH_SYNC_TICK_MS);
+}
+
+function stopWatchSyncTicker() {
+  if (watchSyncTickTimer) window.clearInterval(watchSyncTickTimer);
+  watchSyncTickTimer = null;
+  window.clearTimeout(watchApplyTimer);
+  watchApplyTimer = null;
+}
+
+async function requestWatchWakeLock() {
+  if (!watchFocusActive || !navigator.wakeLock?.request) return;
+  try {
+    watchWakeLock = await navigator.wakeLock.request("screen");
+    watchWakeLock.addEventListener?.("release", () => { watchWakeLock = null; });
+  } catch {}
+}
+
+async function setWatchFocus(active) {
+  watchFocusActive = Boolean(active);
+  document.body.classList.toggle("guest-watch-focus", watchFocusActive);
+  if (watchFocusBtn) watchFocusBtn.textContent = watchFocusActive ? "✕ Exit Focus" : "⛶ Focus";
+
+  if (watchFocusActive) {
+    await requestWatchWakeLock();
+    try {
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
     } catch {}
-  }, 500);
+    forceWatchResync();
+  } else {
+    try { await watchWakeLock?.release?.(); } catch {}
+    watchWakeLock = null;
+    try { if (document.fullscreenElement) await document.exitFullscreen(); } catch {}
+  }
 }
 
 function renderCurrentSong(song) {
@@ -302,6 +653,8 @@ function renderCurrentSong(song) {
     guestPlaybackState.dataset.state = "idle";
     guestNowBody.innerHTML = '<div class="guest-now-placeholder">The current song will appear here when the Host starts playback.</div>';
     renderSingerControls("idle");
+    updateWatchSongInfo();
+    scheduleWatchApply(20);
     renderQueue();
     return;
   }
@@ -320,6 +673,8 @@ function renderCurrentSong(song) {
       <span>👤 ${escapeHtml(currentSong.singerName || "Guest")}</span>
     </div>`;
   renderSingerControls(state);
+  updateWatchSongInfo();
+  scheduleWatchApply(30);
   renderQueue();
 }
 
@@ -407,7 +762,8 @@ async function joinSession(sessionId, singerName) {
   displaySession.textContent = sessionId;
   joinPanel.hidden = true;
   roomPanel.hidden = false;
-  setGuestTab("search");
+  setGuestTab("watch");
+  startWatchSyncTicker();
   setYouTubeSearchState();
 }
 function unsubscribeRoomListeners() {
@@ -416,11 +772,13 @@ function unsubscribeRoomListeners() {
   unsubscribeSettings?.();
   unsubscribeQueue?.();
   unsubscribeCurrentSong?.();
+  unsubscribePlaybackSync?.();
   unsubscribeHost = null;
   unsubscribeGuestCount = null;
   unsubscribeSettings = null;
   unsubscribeQueue = null;
   unsubscribeCurrentSong = null;
+  unsubscribePlaybackSync = null;
 }
 
 function scheduleRoomResync(delay = 120) {
@@ -447,9 +805,10 @@ function restartRoomListeners() {
 
   const hostRef = ref(db, `sessions/${sessionId}/meta/hostOnline`);
   const guestsRef = ref(db, `sessions/${sessionId}/guests`);
-  const settingsRef = ref(db, `sessions/${sessionId}/settings/reservationsLocked`);
+  const settingsRef = ref(db, `sessions/${sessionId}/settings`);
   const queueRef = ref(db, `sessions/${sessionId}/queue`);
   const currentSongRef = ref(db, `sessions/${sessionId}/currentSong`);
+  const playbackSyncRef = ref(db, `sessions/${sessionId}/playbackSync`);
 
   unsubscribeHost = onValue(hostRef, snapshot => {
     if (generation !== roomListenerGeneration) return;
@@ -465,7 +824,9 @@ function restartRoomListeners() {
 
   unsubscribeSettings = onValue(settingsRef, snapshot => {
     if (generation !== roomListenerGeneration) return;
-    setReservationLockState(snapshot.val() === true);
+    const settings = snapshot.val() || {};
+    setReservationLockState(settings.reservationsLocked === true);
+    applyGuestTheme(settings.tvTheme || savedGuestTheme());
   }, roomListenerError("settings", generation));
 
   unsubscribeQueue = onValue(queueRef, snapshot => {
@@ -478,6 +839,12 @@ function restartRoomListeners() {
     if (generation !== roomListenerGeneration) return;
     renderCurrentSong(snapshot.val());
   }, roomListenerError("current-song", generation));
+
+  unsubscribePlaybackSync = onValue(playbackSyncRef, snapshot => {
+    if (generation !== roomListenerGeneration) return;
+    playbackSync = snapshot.val() || null;
+    scheduleWatchApply(25);
+  }, roomListenerError("playback-sync", generation));
 }
 
 async function refreshGuestPresence() {
@@ -613,6 +980,12 @@ async function init() {
   try {
     ({ db, user } = await initFirebase());
 
+    unsubscribeServerTimeOffset?.();
+    unsubscribeServerTimeOffset = onValue(ref(db, ".info/serverTimeOffset"), snapshot => {
+      serverTimeOffsetMs = Number(snapshot.val()) || 0;
+      if (activeSessionId) scheduleWatchApply(20);
+    });
+
     unsubscribeConnection = onValue(ref(db, ".info/connected"), async snapshot => {
       const connected = snapshot.val() === true;
       setConnection(connected);
@@ -664,6 +1037,29 @@ guestMobileTabs?.addEventListener("click", event => {
   const button = event.target.closest("[data-guest-tab]");
   if (!button) return;
   setGuestTab(button.dataset.guestTab);
+  if (button.dataset.guestTab === "watch") {
+    // A direct tap gives mobile browsers the user gesture they may require to
+    // start the muted synchronized YouTube player.
+    forceWatchResync();
+  }
+});
+
+watchResyncBtn?.addEventListener("click", () => {
+  applyWatchSync({ force: true });
+});
+
+watchFocusBtn?.addEventListener("click", () => {
+  setWatchFocus(!watchFocusActive).catch(() => {});
+});
+
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement && watchFocusActive) {
+    watchFocusActive = false;
+    document.body.classList.remove("guest-watch-focus");
+    if (watchFocusBtn) watchFocusBtn.textContent = "⛶ Focus";
+    try { watchWakeLock?.release?.(); } catch {}
+    watchWakeLock = null;
+  }
 });
 
 searchForm.addEventListener("submit", async event => {
@@ -759,6 +1155,45 @@ mySongs.addEventListener("click", async event => {
   }
 });
 
+watchPlayPauseBtn?.addEventListener("click", async () => {
+  if (singerControlBusy || watchSingerControls?.hidden) return;
+  const action = watchPlayPauseBtn.dataset.action || "pause";
+  singerControlBusy = true;
+  renderSingerControls(currentSong?.playbackState || "idle");
+  try {
+    await sendSingerControl(action);
+  } catch (error) {
+    console.error(error);
+    setMessage(reserveMessage, error.message || "Could not control your song.", "error");
+  } finally {
+    window.setTimeout(() => {
+      singerControlBusy = false;
+      renderSingerControls(currentSong?.playbackState || "idle");
+    }, 500);
+  }
+});
+
+watchSkipBtn?.addEventListener("click", async () => {
+  if (singerControlBusy || watchSingerControls?.hidden) return;
+  const requestedQueueItemId = currentSong?.queueItemId || null;
+  singerControlBusy = true;
+  renderSingerControls(currentSong?.playbackState || "playing");
+  try {
+    await sendSingerControl("skip");
+    window.setTimeout(() => {
+      if (singerControlBusy && currentSong?.queueItemId === requestedQueueItemId) {
+        singerControlBusy = false;
+        renderSingerControls(currentSong?.playbackState || "idle");
+      }
+    }, 2200);
+  } catch (error) {
+    console.error(error);
+    singerControlBusy = false;
+    renderSingerControls(currentSong?.playbackState || "idle");
+    setMessage(reserveMessage, error.message || "Could not skip your song.", "error");
+  }
+});
+
 guestPlayPauseBtn?.addEventListener("click", async () => {
   if (singerControlBusy || guestOwnControls.hidden) return;
   const action = guestPlayPauseBtn.dataset.action || "pause";
@@ -822,9 +1257,16 @@ leaveBtn.addEventListener("click", async () => {
   guestRef = null;
   currentQueue = [];
   currentSong = null;
+  playbackSync = null;
+  stopWatchSyncTicker();
+  if (watchFocusActive) await setWatchFocus(false);
+  try { watchPlayer?.stopVideo?.(); } catch {}
+  watchLoadedVideoId = null;
+  updateWatchSongInfo();
   roomPanel.hidden = true;
   joinPanel.hidden = false;
-  setGuestTab("search");
+  applyGuestTheme("classic");
+  setGuestTab("watch");
   joinForm.querySelector("button").disabled = false;
   leaveBtn.disabled = false;
   setMessage(guestMessage, "You left the session. Your waiting reservations remain in the queue until you cancel them or the Host removes them.", "success");
@@ -834,6 +1276,8 @@ leaveBtn.addEventListener("click", async () => {
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && activeSessionId) {
     scheduleRoomResync(60);
+    forceWatchResync();
+    if (watchFocusActive) requestWatchWakeLock();
   }
 });
 
@@ -845,5 +1289,8 @@ window.addEventListener("online", () => {
   if (activeSessionId) scheduleRoomResync(40);
 });
 
+
+document.body.dataset.guestSection = "watch";
+applyGuestTheme(savedGuestTheme(), { animate: false });
 
 init();

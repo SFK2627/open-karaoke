@@ -108,6 +108,15 @@ const handledSingerRequestIds = new Set();
 let autoStartTimer = null;
 let autoStartInFlight = false;
 
+// Guest Watch uses a timestamped playback snapshot instead of writing the
+// position every second. Guests project the current position locally between
+// heartbeats, keeping the room responsive without noisy Firebase traffic.
+const PLAYBACK_SYNC_INTERVAL_MS = 4000;
+let playbackSyncTimer = null;
+let playbackSyncWriteInFlight = false;
+let playbackSyncPending = null;
+let playbackSyncRevision = 0;
+
 const DEFAULT_AMBILIGHT_COLORS = [
   "rgba(139, 92, 246, .46)",
   "rgba(34, 211, 238, .34)",
@@ -368,7 +377,7 @@ function buildGuestUrl(sessionId) {
   const url = new URL("./guest.html", window.location.href);
   url.search = "";
   url.searchParams.set("session", sessionId);
-  url.searchParams.set("v", "20260909-realtimesync1");
+  url.searchParams.set("v", "20260910-watchdisplay1");
   return url.toString();
 }
 
@@ -563,6 +572,78 @@ function renderPlaybackState(state) {
   tvRetroBar?.setAttribute("data-playback", normalized);
 }
 
+function safePlayerNumber(methodName, fallback = 0) {
+  if (!playerReady || !player || typeof player?.[methodName] !== "function") return fallback;
+  try {
+    const value = Number(player[methodName]());
+    return Number.isFinite(value) ? value : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+async function publishPlaybackSync({ state = null, clear = false } = {}) {
+  if (!db || !activeSessionId) return;
+
+  // Never drop a pause/stop/song-change update just because a heartbeat is
+  // still in flight. Keep only the newest pending snapshot and publish it next.
+  if (playbackSyncWriteInFlight) {
+    playbackSyncPending = { state, clear };
+    return;
+  }
+
+  const syncRef = ref(db, `sessions/${activeSessionId}/playbackSync`);
+  playbackSyncWriteInFlight = true;
+  try {
+    if (clear || !currentSong?.youtubeVideoId) {
+      await remove(syncRef);
+      return;
+    }
+
+    const normalizedState = ["playing", "paused", "stopped", "error"].includes(state)
+      ? state
+      : (["playing", "paused", "stopped", "error"].includes(currentSong.playbackState) ? currentSong.playbackState : "playing");
+    const position = Math.max(0, safePlayerNumber("getCurrentTime", 0));
+    const duration = Math.max(0, safePlayerNumber("getDuration", 0));
+    const rate = Math.max(0.25, safePlayerNumber("getPlaybackRate", 1) || 1);
+    playbackSyncRevision += 1;
+
+    await update(syncRef, {
+      queueItemId: String(currentSong.queueItemId || ""),
+      videoId: String(currentSong.youtubeVideoId || ""),
+      position: Math.round(position * 1000) / 1000,
+      duration: Math.round(duration * 1000) / 1000,
+      state: normalizedState,
+      rate,
+      revision: playbackSyncRevision,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.debug("Playback sync heartbeat skipped:", error?.message || error);
+  } finally {
+    playbackSyncWriteInFlight = false;
+    const pending = playbackSyncPending;
+    playbackSyncPending = null;
+    if (pending && activeSessionId) {
+      window.setTimeout(() => publishPlaybackSync(pending).catch(() => {}), 20);
+    }
+  }
+}
+
+function startPlaybackSyncHeartbeat() {
+  if (playbackSyncTimer) return;
+  playbackSyncTimer = window.setInterval(() => {
+    if (!activeSessionId || !currentSong || currentSong.playbackState !== "playing") return;
+    publishPlaybackSync({ state: "playing" }).catch(() => {});
+  }, PLAYBACK_SYNC_INTERVAL_MS);
+}
+
+function stopPlaybackSyncHeartbeat() {
+  if (!playbackSyncTimer) return;
+  window.clearInterval(playbackSyncTimer);
+  playbackSyncTimer = null;
+}
+
 function renderCurrentSong(song) {
   currentSong = song || null;
   showPlayerError("");
@@ -653,6 +734,12 @@ function watchCurrentSong(sessionId) {
     const previousVideoId = currentSong?.youtubeVideoId || null;
     renderCurrentSong(nextCurrent);
     syncPlayerToFirebase(previousVideoId).catch(error => console.error(error));
+
+    if (!nextCurrent) {
+      publishPlaybackSync({ clear: true }).catch(() => {});
+    } else {
+      window.setTimeout(() => publishPlaybackSync({ state: nextCurrent.playbackState || "playing" }).catch(() => {}), 320);
+    }
   });
 }
 
@@ -782,6 +869,8 @@ async function ensurePlayer() {
           event.target.getIframe()?.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture; fullscreen");
         } catch {}
         syncPlayerToFirebase(null).catch(error => console.error(error));
+        startPlaybackSyncHeartbeat();
+        window.setTimeout(() => publishPlaybackSync({ state: currentSong?.playbackState || "playing" }).catch(() => {}), 350);
         scheduleAutoStart();
       },
       onStateChange: event => handlePlayerStateChange(event),
@@ -849,6 +938,9 @@ async function updateCurrentPlaybackState(state) {
     await update(ref(db, `sessions/${activeSessionId}/currentSong`), {
       playbackState: state
     });
+    // State transitions are pushed immediately; the 4-second heartbeat only
+    // maintains drift correction while a song is actively playing.
+    await publishPlaybackSync({ state });
   } catch (error) {
     console.error(error);
   }
@@ -873,9 +965,11 @@ function handlePlayerStateChange(event) {
     makePlayerAudible({ resetIfSilent: true });
     renderPlaybackState("playing");
     if (currentSong.playbackState !== "playing") updateCurrentPlaybackState("playing");
+    else publishPlaybackSync({ state: "playing" }).catch(() => {});
   } else if (state === window.YT.PlayerState.PAUSED) {
     renderPlaybackState("paused");
     if (currentSong.playbackState !== "paused") updateCurrentPlaybackState("paused");
+    else publishPlaybackSync({ state: "paused" }).catch(() => {});
   }
 }
 
@@ -1086,6 +1180,7 @@ async function showSession(sessionId) {
   watchSingerControls(sessionId);
   await setupHostPresence(sessionId);
   await ensurePlayer();
+  startPlaybackSyncHeartbeat();
 }
 
 function showUnlock(sessionId, migration = false) {
@@ -1202,6 +1297,7 @@ async function endSession() {
     try { await hostDisconnectAction?.cancel?.(); } catch {}
     suppressPlayerEventsUntil = Date.now() + 1200;
     try { player?.stopVideo?.(); } catch {}
+    stopPlaybackSyncHeartbeat();
     unsubscribeRoomListeners();
     await remove(ref(db, `sessions/${sessionId}`));
     localStorage.removeItem("openKaraokeHostSession");
