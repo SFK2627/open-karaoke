@@ -22,7 +22,7 @@ import {
   youtubePlayerErrorMessage
 } from "./youtube.js?v=20260910-watchidentity1";
 
-const GUEST_BUILD = "20260910-watchidentity1";
+const GUEST_BUILD = "20260910-precision-sync1";
 
 function uniqueReservationId(guestId, videoId) {
   const randomPart = globalThis.crypto?.randomUUID
@@ -206,12 +206,21 @@ let watchPlayerState = null;
 let watchLoadStartedAt = 0;
 let watchLastPlayCommandAt = 0;
 let watchLastCorrectionAt = 0;
-const WATCH_DRIFT_SEEK_SECONDS = 1.15;
-const WATCH_LOAD_GRACE_MS = 2200;
-const WATCH_PLAY_RETRY_MS = 2200;
-const WATCH_CORRECTION_COOLDOWN_MS = 3200;
+let watchAppliedPlaybackRate = 1;
+// Precision thresholds are intentionally much tighter than the first Watch
+// build. Soft drift is corrected by briefly nudging the muted Guest player's
+// playback rate; larger drift uses a single seek. This avoids visible 1s+ lag
+// without hammering YouTube while it is buffering.
+const WATCH_SYNCED_DRIFT_SECONDS = 0.14;
+const WATCH_RATE_NUDGE_DRIFT_SECONDS = 0.20;
+const WATCH_HARD_SEEK_SECONDS = 0.58;
+const WATCH_TARGET_LEAD_SECONDS = 0.08;
+const WATCH_LOAD_GRACE_MS = 1500;
+const WATCH_PLAY_RETRY_MS = 1200;
+const WATCH_CORRECTION_COOLDOWN_MS = 850;
+const WATCH_HEARTBEAT_STALE_MS = 4500;
 const WATCH_MAX_AUTO_RECOVERY_ATTEMPTS = 2;
-const WATCH_SYNC_TICK_MS = 900;
+const WATCH_SYNC_TICK_MS = 300;
 
 function normalizeGuestTheme(value) {
   return TV_THEME_IDS.has(value) ? value : "classic";
@@ -445,13 +454,50 @@ function expectedWatchPosition(sync = playbackSync, stateOverride = null) {
   if (!sync || !Number.isFinite(Number(sync.position))) return 0;
   let position = Math.max(0, Number(sync.position));
   const effectiveState = stateOverride || sync.state;
-  if (effectiveState === "playing" && Number.isFinite(Number(sync.updatedAt))) {
-    const elapsed = Math.max(0, (serverNowMs() - Number(sync.updatedAt)) / 1000);
+  // `capturedAt` is generated on the Host from Firebase's server-time offset at
+  // the same moment getCurrentTime() is sampled. Fall back to updatedAt for
+  // rooms still running an older Host build.
+  const anchorTime = Number.isFinite(Number(sync.capturedAt))
+    ? Number(sync.capturedAt)
+    : Number(sync.updatedAt);
+  if (effectiveState === "playing" && Number.isFinite(anchorTime)) {
+    const elapsed = Math.max(0, (serverNowMs() - anchorTime) / 1000);
     position += elapsed * (Number(sync.rate) || 1);
+    // Aim a few frames ahead to compensate for the local seek/play command
+    // taking effect after this calculation. The player is muted, so this does
+    // not create echo or audio artifacts.
+    position += WATCH_TARGET_LEAD_SECONDS;
   }
   const duration = Number(sync.duration) || 0;
   if (duration > 0) position = Math.min(duration, position);
   return position;
+}
+
+function resetWatchPlaybackRate() {
+  if (!watchPlayerReady || !watchPlayer) {
+    watchAppliedPlaybackRate = 1;
+    return;
+  }
+  if (Math.abs(watchAppliedPlaybackRate - 1) < 0.001) return;
+  try { watchPlayer.setPlaybackRate?.(1); } catch {}
+  watchAppliedPlaybackRate = 1;
+}
+
+function setWatchCatchupRate(signedDrift) {
+  if (!watchPlayerReady || !watchPlayer) return false;
+  // signedDrift = local - expected. Negative means the phone is behind.
+  const wanted = signedDrift < 0 ? 1.25 : 0.75;
+  let available = [];
+  try { available = watchPlayer.getAvailablePlaybackRates?.() || []; } catch {}
+  if (!Array.isArray(available) || !available.includes(wanted)) return false;
+  if (Math.abs(watchAppliedPlaybackRate - wanted) < 0.001) return true;
+  try {
+    watchPlayer.setPlaybackRate?.(wanted);
+    watchAppliedPlaybackRate = wanted;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function setWatchSyncUi(state, text) {
@@ -519,6 +565,7 @@ function rebuildWatchPlayer({ preserveRecoveryCount = true } = {}) {
   watchLoadStartedAt = 0;
   watchLastPlayCommandAt = 0;
   watchLastCorrectionAt = 0;
+  watchAppliedPlaybackRate = 1;
   if (!preserveRecoveryCount) watchRecoveryAttempts = 0;
   ensureWatchPlayerMount();
 }
@@ -660,6 +707,7 @@ function applyWatchSync({ force = false } = {}) {
     if (watchPlayerReady && watchPlayer && watchLoadedVideoId) {
       try { watchPlayer.stopVideo?.(); } catch {}
     }
+    resetWatchPlaybackRate();
     watchLoadedVideoId = null;
     clearWatchPlayerError();
     watchRecoveryAttempts = 0;
@@ -695,6 +743,7 @@ function applyWatchSync({ force = false } = {}) {
         watchLoadStartedAt = Date.now();
         watchLastPlayCommandAt = 0;
         watchLastCorrectionAt = 0;
+        watchAppliedPlaybackRate = 1;
         if (watchEmpty) watchEmpty.hidden = true;
 
         if (desiredState === "playing") {
@@ -717,7 +766,8 @@ function applyWatchSync({ force = false } = {}) {
 
       let localTime = 0;
       try { localTime = Number(watchPlayer.getCurrentTime?.()) || 0; } catch {}
-      const drift = Math.abs(localTime - expected);
+      const signedDrift = localTime - expected;
+      const drift = Math.abs(signedDrift);
       const now = Date.now();
       const loadAge = watchLoadStartedAt ? now - watchLoadStartedAt : Infinity;
       let actualPlayerState = watchPlayerState;
@@ -728,23 +778,37 @@ function applyWatchSync({ force = false } = {}) {
       const pausedOrCued = actualPlayerState === YTPS.PAUSED || actualPlayerState === YTPS.CUED;
       const unstarted = actualPlayerState === YTPS.UNSTARTED || actualPlayerState == null || Number.isNaN(actualPlayerState);
 
-      // Do not hammer seek/play while YouTube is still loading. On slower phones,
-      // repeated seekTo()/playVideo() calls during BUFFERING can make the iframe
-      // restart its media request and can surface a generic Playback ID error.
+      // Precision lock strategy:
+      // 1) > ~0.6s drift: one hard seek to the projected Host frame.
+      // 2) ~0.2-0.6s drift: briefly run the muted phone at 1.25x/0.75x.
+      // 3) < ~0.14s drift: restore exactly 1x and treat it as locked.
+      // We never seek repeatedly while BUFFERING, which preserves the playback
+      // recovery fix from the previous build.
       if (desiredState === "playing") {
         if (locallyPlaying) {
           if (
-            drift > WATCH_DRIFT_SEEK_SECONDS &&
+            drift >= WATCH_HARD_SEEK_SECONDS &&
             loadAge > WATCH_LOAD_GRACE_MS &&
             now - watchLastCorrectionAt > WATCH_CORRECTION_COOLDOWN_MS
           ) {
+            resetWatchPlaybackRate();
             watchPlayer.seekTo(Math.max(0, expected), true);
             watchLastCorrectionAt = now;
+          } else if (drift >= WATCH_RATE_NUDGE_DRIFT_SECONDS && loadAge > WATCH_LOAD_GRACE_MS) {
+            const rateAdjusted = setWatchCatchupRate(signedDrift);
+            if (!rateAdjusted && now - watchLastCorrectionAt > WATCH_CORRECTION_COOLDOWN_MS) {
+              // Some videos expose only 1x playback. In that case use a precise
+              // seek rather than accepting a visible quarter/half-second lag.
+              watchPlayer.seekTo(Math.max(0, expected), true);
+              watchLastCorrectionAt = now;
+            }
+          } else if (drift <= WATCH_SYNCED_DRIFT_SECONDS) {
+            resetWatchPlaybackRate();
           }
         } else if (!buffering && (pausedOrCued || unstarted) && !watchAutoplayBlocked) {
+          resetWatchPlaybackRate();
           if (now - watchLastPlayCommandAt > WATCH_PLAY_RETRY_MS) {
-            // Seek only once before retrying playback; never seek on every sync tick.
-            if (drift > WATCH_DRIFT_SEEK_SECONDS && loadAge > WATCH_LOAD_GRACE_MS) {
+            if (drift > WATCH_RATE_NUDGE_DRIFT_SECONDS && loadAge > WATCH_LOAD_GRACE_MS) {
               watchPlayer.seekTo(Math.max(0, expected), true);
               watchLastCorrectionAt = now;
             }
@@ -753,9 +817,10 @@ function applyWatchSync({ force = false } = {}) {
           }
         }
       } else if (desiredState === "paused") {
+        resetWatchPlaybackRate();
         if (locallyPlaying || buffering) watchPlayer.pauseVideo?.();
         if (
-          drift > WATCH_DRIFT_SEEK_SECONDS &&
+          drift > WATCH_RATE_NUDGE_DRIFT_SECONDS &&
           loadAge > WATCH_LOAD_GRACE_MS &&
           now - watchLastCorrectionAt > WATCH_CORRECTION_COOLDOWN_MS
         ) {
@@ -763,23 +828,25 @@ function applyWatchSync({ force = false } = {}) {
           watchLastCorrectionAt = now;
         }
       } else if (desiredState === "stopped" || desiredState === "error") {
+        resetWatchPlaybackRate();
         if (locallyPlaying || buffering) watchPlayer.pauseVideo?.();
       }
 
-      const heartbeatAge = sync?.updatedAt ? Math.max(0, serverNowMs() - Number(sync.updatedAt)) : Infinity;
+      const heartbeatAnchor = Number.isFinite(Number(sync?.capturedAt)) ? Number(sync.capturedAt) : Number(sync?.updatedAt);
+      const heartbeatAge = Number.isFinite(heartbeatAnchor) ? Math.max(0, serverNowMs() - heartbeatAnchor) : Infinity;
       const autoplayGraceElapsed = Date.now() - watchLastLoadAttemptAt > WATCH_LOAD_GRACE_MS;
 
       if (!syncMatchesSong || !sync?.updatedAt) {
         setWatchSyncUi("adjusting", "SYNCING…");
-      } else if (desiredState === "playing" && heartbeatAge > 12000) {
+      } else if (desiredState === "playing" && heartbeatAge > WATCH_HEARTBEAT_STALE_MS) {
         setWatchSyncUi("reconnecting", "RECONNECTING");
       } else if (desiredState === "playing" && !locallyPlaying && !buffering && autoplayGraceElapsed) {
         // Do not say SYNCING forever when the only blocker is the browser's
         // autoplay policy. The YouTube iframe is clickable, so one direct tap
         // on its Play button starts the muted second display.
         setWatchSyncUi("adjusting", "TAP ▶ TO START");
-      } else if (drift > WATCH_DRIFT_SEEK_SECONDS) {
-        setWatchSyncUi("adjusting", "ADJUSTING…");
+      } else if (drift > WATCH_SYNCED_DRIFT_SECONDS) {
+        setWatchSyncUi("adjusting", watchAppliedPlaybackRate === 1 ? "FINE-TUNING…" : "LOCKING…");
       } else if (desiredState === "paused") {
         setWatchSyncUi("paused", "PAUSED");
       } else if (desiredState === "stopped") {

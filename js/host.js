@@ -108,14 +108,24 @@ const handledSingerRequestIds = new Set();
 let autoStartTimer = null;
 let autoStartInFlight = false;
 
-// Guest Watch uses a timestamped playback snapshot instead of writing the
-// position every second. Guests project the current position locally between
-// heartbeats, keeping the room responsive without noisy Firebase traffic.
-const PLAYBACK_SYNC_INTERVAL_MS = 4000;
+// Guest Watch uses timestamped playback snapshots. Guests project the current
+// position locally between snapshots, while a precision 1-second heartbeat
+// corrects for real Host-side buffering and device drift.
+// Precision Watch sync: the heartbeat corrects for real Host-side
+// buffering, while capturedAt timestamps the exact player position sample
+// using Firebase's server clock offset. Guests interpolate between snapshots.
+const PLAYBACK_SYNC_INTERVAL_MS = 1000;
 let playbackSyncTimer = null;
 let playbackSyncWriteInFlight = false;
 let playbackSyncPending = null;
 let playbackSyncRevision = 0;
+let hostServerTimeOffsetMs = 0;
+let hostServerTimeOffsetReady = false;
+let unsubscribeServerTimeOffset = null;
+
+function hostServerNowMs() {
+  return Date.now() + Number(hostServerTimeOffsetMs || 0);
+}
 
 const DEFAULT_AMBILIGHT_COLORS = [
   "rgba(139, 92, 246, .46)",
@@ -377,7 +387,7 @@ function buildGuestUrl(sessionId) {
   const url = new URL("./guest.html", window.location.href);
   url.search = "";
   url.searchParams.set("session", sessionId);
-  url.searchParams.set("v", "20260910-watchdisplay1");
+  url.searchParams.set("v", "20260910-precision-sync1");
   return url.toString();
 }
 
@@ -603,7 +613,11 @@ async function publishPlaybackSync({ state = null, clear = false } = {}) {
     const normalizedState = ["playing", "paused", "stopped", "error"].includes(state)
       ? state
       : (["playing", "paused", "stopped", "error"].includes(currentSong.playbackState) ? currentSong.playbackState : "playing");
+    // Capture the player time and its server-clock timestamp together before
+    // the network write begins. This removes the old bias where `position` was
+    // sampled first but `updatedAt` represented the later Firebase commit time.
     const position = Math.max(0, safePlayerNumber("getCurrentTime", 0));
+    const capturedAt = hostServerTimeOffsetReady ? Math.round(hostServerNowMs()) : null;
     const duration = Math.max(0, safePlayerNumber("getDuration", 0));
     const rate = Math.max(0.25, safePlayerNumber("getPlaybackRate", 1) || 1);
     playbackSyncRevision += 1;
@@ -616,6 +630,7 @@ async function publishPlaybackSync({ state = null, clear = false } = {}) {
       state: normalizedState,
       rate,
       revision: playbackSyncRevision,
+      capturedAt,
       updatedAt: serverTimestamp()
     });
   } catch (error) {
@@ -938,8 +953,8 @@ async function updateCurrentPlaybackState(state) {
     await update(ref(db, `sessions/${activeSessionId}/currentSong`), {
       playbackState: state
     });
-    // State transitions are pushed immediately; the 4-second heartbeat only
-    // maintains drift correction while a song is actively playing.
+    // State transitions are pushed immediately; the precision heartbeat
+    // maintains sub-second drift correction while a song is actively playing.
     await publishPlaybackSync({ state });
   } catch (error) {
     console.error(error);
@@ -1278,12 +1293,14 @@ function unsubscribeRoomListeners() {
   unsubscribeSettings?.();
   unsubscribeCurrentSong?.();
   unsubscribeControlRequests?.();
+  unsubscribeServerTimeOffset?.();
   unsubscribeGuests = null;
   unsubscribeConnected = null;
   unsubscribeQueue = null;
   unsubscribeSettings = null;
   unsubscribeCurrentSong = null;
   unsubscribeControlRequests = null;
+  unsubscribeServerTimeOffset = null;
 }
 
 async function endSession() {
@@ -1331,6 +1348,16 @@ async function init() {
 
   try {
     ({ db, user } = await initFirebase());
+
+    unsubscribeServerTimeOffset?.();
+    unsubscribeServerTimeOffset = onValue(ref(db, ".info/serverTimeOffset"), snapshot => {
+      hostServerTimeOffsetMs = Number(snapshot.val()) || 0;
+      hostServerTimeOffsetReady = true;
+      if (activeSessionId && currentSong) {
+        publishPlaybackSync({ state: currentSong.playbackState || "playing" }).catch(() => {});
+      }
+    });
+
     connectionStatus.textContent = "Firebase Ready";
     connectionStatus.dataset.state = "online";
 
