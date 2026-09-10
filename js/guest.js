@@ -20,7 +20,7 @@ import {
   searchYouTubeVideos
 } from "./youtube.js";
 
-const GUEST_BUILD = "20260910-themesync1";
+const GUEST_BUILD = "20260910-stylepack20";
 
 function uniqueReservationId(guestId, videoId) {
   const randomPart = globalThis.crypto?.randomUUID
@@ -76,7 +76,7 @@ const guestTabPanels = [...document.querySelectorAll("[data-guest-panel]")];
 const guestThemeBadge = document.querySelector("#guestThemeBadge");
 const themeColorMeta = document.querySelector('meta[name="theme-color"]');
 
-const TV_THEME_IDS = new Set(["classic", "neon", "studio", "disco", "ocean", "christmas", "spider", "gold", "pink"]);
+const TV_THEME_IDS = new Set(["classic", "neon", "studio", "disco", "ocean", "christmas", "spider", "gold", "pink", "minimal", "maximal", "futuristic", "vector", "collage", "retro", "cyberpunk", "popart", "glass", "clay", "pixel", "editorial", "y2k", "swiss", "surreal", "bohemian", "victorian", "graffiti", "aurora", "handwritten"]);
 const TV_THEME_LABELS = {
   classic: "Classic Videoke",
   neon: "Neon Night",
@@ -86,7 +86,27 @@ const TV_THEME_LABELS = {
   christmas: "Christmas",
   spider: "Spider Hero",
   gold: "Gold Luxury",
-  pink: "Pink Cute"
+  pink: "Pink Cute",
+  minimal: "Minimalism",
+  maximal: "Maximalism",
+  futuristic: "Futuristic",
+  vector: "Vector Art",
+  collage: "Collage Art",
+  retro: "Retro",
+  cyberpunk: "Cyberpunk",
+  popart: "Pop Art",
+  glass: "Glass Morphism",
+  clay: "Clay Style",
+  pixel: "Pixel Art",
+  editorial: "Editorial",
+  y2k: "Y2K",
+  swiss: "Swiss Design",
+  surreal: "Surreal Design",
+  bohemian: "Bohemian",
+  victorian: "Victorian Style",
+  graffiti: "Graffiti",
+  aurora: "Aurora",
+  handwritten: "Handwritten"
 };
 const TV_THEME_META_COLORS = {
   classic: "#090a0e",
@@ -97,7 +117,27 @@ const TV_THEME_META_COLORS = {
   christmas: "#0b2418",
   spider: "#071b36",
   gold: "#17120a",
-  pink: "#3a1730"
+  pink: "#3a1730",
+  minimal: "#f2f1ed",
+  maximal: "#43114f",
+  futuristic: "#06131c",
+  vector: "#143d6b",
+  collage: "#e8dcc7",
+  retro: "#5b321c",
+  cyberpunk: "#0b0b12",
+  popart: "#ffd93b",
+  glass: "#18243e",
+  clay: "#f4d7c9",
+  pixel: "#111022",
+  editorial: "#f4f0e8",
+  y2k: "#d7e7f4",
+  swiss: "#f7f7f5",
+  surreal: "#331b63",
+  bohemian: "#6f3f2f",
+  victorian: "#241613",
+  graffiti: "#191a20",
+  aurora: "#071521",
+  handwritten: "#f1ead8"
 };
 
 let db;

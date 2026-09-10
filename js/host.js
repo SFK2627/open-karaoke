@@ -85,7 +85,7 @@ const tvQrSessionCode = document.querySelector("#tvQrSessionCode");
 let db;
 let user;
 let activeSessionId = null;
-const TV_THEME_IDS = new Set(["classic", "neon", "studio", "disco", "ocean", "christmas", "spider", "gold", "pink"]);
+const TV_THEME_IDS = new Set(["classic", "neon", "studio", "disco", "ocean", "christmas", "spider", "gold", "pink", "minimal", "maximal", "futuristic", "vector", "collage", "retro", "cyberpunk", "popart", "glass", "clay", "pixel", "editorial", "y2k", "swiss", "surreal", "bohemian", "victorian", "graffiti", "aurora", "handwritten"]);
 let activeTvTheme = "classic";
 let tvThemeTransitionTimer = null;
 let reservationsLocked = false;
