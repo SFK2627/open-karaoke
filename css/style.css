@@ -4246,3 +4246,475 @@ body.tv-mode #tvRetroBar[data-playback="paused"] .tv-led-dot {
     width: 7px;
   }
 }
+
+
+/* =========================================================
+   TV MODE FINAL - GRID FIX + PREMIUM VIDEOKE BAR
+   Root fix: older TV rules left grid-row 3/4 on nested children.
+   These explicit placements keep Controls | Now Playing | Level visible.
+   ========================================================= */
+body.tv-mode .player-card {
+  grid-template-rows: 50px minmax(0, 1fr) 86px !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  row-gap: 0 !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+body.tv-mode .tv-karaoke-header {
+  grid-row: 1 !important;
+  min-height: 50px !important;
+  height: 50px !important;
+  padding: 4px 8px !important;
+  gap: 8px !important;
+  border-bottom: 1px solid rgba(255, 154, 47, .16) !important;
+  background: linear-gradient(180deg, rgba(7, 11, 20, .99), rgba(5, 7, 14, .99)) !important;
+}
+
+body.tv-mode .tv-up-next-area { gap: 7px !important; }
+
+body.tv-mode .tv-up-next-label {
+  min-width: 64px !important;
+  padding: 0 8px !important;
+  border-radius: 10px !important;
+  font-size: .58rem !important;
+  letter-spacing: .18em !important;
+  background: linear-gradient(180deg, rgba(80, 64, 150, .95), rgba(34, 28, 73, .98)) !important;
+  border: 1px solid rgba(160, 136, 255, .36) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 5px 12px rgba(0,0,0,.2) !important;
+}
+
+body.tv-mode .tv-queue-strip {
+  height: 40px !important;
+  gap: 6px !important;
+}
+
+body.tv-mode .tv-queue-empty {
+  padding: 0 12px !important;
+  border-radius: 10px !important;
+  font-size: .75rem !important;
+  background: rgba(255,255,255,.025) !important;
+  border-color: rgba(255, 154, 47, .14) !important;
+}
+
+body.tv-mode .tv-queue-card {
+  flex: 0 0 160px !important;
+  grid-template-columns: 43px minmax(0,1fr) !important;
+  gap: 6px !important;
+  padding: 4px 6px 4px 4px !important;
+  border-radius: 9px !important;
+  border-color: rgba(255, 154, 47, .18) !important;
+  background: linear-gradient(180deg, rgba(18, 22, 34, .98), rgba(8, 10, 17, .98)) !important;
+}
+
+body.tv-mode .tv-queue-card img {
+  width: 43px !important;
+  border-radius: 6px !important;
+}
+
+body.tv-mode .tv-queue-number {
+  top: 2px !important;
+  left: 2px !important;
+  min-width: 16px !important;
+  height: 16px !important;
+  font-size: .55rem !important;
+  border-radius: 5px !important;
+}
+
+body.tv-mode .tv-queue-text { gap: 1px !important; }
+body.tv-mode .tv-queue-text strong { font-size: .64rem !important; }
+body.tv-mode .tv-queue-text small { font-size: .54rem !important; }
+
+body.tv-mode .tv-icon-btn {
+  min-width: 50px !important;
+  height: 40px !important;
+  padding: 4px 6px !important;
+  border-radius: 9px !important;
+  font-size: .9rem !important;
+}
+body.tv-mode .tv-icon-btn span { font-size: .48rem !important; }
+
+body.tv-mode .player-shell {
+  grid-row: 2 !important;
+  align-self: center !important;
+  justify-self: center !important;
+  width: min(calc(100vw - 14px), calc((100dvh - 144px) * 1.7777778)) !important;
+  height: min(calc(100dvh - 144px), calc((100vw - 14px) / 1.7777778)) !important;
+  max-width: calc(100vw - 14px) !important;
+  max-height: calc(100dvh - 144px) !important;
+  aspect-ratio: 16 / 9 !important;
+  margin: 3px auto !important;
+  border-radius: 14px !important;
+  z-index: 1 !important;
+}
+
+body.tv-mode .player-stage,
+body.tv-mode #youtubePlayer,
+body.tv-mode #youtubePlayer iframe {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+body.tv-mode .tv-retro-bar {
+  grid-row: 3 !important;
+  grid-column: 1 !important;
+  grid-template-columns: 260px minmax(0, 1fr) 230px !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  min-height: 82px !important;
+  height: 82px !important;
+  max-height: 82px !important;
+  margin: 0 8px 4px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: 13px !important;
+  border: 1px solid rgba(255, 133, 0, .86) !important;
+  background: linear-gradient(180deg, rgba(35, 22, 16, .99), rgba(7, 7, 10, .99)) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 113, 0, .17),
+    0 8px 20px rgba(0,0,0,.38),
+    inset 0 1px 0 rgba(255, 192, 117, .16),
+    inset 0 -10px 20px rgba(0,0,0,.24) !important;
+  z-index: 8 !important;
+}
+
+/* Critical reset of stale child grid rows from old TV CSS. */
+body.tv-mode .tv-retro-controls {
+  grid-row: 1 !important;
+  grid-column: 1 !important;
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  width: auto !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  align-self: stretch !important;
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 5px !important;
+  padding: 19px 8px 7px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-right: 1px solid rgba(255, 139, 22, .45) !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  background:
+    linear-gradient(180deg, rgba(42, 28, 21, .96), rgba(12, 11, 14, .99)) !important;
+}
+
+body.tv-mode .tv-retro-controls::before {
+  content: "KARAOKE CONTROL" !important;
+  top: 5px !important;
+  left: 9px !important;
+  font-size: .46rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .2em !important;
+  color: rgba(255, 200, 126, .9) !important;
+}
+
+body.tv-mode .tv-retro-controls::after,
+body.tv-mode .tv-retro-info::after,
+body.tv-mode .tv-retro-status::after {
+  display: none !important;
+}
+
+body.tv-mode .tv-retro-controls .btn {
+  min-width: 0 !important;
+  min-height: 48px !important;
+  height: 48px !important;
+  padding: 4px 2px !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  border: 1px solid rgba(255, 173, 82, .25) !important;
+  background: linear-gradient(180deg, rgba(49, 51, 59, .98), rgba(10, 11, 15, .99)) !important;
+  color: #fff1d8 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.09), inset 0 -5px 8px rgba(0,0,0,.23) !important;
+  white-space: nowrap !important;
+}
+
+body.tv-mode .tv-retro-controls #playBtn,
+body.tv-mode .tv-retro-controls #nextBtn {
+  background: linear-gradient(180deg, rgba(158, 100, 255, .98), rgba(93, 49, 224, .99)) !important;
+  border-color: rgba(194, 159, 255, .55) !important;
+  color: #fff !important;
+  box-shadow: 0 0 12px rgba(121, 74, 255, .22), inset 0 1px 0 rgba(255,255,255,.15) !important;
+}
+
+body.tv-mode .tv-control-icon {
+  display: block !important;
+  font-size: 1rem !important;
+  line-height: 1 !important;
+}
+body.tv-mode .tv-control-label {
+  display: block !important;
+  font-size: .44rem !important;
+  line-height: 1 !important;
+  letter-spacing: .08em !important;
+}
+
+body.tv-mode .tv-retro-info {
+  grid-row: 1 !important;
+  grid-column: 2 !important;
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  width: auto !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  align-self: stretch !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.55fr) minmax(155px, .8fr) !important;
+  gap: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-right: 1px solid rgba(255, 139, 22, .45) !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  background: linear-gradient(180deg, rgba(39, 25, 18, .96), rgba(11, 10, 12, .99)) !important;
+}
+
+body.tv-mode .tv-retro-panel {
+  min-width: 0 !important;
+  height: 100% !important;
+  padding: 9px 12px 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  overflow: hidden !important;
+}
+body.tv-mode .tv-retro-panel + .tv-retro-panel {
+  border-left: 1px solid rgba(255, 139, 22, .38) !important;
+}
+body.tv-mode .tv-retro-label {
+  margin: 0 !important;
+  color: #ffb258 !important;
+  font-size: .52rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .18em !important;
+  line-height: 1 !important;
+}
+
+body.tv-mode .tv-marquee-wrap {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  border-radius: 7px !important;
+  border: 1px solid rgba(255, 153, 54, .14) !important;
+  background: linear-gradient(180deg, rgba(9, 10, 13, .95), rgba(20, 13, 9, .94)) !important;
+  box-shadow: inset 0 0 12px rgba(255, 126, 0, .035) !important;
+}
+body.tv-mode .tv-marquee {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  padding: 4px 8px 5px !important;
+}
+body.tv-mode .tv-marquee-text {
+  display: inline-block !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  padding: 0 !important;
+  white-space: nowrap !important;
+  transform: translateX(0);
+  animation: none !important;
+  will-change: transform;
+}
+body.tv-mode .tv-marquee.is-scrolling .tv-marquee-text {
+  animation: tvMarqueeOverflow var(--marquee-duration, 10s) ease-in-out infinite !important;
+}
+@keyframes tvMarqueeOverflow {
+  0%, 12% { transform: translateX(0); }
+  72%, 86% { transform: translateX(calc(-1 * var(--marquee-distance, 0px))); }
+  100% { transform: translateX(0); }
+}
+
+body.tv-mode #nowPlayingTitle.tv-marquee-text {
+  color: #ff8512 !important;
+  font-size: clamp(.88rem, 1.5vw, 1.34rem) !important;
+  font-weight: 950 !important;
+  letter-spacing: .015em !important;
+  line-height: 1.05 !important;
+  text-transform: uppercase !important;
+  text-shadow: 0 0 11px rgba(255, 117, 0, .13) !important;
+}
+body.tv-mode #nowPlayingSinger.tv-marquee-text {
+  color: #fff0da !important;
+  font-size: clamp(.7rem, .95vw, .88rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.05 !important;
+}
+
+body.tv-mode .tv-retro-status {
+  grid-row: 1 !important;
+  grid-column: 3 !important;
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  width: auto !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  align-self: stretch !important;
+  display: grid !important;
+  grid-template-rows: 10px 27px 8px 20px !important;
+  align-items: center !important;
+  justify-items: center !important;
+  gap: 3px !important;
+  margin: 0 !important;
+  padding: 7px 10px 6px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  background: linear-gradient(180deg, rgba(38, 25, 18, .97), rgba(9, 9, 11, .99)) !important;
+}
+body.tv-mode .tv-retro-status::before { display: none !important; }
+
+body.tv-mode .tv-retro-meter-head {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  font-size: .42rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .18em !important;
+  color: rgba(255, 198, 126, .9) !important;
+  line-height: 1 !important;
+}
+body.tv-mode .tv-meter-label.right { color: #57f3ba !important; }
+
+body.tv-mode .tv-equalizer {
+  width: 100% !important;
+  height: 27px !important;
+  min-height: 27px !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: end !important;
+  justify-content: center !important;
+  gap: 3px !important;
+}
+body.tv-mode .tv-eq-bar {
+  width: 6px !important;
+  min-width: 6px !important;
+  border-radius: 3px 3px 1px 1px !important;
+  background: linear-gradient(180deg, #ffd892 0%, #ff9a22 48%, #ff5e00 100%) !important;
+  box-shadow: 0 0 5px rgba(255, 145, 32, .45), 0 0 11px rgba(255, 94, 0, .13) !important;
+  transform-origin: bottom center !important;
+}
+
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-eq-bar {
+  animation: tvEqNatural 1.02s ease-in-out infinite !important;
+  opacity: 1 !important;
+}
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-eq-bar:nth-child(2n) { animation-duration: .82s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-eq-bar:nth-child(3n) { animation-duration: 1.19s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-eq-bar:nth-child(4n) { animation-duration: .93s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-eq-bar:nth-child(5n) { animation-duration: 1.31s !important; }
+
+@keyframes tvEqNatural {
+  0%,100% { transform: scaleY(.25); opacity: .58; }
+  18% { transform: scaleY(.88); opacity: .96; }
+  37% { transform: scaleY(.48); opacity: .78; }
+  56% { transform: scaleY(1.02); opacity: 1; }
+  76% { transform: scaleY(.64); opacity: .88; }
+  90% { transform: scaleY(.82); opacity: .95; }
+}
+
+body.tv-mode #tvRetroBar:not([data-playback="playing"]) .tv-eq-bar {
+  animation: none !important;
+  transform: scaleY(.28) !important;
+  opacity: .38 !important;
+}
+
+body.tv-mode .tv-led-meter {
+  width: 100% !important;
+  height: 8px !important;
+  display: grid !important;
+  grid-template-columns: repeat(16, minmax(0,1fr)) !important;
+  gap: 2px !important;
+}
+body.tv-mode .tv-led-dot {
+  height: 7px !important;
+  border-radius: 2px !important;
+  background: linear-gradient(180deg, rgba(15, 48, 32, .95), rgba(4, 20, 12, .95)) !important;
+  border: 1px solid rgba(79, 255, 178, .17) !important;
+  opacity: .38 !important;
+  animation: none !important;
+}
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot {
+  animation: tvLedRun 1.15s linear infinite !important;
+}
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(n+11):nth-child(-n+13) {
+  --led-on: #ffd447;
+  --led-glow: rgba(255, 201, 52, .55);
+}
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(n+14) {
+  --led-on: #ff5e3a;
+  --led-glow: rgba(255, 78, 47, .55);
+}
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(1) { animation-delay: -.05s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(2) { animation-delay: -.11s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(3) { animation-delay: -.17s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(4) { animation-delay: -.23s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(5) { animation-delay: -.29s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(6) { animation-delay: -.35s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(7) { animation-delay: -.41s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(8) { animation-delay: -.47s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(9) { animation-delay: -.53s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(10) { animation-delay: -.59s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(11) { animation-delay: -.65s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(12) { animation-delay: -.71s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(13) { animation-delay: -.77s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(14) { animation-delay: -.83s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(15) { animation-delay: -.89s !important; }
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(16) { animation-delay: -.95s !important; }
+
+@keyframes tvLedRun {
+  0%, 100% {
+    background: linear-gradient(180deg, rgba(15, 48, 32, .95), rgba(4, 20, 12, .95));
+    box-shadow: none;
+    opacity: .32;
+  }
+  36%, 55% {
+    background: linear-gradient(180deg, #caffdf 0%, var(--led-on, #35f59f) 43%, var(--led-on, #35f59f) 100%);
+    box-shadow: 0 0 5px var(--led-glow, rgba(53,245,159,.55)), 0 0 10px var(--led-glow, rgba(53,245,159,.25));
+    opacity: 1;
+  }
+}
+
+body.tv-mode .tv-retro-state-line {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+body.tv-mode .tv-retro-chip {
+  min-width: 82px !important;
+  min-height: 18px !important;
+  height: 18px !important;
+  padding: 2px 8px !important;
+  border-radius: 999px !important;
+  font-size: .48rem !important;
+  line-height: 1 !important;
+  letter-spacing: .13em !important;
+  font-weight: 900 !important;
+}
+
+@media (max-width: 1100px) {
+  body.tv-mode .tv-retro-bar {
+    grid-template-columns: 225px minmax(0, 1fr) 190px !important;
+  }
+  body.tv-mode .tv-retro-controls { padding-left: 6px !important; padding-right: 6px !important; gap: 4px !important; }
+  body.tv-mode .tv-control-icon { font-size: .9rem !important; }
+  body.tv-mode .tv-control-label { font-size: .38rem !important; }
+  body.tv-mode .tv-retro-info { grid-template-columns: minmax(0, 1.35fr) minmax(125px, .75fr) !important; }
+}

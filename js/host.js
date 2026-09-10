@@ -59,6 +59,8 @@ const playerEmpty = document.querySelector("#playerEmpty");
 const nowPlayingTitle = document.querySelector("#nowPlayingTitle");
 const nowPlayingSinger = document.querySelector("#nowPlayingSinger");
 const playbackStateEl = document.querySelector("#playbackState");
+const nowPlayingTitleMarquee = document.querySelector("#nowPlayingTitleMarquee");
+const nowPlayingSingerMarquee = document.querySelector("#nowPlayingSingerMarquee");
 const tvRetroBar = document.querySelector("#tvRetroBar");
 const playBtn = document.querySelector("#playBtn");
 const pauseBtn = document.querySelector("#pauseBtn");
@@ -491,6 +493,34 @@ function renderReservationState(locked) {
   hostQueueNotice.textContent = reservationsLocked ? "🔒 New guest reservations are currently locked. Existing songs remain in the queue." : "";
 }
 
+function updateTvMarquee(container, textElement) {
+  if (!container || !textElement) return;
+
+  container.classList.remove("is-scrolling");
+  container.style.removeProperty("--marquee-distance");
+  container.style.removeProperty("--marquee-duration");
+
+  requestAnimationFrame(() => {
+    const overflow = Math.max(0, textElement.scrollWidth - container.clientWidth);
+    if (overflow <= 12) return;
+
+    const distance = Math.ceil(overflow + 18);
+    const duration = Math.min(18, Math.max(8, 7 + (distance / 55)));
+    container.style.setProperty("--marquee-distance", `${distance}px`);
+    container.style.setProperty("--marquee-duration", `${duration.toFixed(1)}s`);
+    container.classList.add("is-scrolling");
+  });
+}
+
+function refreshTvMarquees() {
+  updateTvMarquee(nowPlayingTitleMarquee, nowPlayingTitle);
+  updateTvMarquee(nowPlayingSingerMarquee, nowPlayingSinger);
+}
+
+function scheduleTvMarqueeRefresh() {
+  requestAnimationFrame(() => requestAnimationFrame(refreshTvMarquees));
+}
+
 function renderPlaybackState(state) {
   const normalized = ["playing", "paused", "stopped", "error"].includes(state) ? state : "idle";
   playbackStateEl.dataset.state = normalized;
@@ -509,6 +539,7 @@ function renderCurrentSong(song) {
     nowPlayingTitle.title = "Waiting for a song…";
     nowPlayingSinger.textContent = "Waiting for singer…";
     nowPlayingSinger.title = "Waiting for singer…";
+    scheduleTvMarqueeRefresh();
     playerEmpty.hidden = false;
     renderPlaybackState("idle");
     updateAmbilightForSong(null);
@@ -522,6 +553,7 @@ function renderCurrentSong(song) {
   nowPlayingTitle.title = nextTitle;
   nowPlayingSinger.textContent = nextSinger;
   nowPlayingSinger.title = nextSinger;
+  scheduleTvMarqueeRefresh();
   playerEmpty.hidden = true;
   renderPlaybackState(currentSong.playbackState || "playing");
   updateAmbilightForSong(currentSong);
@@ -1049,6 +1081,7 @@ function toggleQrOverlay() {
 async function enterTvMode() {
   document.body.classList.add("tv-mode");
   fullscreenBtn.textContent = "⛶ Exit TV";
+  scheduleTvMarqueeRefresh();
   try {
     if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
       await document.documentElement.requestFullscreen();
@@ -1061,6 +1094,7 @@ async function enterTvMode() {
 async function exitTvMode() {
   setQrOverlay(false);
   document.body.classList.remove("tv-mode");
+  scheduleTvMarqueeRefresh();
   fullscreenBtn.textContent = "📺 TV Mode";
   try {
     if (document.fullscreenElement) await document.exitFullscreen();
@@ -1382,7 +1416,10 @@ document.addEventListener("fullscreenchange", () => {
   document.body.classList.toggle("tv-mode", fullscreen);
   fullscreenBtn.textContent = fullscreen ? "⛶ Exit TV" : "📺 TV Mode";
   if (!fullscreen && !document.body.classList.contains("tv-mode")) setQrOverlay(false);
+  scheduleTvMarqueeRefresh();
 });
+
+window.addEventListener("resize", scheduleTvMarqueeRefresh);
 
 document.addEventListener("keydown", event => {
   if (!activeSessionId || sessionPanel.hidden) return;
