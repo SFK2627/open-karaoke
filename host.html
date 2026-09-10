@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Host</title>
-  <link rel="stylesheet" href="./css/style.css?v=20260910-premium-retro2">
+  <link rel="stylesheet" href="./css/style.css?v=20260910-premium-retro3">
 </head>
 <body class="host-page">
   <header class="topbar">
@@ -101,15 +101,27 @@
           <div class="now-playing-host tv-retro-info">
             <div class="tv-retro-panel tv-retro-now">
               <p class="eyebrow tv-retro-label">NOW PLAYING</p>
-              <h3 id="nowPlayingTitle">Waiting for a song…</h3>
+              <div class="tv-marquee-wrap">
+                <div class="tv-marquee" id="nowPlayingTitleMarquee">
+                  <span id="nowPlayingTitle" class="tv-marquee-text">Waiting for a song…</span>
+                </div>
+              </div>
             </div>
             <div class="tv-retro-panel tv-retro-reserved">
               <p class="eyebrow tv-retro-label">RESERVED BY</p>
-              <p id="nowPlayingSinger" class="muted now-playing-singer">Waiting for singer…</p>
+              <div class="tv-marquee-wrap compact">
+                <div class="tv-marquee compact" id="nowPlayingSingerMarquee">
+                  <span id="nowPlayingSinger" class="muted now-playing-singer tv-marquee-text">Waiting for singer…</span>
+                </div>
+              </div>
             </div>
           </div>
 
           <div class="tv-retro-status" aria-label="Playback status">
+            <div class="tv-retro-meter-head" aria-hidden="true">
+              <span class="tv-meter-label">LEVEL</span>
+              <span class="tv-meter-label right">STATUS</span>
+            </div>
             <div class="tv-equalizer" aria-hidden="true">
               <span class="tv-eq-bar"></span>
               <span class="tv-eq-bar"></span>
@@ -124,7 +136,27 @@
               <span class="tv-eq-bar"></span>
               <span class="tv-eq-bar"></span>
             </div>
-            <span class="playback-chip tv-retro-chip" id="playbackState" data-state="idle">IDLE</span>
+            <div class="tv-led-meter" aria-hidden="true">
+              <span class="tv-led-dot"></span>
+              <span class="tv-led-dot"></span>
+              <span class="tv-led-dot"></span>
+              <span class="tv-led-dot"></span>
+              <span class="tv-led-dot"></span>
+              <span class="tv-led-dot"></span>
+              <span class="tv-led-dot"></span>
+              <span class="tv-led-dot"></span>
+              <span class="tv-led-dot"></span>
+              <span class="tv-led-dot"></span>
+              <span class="tv-led-dot"></span>
+              <span class="tv-led-dot"></span>
+              <span class="tv-led-dot"></span>
+              <span class="tv-led-dot"></span>
+              <span class="tv-led-dot"></span>
+              <span class="tv-led-dot"></span>
+            </div>
+            <div class="tv-retro-state-line">
+              <span class="playback-chip tv-retro-chip" id="playbackState" data-state="idle">IDLE</span>
+            </div>
           </div>
         </div>
 
@@ -237,6 +269,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module" src="./js/host.js?v=20260909-realtimesync1"></script>
+  <script type="module" src="./js/host.js?v=20260910-premiumretro3"></script>
 </body>
 </html>

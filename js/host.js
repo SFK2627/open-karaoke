@@ -59,6 +59,7 @@ const playerEmpty = document.querySelector("#playerEmpty");
 const nowPlayingTitle = document.querySelector("#nowPlayingTitle");
 const nowPlayingSinger = document.querySelector("#nowPlayingSinger");
 const playbackStateEl = document.querySelector("#playbackState");
+const tvRetroBar = document.querySelector("#tvRetroBar");
 const playBtn = document.querySelector("#playBtn");
 const pauseBtn = document.querySelector("#pauseBtn");
 const stopBtn = document.querySelector("#stopBtn");
@@ -495,6 +496,7 @@ function renderPlaybackState(state) {
   playbackStateEl.dataset.state = normalized;
   playbackStateEl.textContent = normalized.toUpperCase();
   playerCard?.setAttribute("data-playback", normalized);
+  tvRetroBar?.setAttribute("data-playback", normalized);
 }
 
 function renderCurrentSong(song) {
@@ -504,7 +506,9 @@ function renderCurrentSong(song) {
 
   if (!currentSong) {
     nowPlayingTitle.textContent = "Waiting for a song…";
+    nowPlayingTitle.title = "Waiting for a song…";
     nowPlayingSinger.textContent = "Waiting for singer…";
+    nowPlayingSinger.title = "Waiting for singer…";
     playerEmpty.hidden = false;
     renderPlaybackState("idle");
     updateAmbilightForSong(null);
@@ -512,8 +516,12 @@ function renderCurrentSong(song) {
     return;
   }
 
-  nowPlayingTitle.textContent = currentSong.title || "Untitled song";
-  nowPlayingSinger.textContent = currentSong.singerName || "Guest";
+  const nextTitle = currentSong.title || "Untitled song";
+  const nextSinger = currentSong.singerName || "Guest";
+  nowPlayingTitle.textContent = nextTitle;
+  nowPlayingTitle.title = nextTitle;
+  nowPlayingSinger.textContent = nextSinger;
+  nowPlayingSinger.title = nextSinger;
   playerEmpty.hidden = true;
   renderPlaybackState(currentSong.playbackState || "playing");
   updateAmbilightForSong(currentSong);
