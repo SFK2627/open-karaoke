@@ -81,12 +81,17 @@ const tvQrBackdrop = document.querySelector("#tvQrBackdrop");
 const tvQrCloseBtn = document.querySelector("#tvQrCloseBtn");
 const tvQrCode = document.querySelector("#tvQrCode");
 const tvQrSessionCode = document.querySelector("#tvQrSessionCode");
+const tvThemePopover = document.querySelector("#tvThemePopover");
+const tvThemeToggleBtn = document.querySelector("#tvThemeToggleBtn");
+const tvThemeMenu = document.querySelector("#tvThemeMenu");
+const tvThemeOptionButtons = Array.from(document.querySelectorAll(".tv-theme-option"));
 
 let db;
 let user;
 let activeSessionId = null;
 const TV_THEME_IDS = new Set(["classic", "neon", "studio", "disco", "ocean"]);
 let activeTvTheme = "classic";
+let tvThemeMenuOpen = false;
 let reservationsLocked = false;
 let queueEntries = [];
 let currentSong = null;
@@ -317,12 +322,27 @@ function savedTvTheme() {
   return normalizeTvTheme(localStorage.getItem("openKaraokeTvTheme") || "classic");
 }
 
+function syncTvThemeMenu() {
+  tvThemeOptionButtons.forEach(button => {
+    const isActive = button.dataset.theme === activeTvTheme;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+}
+
+function setTvThemeMenuOpen(isOpen) {
+  tvThemeMenuOpen = Boolean(isOpen);
+  if (tvThemeMenu) tvThemeMenu.hidden = !tvThemeMenuOpen;
+  if (tvThemeToggleBtn) tvThemeToggleBtn.setAttribute("aria-expanded", tvThemeMenuOpen ? "true" : "false");
+}
+
 function applyTvTheme(theme) {
   const normalized = normalizeTvTheme(theme);
   activeTvTheme = normalized;
   document.body.dataset.tvTheme = normalized;
   if (tvThemeSelect && tvThemeSelect.value !== normalized) tvThemeSelect.value = normalized;
   if (tvThemeQuickSelect && tvThemeQuickSelect.value !== normalized) tvThemeQuickSelect.value = normalized;
+  syncTvThemeMenu();
   localStorage.setItem("openKaraokeTvTheme", normalized);
 }
 
@@ -1354,14 +1374,16 @@ volumeSlider.addEventListener("input", () => {
 });
 
 
-async function saveTvThemeFromControl(control) {
+async function saveTvTheme(theme) {
   const previousTheme = activeTvTheme;
-  const nextTheme = normalizeTvTheme(control?.value);
+  const nextTheme = normalizeTvTheme(theme);
   applyTvTheme(nextTheme);
   if (!activeSessionId) return;
 
   if (tvThemeSelect) tvThemeSelect.disabled = true;
   if (tvThemeQuickSelect) tvThemeQuickSelect.disabled = true;
+  if (tvThemeToggleBtn) tvThemeToggleBtn.disabled = true;
+  tvThemeOptionButtons.forEach(button => { button.disabled = true; });
   try {
     await update(ref(db, `sessions/${activeSessionId}/settings`), {
       tvTheme: nextTheme
@@ -1373,11 +1395,13 @@ async function saveTvThemeFromControl(control) {
   } finally {
     if (tvThemeSelect) tvThemeSelect.disabled = false;
     if (tvThemeQuickSelect) tvThemeQuickSelect.disabled = false;
+    if (tvThemeToggleBtn) tvThemeToggleBtn.disabled = false;
+    tvThemeOptionButtons.forEach(button => { button.disabled = false; });
   }
 }
 
-tvThemeSelect?.addEventListener("change", () => saveTvThemeFromControl(tvThemeSelect));
-tvThemeQuickSelect?.addEventListener("change", () => saveTvThemeFromControl(tvThemeQuickSelect));
+tvThemeSelect?.addEventListener("change", () => saveTvTheme(tvThemeSelect.value));
+tvThemeQuickSelect?.addEventListener("change", () => saveTvTheme(tvThemeQuickSelect.value));
 
 lockReservationsBtn.addEventListener("click", async () => {
   if (!activeSessionId) return;
@@ -1458,14 +1482,39 @@ tvQrToggleBtn?.addEventListener("click", toggleQrOverlay);
 tvQrCloseBtn?.addEventListener("click", () => setQrOverlay(false));
 tvQrBackdrop?.addEventListener("click", () => setQrOverlay(false));
 tvExitBtn?.addEventListener("click", () => {
+  setTvThemeMenuOpen(false);
   exitTvMode().catch(error => console.error(error));
+});
+
+tvThemeToggleBtn?.addEventListener("click", event => {
+  event.stopPropagation();
+  setTvThemeMenuOpen(!tvThemeMenuOpen);
+});
+
+tvThemeMenu?.addEventListener("click", event => {
+  const option = event.target.closest(".tv-theme-option");
+  if (!option) return;
+  setTvThemeMenuOpen(false);
+  saveTvTheme(option.dataset.theme).catch(error => {
+    console.error(error);
+    window.alert("Could not save the TV theme. Please try again.");
+  });
+});
+
+document.addEventListener("click", event => {
+  if (!tvThemeMenuOpen) return;
+  if (tvThemePopover?.contains(event.target)) return;
+  setTvThemeMenuOpen(false);
 });
 
 document.addEventListener("fullscreenchange", () => {
   const fullscreen = Boolean(document.fullscreenElement);
   document.body.classList.toggle("tv-mode", fullscreen);
   fullscreenBtn.textContent = fullscreen ? "⛶ Exit TV" : "📺 TV Mode";
-  if (!fullscreen && !document.body.classList.contains("tv-mode")) setQrOverlay(false);
+  if (!fullscreen && !document.body.classList.contains("tv-mode")) {
+    setQrOverlay(false);
+    setTvThemeMenuOpen(false);
+  }
   scheduleTvMarqueeRefresh();
 });
 
@@ -1481,6 +1530,10 @@ document.addEventListener("keydown", event => {
   const key = event.key.toLowerCase();
 
   if (event.key === "Escape") {
+    if (tvThemeMenuOpen) {
+      setTvThemeMenuOpen(false);
+      return;
+    }
     if (tvQrOverlay && !tvQrOverlay.hidden) {
       setQrOverlay(false);
       return;
@@ -1533,6 +1586,7 @@ document.addEventListener("keydown", event => {
 
 setAmbilightPalette(DEFAULT_AMBILIGHT_COLORS, "idle");
 
+setTvThemeMenuOpen(false);
 applyTvTheme(savedTvTheme());
 
 init();

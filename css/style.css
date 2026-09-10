@@ -5005,3 +5005,338 @@ body.tv-mode[data-tv-theme="studio"] .tv-theme-quick select option {
   body.tv-mode .tv-theme-quick > span { display: none; }
   body.tv-mode .tv-theme-quick select { width: 78px; font-size: .52rem; }
 }
+
+/* =========================================================
+   TV THEME FOLLOW-THROUGH + TV MODE THEME BUTTON MENU
+   Extends theme styling so the top strip and bottom retro bar also follow
+   the chosen TV theme even before fullscreen, and adds an in-TV theme menu.
+   ========================================================= */
+
+body[data-tv-theme] {
+  --tv-bg-a: #090a0e;
+  --tv-bg-b: #020304;
+  --tv-surface-a: rgba(36, 24, 18, .98);
+  --tv-surface-b: rgba(10, 9, 9, .99);
+  --tv-border: #ff8500;
+  --tv-border-soft: rgba(255, 133, 0, .4);
+  --tv-accent: #ff8500;
+  --tv-accent-2: #ffc16d;
+  --tv-text: #fff3df;
+  --tv-muted: #c5b9a8;
+  --tv-button-a: #34343b;
+  --tv-button-b: #0a0a0d;
+  --tv-button-active-a: #80d93b;
+  --tv-button-active-b: #46a01e;
+  --tv-led: #48f59b;
+  --tv-led-warn: #ffd84b;
+  --tv-led-hot: #ff5a35;
+  --tv-font: "Trebuchet MS", Arial, sans-serif;
+}
+
+body[data-tv-theme="neon"] {
+  --tv-bg-a: #08051a;
+  --tv-bg-b: #01040b;
+  --tv-surface-a: rgba(20, 13, 42, .98);
+  --tv-surface-b: rgba(5, 8, 20, .99);
+  --tv-border: #6ef7ff;
+  --tv-border-soft: rgba(110, 247, 255, .32);
+  --tv-accent: #7c5cff;
+  --tv-accent-2: #5ff8ff;
+  --tv-text: #f6f4ff;
+  --tv-muted: #aab8d9;
+  --tv-button-a: #27213d;
+  --tv-button-b: #080916;
+  --tv-button-active-a: #9c55ff;
+  --tv-button-active-b: #5d35d8;
+  --tv-led: #45f6ff;
+  --tv-led-warn: #c866ff;
+  --tv-led-hot: #ff5bbd;
+  --tv-font: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+body[data-tv-theme="studio"] {
+  --tv-bg-a: #f7efe2;
+  --tv-bg-b: #e9dcc7;
+  --tv-surface-a: rgba(255, 251, 244, .98);
+  --tv-surface-b: rgba(237, 225, 207, .98);
+  --tv-border: #b58742;
+  --tv-border-soft: rgba(145, 100, 42, .34);
+  --tv-accent: #a56d2c;
+  --tv-accent-2: #d7a455;
+  --tv-text: #2c241c;
+  --tv-muted: #6f6255;
+  --tv-button-a: #fffaf2;
+  --tv-button-b: #e8dccb;
+  --tv-button-active-a: #d9ad62;
+  --tv-button-active-b: #a9742d;
+  --tv-led: #2ca36c;
+  --tv-led-warn: #d79e2f;
+  --tv-led-hot: #c84e3e;
+  --tv-font: Georgia, "Times New Roman", serif;
+}
+
+body[data-tv-theme="disco"] {
+  --tv-bg-a: #170022;
+  --tv-bg-b: #02030a;
+  --tv-surface-a: rgba(34, 8, 42, .98);
+  --tv-surface-b: rgba(7, 8, 17, .99);
+  --tv-border: #ff4fc8;
+  --tv-border-soft: rgba(255, 79, 200, .35);
+  --tv-accent: #ff4fc8;
+  --tv-accent-2: #5efcff;
+  --tv-text: #fff7ff;
+  --tv-muted: #c2b5d6;
+  --tv-button-a: #31183e;
+  --tv-button-b: #0a0710;
+  --tv-button-active-a: #ff4fc8;
+  --tv-button-active-b: #8a2dff;
+  --tv-led: #58ff9e;
+  --tv-led-warn: #ffe54b;
+  --tv-led-hot: #ff4f72;
+  --tv-font: "Arial Rounded MT Bold", "Trebuchet MS", Arial, sans-serif;
+}
+
+body[data-tv-theme="ocean"] {
+  --tv-bg-a: #082b3a;
+  --tv-bg-b: #03141d;
+  --tv-surface-a: rgba(10, 47, 60, .98);
+  --tv-surface-b: rgba(3, 24, 34, .99);
+  --tv-border: #55d9e8;
+  --tv-border-soft: rgba(85, 217, 232, .34);
+  --tv-accent: #39b9d2;
+  --tv-accent-2: #8df0dc;
+  --tv-text: #efffff;
+  --tv-muted: #a8ced6;
+  --tv-button-a: #164758;
+  --tv-button-b: #06202c;
+  --tv-button-active-a: #31c8b2;
+  --tv-button-active-b: #178b8b;
+  --tv-led: #83ffd8;
+  --tv-led-warn: #d9f57f;
+  --tv-led-hot: #ff9d65;
+  --tv-font: Verdana, Geneva, sans-serif;
+}
+
+body[data-tv-theme] .player-card .tv-karaoke-header,
+body.tv-mode .tv-karaoke-header {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tv-surface-a) 92%, transparent), color-mix(in srgb, var(--tv-surface-b) 96%, transparent)) !important;
+  border-bottom-color: var(--tv-border-soft) !important;
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--tv-border-soft) 90%, transparent), 0 6px 20px rgba(0,0,0,.18) !important;
+}
+
+body[data-tv-theme] .player-card .tv-up-next-label,
+body.tv-mode .tv-up-next-label {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--tv-accent) 34%, transparent), color-mix(in srgb, var(--tv-accent-2) 16%, transparent)) !important;
+  border-color: var(--tv-border-soft) !important;
+  color: var(--tv-text) !important;
+}
+
+body[data-tv-theme] .player-card .tv-queue-card,
+body[data-tv-theme] .player-card .tv-queue-empty,
+body[data-tv-theme] .player-card .tv-icon-btn,
+body.tv-mode .tv-queue-card,
+body.tv-mode .tv-queue-empty,
+body.tv-mode .tv-icon-btn {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tv-surface-a) 90%, transparent), color-mix(in srgb, var(--tv-surface-b) 98%, transparent)) !important;
+  border-color: var(--tv-border-soft) !important;
+  color: var(--tv-text) !important;
+}
+
+body[data-tv-theme] .player-card .tv-queue-text strong,
+body.tv-mode .tv-queue-text strong { color: var(--tv-text) !important; }
+body[data-tv-theme] .player-card .tv-queue-text small,
+body[data-tv-theme] .player-card .tv-queue-empty,
+body[data-tv-theme] .player-card .tv-icon-btn span,
+body.tv-mode .tv-queue-text small,
+body.tv-mode .tv-queue-empty,
+body.tv-mode .tv-icon-btn span { color: var(--tv-muted) !important; }
+
+body[data-tv-theme] .player-card .tv-retro-bar,
+body.tv-mode .tv-retro-bar {
+  border-color: var(--tv-border) !important;
+  background: linear-gradient(180deg, var(--tv-surface-a), var(--tv-surface-b)) !important;
+  box-shadow: 0 0 0 1px var(--tv-border-soft), 0 12px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.10) !important;
+}
+
+body[data-tv-theme] .player-card .tv-retro-controls,
+body[data-tv-theme] .player-card .tv-retro-info,
+body[data-tv-theme] .player-card .tv-retro-status,
+body.tv-mode .tv-retro-controls,
+body.tv-mode .tv-retro-info,
+body.tv-mode .tv-retro-status {
+  background: linear-gradient(180deg, var(--tv-surface-a), var(--tv-surface-b)) !important;
+  border-color: var(--tv-border-soft) !important;
+}
+
+body[data-tv-theme] .player-card .tv-retro-controls,
+body[data-tv-theme] .player-card .tv-retro-info,
+body.tv-mode .tv-retro-controls,
+body.tv-mode .tv-retro-info {
+  border-right-color: var(--tv-border-soft) !important;
+}
+
+body[data-tv-theme] .player-card .tv-retro-panel + .tv-retro-panel,
+body.tv-mode .tv-retro-panel + .tv-retro-panel { border-left-color: var(--tv-border-soft) !important; }
+
+body[data-tv-theme] .player-card .tv-retro-label,
+body[data-tv-theme] .player-card .tv-retro-controls::before,
+body[data-tv-theme] .player-card .tv-meter-label,
+body.tv-mode .tv-retro-label,
+body.tv-mode .tv-retro-controls::before,
+body.tv-mode .tv-meter-label { color: var(--tv-accent-2) !important; }
+
+body[data-tv-theme] .player-card #nowPlayingTitle.tv-marquee-text,
+body.tv-mode #nowPlayingTitle.tv-marquee-text {
+  color: var(--tv-accent) !important;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--tv-accent) 30%, transparent) !important;
+}
+
+body[data-tv-theme] .player-card #nowPlayingSinger.tv-marquee-text,
+body.tv-mode #nowPlayingSinger.tv-marquee-text { color: var(--tv-text) !important; }
+
+body[data-tv-theme] .player-card .tv-marquee-wrap,
+body.tv-mode .tv-marquee-wrap {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tv-surface-b) 96%, transparent), color-mix(in srgb, var(--tv-surface-a) 82%, transparent)) !important;
+  border-color: var(--tv-border-soft) !important;
+}
+
+body[data-tv-theme] .player-card .tv-retro-controls .btn,
+body.tv-mode .tv-retro-controls .btn {
+  background: linear-gradient(180deg, var(--tv-button-a), var(--tv-button-b)) !important;
+  border-color: var(--tv-border-soft) !important;
+  color: var(--tv-text) !important;
+}
+
+body[data-tv-theme] .player-card .tv-retro-controls #playBtn,
+body[data-tv-theme] .player-card .tv-retro-controls #nextBtn,
+body.tv-mode .tv-retro-controls #playBtn,
+body.tv-mode .tv-retro-controls #nextBtn {
+  background: linear-gradient(180deg, var(--tv-button-active-a), var(--tv-button-active-b)) !important;
+  border-color: color-mix(in srgb, var(--tv-accent-2) 65%, transparent) !important;
+}
+
+body[data-tv-theme] .player-card .tv-eq-bar,
+body.tv-mode .tv-eq-bar {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tv-accent-2) 90%, white), var(--tv-accent), color-mix(in srgb, var(--tv-accent) 72%, black)) !important;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--tv-accent) 55%, transparent), 0 0 14px color-mix(in srgb, var(--tv-accent) 20%, transparent) !important;
+}
+
+body[data-tv-theme] .player-card #tvRetroBar[data-playback="playing"] .tv-led-dot,
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot {
+  --led-on: var(--tv-led);
+  --led-glow: color-mix(in srgb, var(--tv-led) 55%, transparent);
+}
+body[data-tv-theme] .player-card #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(n+11):nth-child(-n+13),
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(n+11):nth-child(-n+13) {
+  --led-on: var(--tv-led-warn);
+  --led-glow: color-mix(in srgb, var(--tv-led-warn) 55%, transparent);
+}
+body[data-tv-theme] .player-card #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(n+14),
+body.tv-mode #tvRetroBar[data-playback="playing"] .tv-led-dot:nth-child(n+14) {
+  --led-on: var(--tv-led-hot);
+  --led-glow: color-mix(in srgb, var(--tv-led-hot) 55%, transparent);
+}
+
+body[data-tv-theme] .player-card .tv-retro-chip,
+body.tv-mode .tv-retro-chip {
+  border-color: color-mix(in srgb, var(--tv-led) 34%, transparent) !important;
+  color: var(--tv-led) !important;
+  background: color-mix(in srgb, var(--tv-surface-b) 88%, transparent) !important;
+}
+
+/* Theme chooser button + popover in TV mode */
+body.tv-mode .tv-header-actions {
+  position: relative;
+  overflow: visible !important;
+}
+
+body.tv-mode .tv-theme-popover {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+body.tv-mode .tv-theme-trigger {
+  min-width: 92px;
+  justify-content: center;
+}
+
+body.tv-mode .tv-theme-trigger[aria-expanded="true"] {
+  border-color: var(--tv-border) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tv-border) 34%, transparent), 0 0 18px color-mix(in srgb, var(--tv-accent) 18%, transparent) !important;
+}
+
+body.tv-mode .tv-theme-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 210px;
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--tv-border-soft);
+  border-radius: 14px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tv-surface-a) 96%, transparent), color-mix(in srgb, var(--tv-surface-b) 99%, transparent));
+  box-shadow: 0 16px 36px rgba(0,0,0,.35), 0 0 0 1px color-mix(in srgb, var(--tv-border-soft) 80%, transparent);
+  backdrop-filter: blur(12px);
+  z-index: 40;
+}
+
+body.tv-mode .tv-theme-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--tv-border-soft) 84%, transparent);
+  border-radius: 10px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tv-button-a) 92%, transparent), color-mix(in srgb, var(--tv-button-b) 98%, transparent));
+  color: var(--tv-text);
+  font: 800 .72rem/1.1 var(--tv-font);
+  letter-spacing: .02em;
+  cursor: pointer;
+  text-align: left;
+}
+
+body.tv-mode .tv-theme-option::after {
+  content: "";
+  width: 26px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--tv-border-soft) 90%, transparent);
+  background: linear-gradient(90deg, var(--tv-accent), var(--tv-accent-2));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--tv-accent) 30%, transparent);
+  flex: 0 0 auto;
+}
+
+body.tv-mode .tv-theme-option:hover,
+body.tv-mode .tv-theme-option.active {
+  border-color: color-mix(in srgb, var(--tv-accent) 62%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tv-accent) 18%, transparent), 0 0 18px color-mix(in srgb, var(--tv-accent) 12%, transparent);
+  transform: translateY(-1px);
+}
+
+body.tv-mode .tv-theme-option:disabled,
+body.tv-mode .tv-theme-trigger:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+
+@media (max-width: 900px) {
+  body.tv-mode .tv-theme-trigger {
+    min-width: 76px;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+  body.tv-mode .tv-theme-menu {
+    min-width: 180px;
+  }
+  body.tv-mode .tv-theme-option {
+    padding: 9px 10px;
+    font-size: .64rem;
+  }
+}
+
+.tv-theme-popover { display: none; }
+body.tv-mode .tv-theme-popover { display: flex; }

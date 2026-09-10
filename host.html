@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Host</title>
-  <link rel="stylesheet" href="./css/style.css?v=20260910-tvthemes1">
+  <link rel="stylesheet" href="./css/style.css?v=20260910-tvthemes2">
 </head>
 <body class="host-page">
   <header class="topbar">
@@ -77,16 +77,18 @@
             </div>
           </div>
           <div class="tv-header-actions">
-            <label class="tv-theme-quick" title="Change TV theme">
-              <span>🎨</span>
-              <select id="tvThemeQuickSelect" aria-label="TV Theme in TV Mode">
-                <option value="classic">Classic</option>
-                <option value="neon">Neon</option>
-                <option value="studio">Studio</option>
-                <option value="disco">Disco</option>
-                <option value="ocean">Ocean</option>
-              </select>
-            </label>
+            <div class="tv-theme-popover" id="tvThemePopover">
+              <button class="tv-icon-btn tv-theme-trigger" id="tvThemeToggleBtn" type="button" title="Change TV theme">
+                ✦ <span>Theme</span>
+              </button>
+              <div class="tv-theme-menu" id="tvThemeMenu" hidden>
+                <button class="tv-theme-option" type="button" data-theme="classic">Classic Videoke</button>
+                <button class="tv-theme-option" type="button" data-theme="neon">Neon Night</button>
+                <button class="tv-theme-option" type="button" data-theme="studio">Light Studio</button>
+                <button class="tv-theme-option" type="button" data-theme="disco">Disco RGB</button>
+                <button class="tv-theme-option" type="button" data-theme="ocean">Ocean Blue</button>
+              </div>
+            </div>
             <button class="tv-icon-btn" id="tvQrToggleBtn" type="button" title="Show guest QR (Q)">▦ <span>QR</span></button>
             <button class="tv-icon-btn" id="tvExitBtn" type="button" title="Exit TV mode (F)">⛶ <span>Exit</span></button>
           </div>
@@ -289,6 +291,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module" src="./js/host.js?v=20260910-tvthemes1"></script>
+  <script type="module" src="./js/host.js?v=20260910-tvthemes2"></script>
 </body>
 </html>
