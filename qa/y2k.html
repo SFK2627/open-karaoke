@@ -7,7 +7,7 @@
   <title>Open Karaoke - Host</title>
   <link rel="stylesheet" href="./css/style.css?v=20260910-themecomfort1">
 </head>
-<body class="host-page">
+<body class="host-page tv-mode" data-tv-theme="y2k">
   <header class="topbar">
     <a class="brand" href="./index.html">🎤 <span>Open Karaoke</span></a>
     <div class="topbar-actions">
@@ -17,7 +17,7 @@
   </header>
 
   <main class="page-shell host-shell">
-    <section class="panel host-create-panel" id="createPanel">
+    <section class="panel host-create-panel" id="createPanel" hidden>
       <p class="eyebrow">HOST SCREEN</p>
       <h1>Create a karaoke session</h1>
       <p class="muted">This browser becomes the owner of the room. Set a Host PIN, then guests can join using the QR code.</p>
@@ -46,7 +46,7 @@
       <button class="btn btn-ghost full-width" id="forgetRecoveredBtn" type="button">Forget This Saved Session</button>
     </section>
 
-    <section class="host-grid" id="sessionPanel" hidden>
+    <section class="host-grid" id="sessionPanel">
       <article class="panel session-card player-card">
         <div class="section-heading session-heading-final">
           <div>
@@ -54,40 +54,6 @@
             <h2 id="sessionCode">—</h2>
           </div>
           <div class="session-actions-final">
-            <label class="tv-theme-picker" for="tvThemeSelect">
-              <span>TV Theme</span>
-              <select id="tvThemeSelect" aria-label="TV Theme">
-                <option value="classic">Classic Videoke</option>
-                <option value="neon">Neon Night</option>
-                <option value="studio">Light Studio</option>
-                <option value="disco">Disco RGB</option>
-                <option value="ocean">Ocean Blue</option>
-                <option value="christmas">Christmas</option>
-                <option value="spider">Spider Hero</option>
-                <option value="gold">Gold Luxury</option>
-                <option value="pink">Pink Cute</option>
-                <option value="minimal">Minimalism</option>
-                <option value="maximal">Maximalism</option>
-                <option value="futuristic">Futuristic</option>
-                <option value="vector">Vector Art</option>
-                <option value="collage">Collage Art</option>
-                <option value="retro">Retro</option>
-                <option value="cyberpunk">Cyberpunk</option>
-                <option value="popart">Pop Art</option>
-                <option value="glass">Glass Morphism</option>
-                <option value="clay">Clay Style</option>
-                <option value="pixel">Pixel Art</option>
-                <option value="editorial">Editorial</option>
-                <option value="y2k">Y2K</option>
-                <option value="swiss">Swiss Design</option>
-                <option value="surreal">Surreal Design</option>
-                <option value="bohemian">Bohemian</option>
-                <option value="victorian">Victorian Style</option>
-                <option value="graffiti">Graffiti</option>
-                <option value="aurora">Aurora</option>
-                <option value="handwritten">Handwritten</option>
-              </select>
-            </label>
             <button class="btn btn-ghost btn-small" id="copyCodeBtn" type="button">Copy Code</button>
             <button class="btn btn-secondary btn-small" id="lockHostBtn" type="button">🔐 Lock Host</button>
           </div>
@@ -97,44 +63,10 @@
           <div class="tv-up-next-area">
             <span class="tv-up-next-label">UP NEXT</span>
             <div class="tv-queue-strip" id="tvQueueStrip">
-              <span class="tv-queue-empty">Waiting for reservations…</span>
+              <span class="tv-queue-empty">The Bloomfields - Ale</span>
             </div>
           </div>
-          <div class="tv-header-actions">
-            <label class="tv-theme-quick" title="Change TV theme">
-              <span>🎨</span>
-              <select id="tvThemeQuickSelect" aria-label="TV Theme in TV Mode">
-                <option value="classic">Classic</option>
-                <option value="neon">Neon</option>
-                <option value="studio">Studio</option>
-                <option value="disco">Disco</option>
-                <option value="ocean">Ocean</option>
-                <option value="christmas">Christmas</option>
-                <option value="spider">Spider</option>
-                <option value="gold">Gold</option>
-                <option value="pink">Pink</option>
-                <option value="minimal">Minimal</option>
-                <option value="maximal">Maximal</option>
-                <option value="futuristic">Future</option>
-                <option value="vector">Vector</option>
-                <option value="collage">Collage</option>
-                <option value="retro">Retro</option>
-                <option value="cyberpunk">Cyberpunk</option>
-                <option value="popart">Pop Art</option>
-                <option value="glass">Glass</option>
-                <option value="clay">Clay</option>
-                <option value="pixel">Pixel</option>
-                <option value="editorial">Editorial</option>
-                <option value="y2k">Y2K</option>
-                <option value="swiss">Swiss</option>
-                <option value="surreal">Surreal</option>
-                <option value="bohemian">Boho</option>
-                <option value="victorian">Victorian</option>
-                <option value="graffiti">Graffiti</option>
-                <option value="aurora">Aurora</option>
-                <option value="handwritten">Handwritten</option>
-              </select>
-            </label>
+          <div class="tv-header-actions"><label class="tv-theme-quick" style="display:flex" title="Change TV theme"><span>🎨</span><select><option>Minimalism</option><option>Maximalism</option><option>Cyberpunk</option><option>Y2K</option></select></label>
             <button class="tv-icon-btn" id="tvQrToggleBtn" type="button" title="Show guest QR (Q)">▦ <span>QR</span></button>
             <button class="tv-icon-btn" id="tvExitBtn" type="button" title="Exit TV mode (F)">⛶ <span>Exit</span></button>
           </div>
@@ -148,7 +80,7 @@
             <span class="ambient-glow glow-left"></span>
           </div>
           <div class="player-stage">
-            <div id="youtubePlayer"></div>
+            <div id="youtubePlayer" style="background:linear-gradient(135deg,#1a3820,#75672e);display:grid;place-items:center;color:white;font-size:48px;font-weight:900;">VIDEO AREA</div>
             <div class="player-empty" id="playerEmpty">
               <div class="placeholder-icon">▶</div>
               <strong>No song playing</strong>
@@ -159,11 +91,11 @@
 
         <div class="tv-retro-bar" id="tvRetroBar">
           <div class="host-player-controls host-player-controls-final tv-retro-controls">
-            <button class="btn btn-secondary" id="previousBtn" type="button"><span class="tv-control-icon">⏮</span><span class="tv-control-label">PREV</span></button>
-            <button class="btn btn-primary" id="playBtn" type="button"><span class="tv-control-icon">▶</span><span class="tv-control-label">PLAY</span></button>
-            <button class="btn btn-secondary" id="pauseBtn" type="button"><span class="tv-control-icon">⏸</span><span class="tv-control-label">PAUSE</span></button>
-            <button class="btn btn-secondary" id="stopBtn" type="button"><span class="tv-control-icon">⏹</span><span class="tv-control-label">STOP</span></button>
-            <button class="btn btn-primary" id="nextBtn" type="button"><span class="tv-control-icon">⏭</span><span class="tv-control-label">NEXT</span></button>
+            <button class="btn btn-secondary" id="previousBtn" type="button">⏮ Previous</button>
+            <button class="btn btn-primary" id="playBtn" type="button">▶ Play / Resume</button>
+            <button class="btn btn-secondary" id="pauseBtn" type="button">⏸ Pause</button>
+            <button class="btn btn-secondary" id="stopBtn" type="button">⏹ Stop</button>
+            <button class="btn btn-primary" id="nextBtn" type="button">⏭ Next / Skip</button>
           </div>
 
           <div class="now-playing-host tv-retro-info">
@@ -171,7 +103,7 @@
               <p class="eyebrow tv-retro-label">NOW PLAYING</p>
               <div class="tv-marquee-wrap">
                 <div class="tv-marquee" id="nowPlayingTitleMarquee">
-                  <span id="nowPlayingTitle" class="tv-marquee-text">Waiting for a song…</span>
+                  <span id="nowPlayingTitle" class="tv-marquee-text">The Bloomfields - Ale (Official Lyric Video)</span>
                 </div>
               </div>
             </div>
@@ -179,7 +111,7 @@
               <p class="eyebrow tv-retro-label">RESERVED BY</p>
               <div class="tv-marquee-wrap compact">
                 <div class="tv-marquee compact" id="nowPlayingSingerMarquee">
-                  <span id="nowPlayingSinger" class="muted now-playing-singer tv-marquee-text">Waiting for singer…</span>
+                  <span id="nowPlayingSinger" class="muted now-playing-singer tv-marquee-text">John Rey</span>
                 </div>
               </div>
             </div>
@@ -223,7 +155,7 @@
               <span class="tv-led-dot"></span>
             </div>
             <div class="tv-retro-state-line">
-              <span class="playback-chip tv-retro-chip" id="playbackState" data-state="idle">IDLE</span>
+              <span class="playback-chip tv-retro-chip" id="playbackState" data-state="idle">PLAYING</span>
             </div>
           </div>
         </div>
@@ -336,7 +268,7 @@
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module" src="./js/host.js?v=20260910-stylepack20"></script>
+  
+  
 </body>
 </html>

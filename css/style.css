@@ -6318,3 +6318,476 @@ body.tv-mode[data-tv-theme="handwritten"] .tv-theme-quick select option { backgr
   body.guest-page[data-tv-theme="graffiti"]::before,
   body.guest-page[data-tv-theme="aurora"]::before { animation:none !important; }
 }
+
+/* =========================================================
+   THEME READABILITY + EYE COMFORT PASS v2
+   Goal: every theme stays visually distinct without sacrificing legibility.
+   Functional text uses a neutral UI font; theme fonts remain on display areas.
+   ========================================================= */
+
+:root {
+  --karaoke-ui-font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+}
+
+/* ---------- Theme selectors: always readable, independent of active theme ---------- */
+.tv-theme-picker {
+  color: #dbe3f3 !important;
+  background: #111827 !important;
+  border-color: rgba(255,255,255,.16) !important;
+  font-family: var(--karaoke-ui-font) !important;
+}
+.tv-theme-picker > span {
+  color: #cbd5e1 !important;
+  font-family: var(--karaoke-ui-font) !important;
+}
+.tv-theme-picker select,
+body.tv-mode .tv-theme-quick select {
+  color-scheme: dark !important;
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #475569 !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  font-family: var(--karaoke-ui-font) !important;
+  font-weight: 750 !important;
+  text-shadow: none !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+.tv-theme-picker select:focus,
+body.tv-mode .tv-theme-quick select:focus {
+  border-color: #94a3b8 !important;
+  outline: 2px solid rgba(148,163,184,.22) !important;
+  outline-offset: 1px;
+}
+.tv-theme-picker select option,
+body.tv-mode .tv-theme-quick select option,
+body.tv-mode[data-tv-theme] .tv-theme-quick select option {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  font-family: var(--karaoke-ui-font) !important;
+  font-weight: 700 !important;
+}
+body.tv-mode .tv-theme-quick {
+  background: rgba(15, 23, 42, .96) !important;
+  border-color: rgba(148, 163, 184, .38) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 5px 16px rgba(0,0,0,.20) !important;
+}
+body.tv-mode .tv-theme-quick > span { color: #e2e8f0 !important; }
+
+/* ---------- Readability tokens computed from each theme's own palette ---------- */
+body.tv-mode {
+  --tv-muted-safe: color-mix(in srgb, var(--tv-text) 76%, var(--tv-muted) 24%);
+  --tv-accent-safe: color-mix(in srgb, var(--tv-accent) 68%, var(--tv-text) 32%);
+  --tv-accent2-safe: color-mix(in srgb, var(--tv-accent-2) 68%, var(--tv-text) 32%);
+}
+body.guest-page {
+  --guest-muted-safe: color-mix(in srgb, var(--guest-text) 76%, var(--guest-muted) 24%);
+  --guest-accent-safe: color-mix(in srgb, var(--guest-accent) 68%, var(--guest-text) 32%);
+  --guest-accent2-safe: color-mix(in srgb, var(--guest-accent-2) 68%, var(--guest-text) 32%);
+}
+
+/* ---------- TV: functional controls stay clear; display areas keep theme character ---------- */
+body.tv-mode .tv-karaoke-header,
+body.tv-mode .tv-queue-card,
+body.tv-mode .tv-queue-empty,
+body.tv-mode .tv-icon-btn,
+body.tv-mode .tv-retro-controls .btn,
+body.tv-mode .tv-retro-chip,
+body.tv-mode .tv-theme-quick {
+  font-family: var(--karaoke-ui-font) !important;
+}
+body.tv-mode .tv-queue-text strong,
+body.tv-mode .tv-queue-text small,
+body.tv-mode .tv-queue-empty,
+body.tv-mode .tv-icon-btn span {
+  text-shadow: none !important;
+}
+body.tv-mode .tv-queue-text small,
+body.tv-mode .tv-queue-empty,
+body.tv-mode .tv-icon-btn span {
+  color: var(--tv-muted-safe) !important;
+}
+body.tv-mode .tv-retro-label,
+body.tv-mode .tv-retro-controls::before,
+body.tv-mode .tv-meter-label {
+  color: var(--tv-accent2-safe) !important;
+  text-shadow: none !important;
+}
+body.tv-mode #nowPlayingTitle.tv-marquee-text {
+  color: var(--tv-accent-safe) !important;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--tv-accent) 18%, transparent) !important;
+}
+body.tv-mode #nowPlayingSinger.tv-marquee-text {
+  color: var(--tv-text) !important;
+  text-shadow: none !important;
+}
+
+/* Make active player controls readable even when the theme accent itself is bright. */
+body.tv-mode .tv-retro-controls #playBtn,
+body.tv-mode .tv-retro-controls #nextBtn {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--tv-button-active-a) 68%, #111827 32%),
+    color-mix(in srgb, var(--tv-button-active-b) 66%, #020617 34%)
+  ) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 1px rgba(0,0,0,.34) !important;
+}
+body.tv-mode .tv-retro-controls .btn:not(#playBtn):not(#nextBtn) {
+  color: var(--tv-text) !important;
+  text-shadow: none !important;
+}
+
+/* Keep the hardware surfaces solid enough so background art never fights the text. */
+body.tv-mode .tv-karaoke-header,
+body.tv-mode .tv-retro-controls,
+body.tv-mode .tv-retro-info,
+body.tv-mode .tv-retro-status,
+body.tv-mode .tv-queue-card,
+body.tv-mode .tv-queue-empty {
+  backdrop-filter: none !important;
+}
+body.tv-mode[data-tv-theme="glass"] .tv-karaoke-header,
+body.tv-mode[data-tv-theme="glass"] .tv-retro-bar,
+body.tv-mode[data-tv-theme="glass"] .tv-queue-card,
+body.tv-mode[data-tv-theme="glass"] .tv-icon-btn {
+  backdrop-filter: blur(14px) saturate(1.02) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.02) !important;
+}
+
+/* ---------- Eye-comfort: themes remain visible, but patterns/glows are no longer harsh ---------- */
+body.tv-mode::before {
+  opacity: .46 !important;
+  filter: saturate(.86) contrast(.96) !important;
+}
+body.tv-mode .tv-karaoke-header::after,
+body.tv-mode .tv-retro-bar::after {
+  opacity: .26 !important;
+}
+body.tv-mode[data-tv-theme="studio"]::before,
+body.tv-mode[data-tv-theme="minimal"]::before,
+body.tv-mode[data-tv-theme="collage"]::before,
+body.tv-mode[data-tv-theme="popart"]::before,
+body.tv-mode[data-tv-theme="clay"]::before,
+body.tv-mode[data-tv-theme="editorial"]::before,
+body.tv-mode[data-tv-theme="y2k"]::before,
+body.tv-mode[data-tv-theme="swiss"]::before,
+body.tv-mode[data-tv-theme="handwritten"]::before {
+  opacity: .30 !important;
+  filter: saturate(.74) contrast(.94) !important;
+}
+body.tv-mode[data-tv-theme="maximal"]::before,
+body.tv-mode[data-tv-theme="disco"]::before,
+body.tv-mode[data-tv-theme="cyberpunk"]::before,
+body.tv-mode[data-tv-theme="graffiti"]::before,
+body.tv-mode[data-tv-theme="surreal"]::before,
+body.tv-mode[data-tv-theme="aurora"]::before {
+  opacity: .38 !important;
+  filter: saturate(.78) brightness(.96) !important;
+}
+
+/* Tone down animated brightness pulsing while keeping motion alive. */
+@keyframes tvThemeNeonPulse {
+  0%,100% { filter: brightness(.98) saturate(.88); }
+  50% { filter: brightness(1.02) saturate(.96); }
+}
+@keyframes guestNeonPulse {
+  0%,100% { filter: brightness(.98) saturate(.88); }
+  50% { filter: brightness(1.02) saturate(.95); }
+}
+@keyframes tv-theme-surface-pop {
+  0% { filter: brightness(.97) saturate(.90); }
+  45% { filter: brightness(1.04) saturate(1.02); }
+  100% { filter: brightness(1) saturate(.96); }
+}
+@keyframes guestThemePop {
+  0% { filter: brightness(.97) saturate(.90); }
+  48% { filter: brightness(1.04) saturate(1.02); }
+  100% { filter: brightness(1) saturate(.96); }
+}
+
+/* ---------- Guest: universal readability guardrails ---------- */
+body.guest-page .btn,
+body.guest-page .text-input,
+body.guest-page .field-label,
+body.guest-page .mini-note,
+body.guest-page .muted,
+body.guest-page .guest-tab-btn,
+body.guest-page .guest-mini-stat,
+body.guest-page .search-result-info,
+body.guest-page .song-info,
+body.guest-page .guest-status-pill,
+body.guest-page .playback-chip,
+body.guest-page .session-badge,
+body.guest-page .lock-chip,
+body.guest-page .queue-count {
+  font-family: var(--karaoke-ui-font) !important;
+  letter-spacing: normal;
+}
+body.guest-page h1,
+body.guest-page h2,
+body.guest-page h3,
+body.guest-page .brand {
+  font-family: var(--guest-font) !important;
+}
+body.guest-page .guest-theme-badge {
+  font-family: var(--karaoke-ui-font) !important;
+  color: var(--guest-accent2-safe) !important;
+  background: color-mix(in srgb, var(--guest-panel-a) 96%, var(--guest-panel-b) 4%) !important;
+  text-shadow: none !important;
+}
+body.guest-page .muted,
+body.guest-page .mini-note,
+body.guest-page .field-label,
+body.guest-page .guest-summary-label,
+body.guest-page .search-result-info > span,
+body.guest-page .song-info span,
+body.guest-page .guest-tab-btn,
+body.guest-page .guest-mini-stat,
+body.guest-page .guest-now-body,
+body.guest-page .search-results.empty-state,
+body.guest-page .song-list.empty-state,
+body.guest-page .manual-reserve {
+  color: var(--guest-muted-safe) !important;
+}
+body.guest-page .eyebrow,
+body.guest-page .guest-summary-icon,
+body.guest-page .guest-own-turn,
+body.guest-page .session-badge,
+body.guest-page .lock-chip,
+body.guest-page .queue-count,
+body.guest-page .song-position,
+body.guest-page .mine-badge {
+  color: var(--guest-accent2-safe) !important;
+  text-shadow: none !important;
+}
+
+/* Primary actions use a deeper version of the theme hue so white labels stay readable. */
+body.guest-page .btn-primary {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--guest-accent) 64%, #111827 36%),
+    color-mix(in srgb, var(--guest-accent) 48%, #020617 52%)
+  ) !important;
+  color: #ffffff !important;
+  border-color: color-mix(in srgb, var(--guest-accent2-safe) 48%, transparent) !important;
+  text-shadow: 0 1px 1px rgba(0,0,0,.28) !important;
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--guest-accent) 12%, transparent), inset 0 1px 0 rgba(255,255,255,.10) !important;
+}
+body.guest-page .btn-secondary,
+body.guest-page .icon-btn {
+  color: var(--guest-text) !important;
+  text-shadow: none !important;
+}
+body.guest-page .text-input {
+  color: var(--guest-text) !important;
+  caret-color: var(--guest-accent-safe) !important;
+  text-shadow: none !important;
+}
+body.guest-page .text-input::placeholder {
+  color: color-mix(in srgb, var(--guest-muted-safe) 78%, transparent) !important;
+  opacity: 1 !important;
+}
+body.guest-page .guest-tab-btn.is-active {
+  color: var(--guest-text) !important;
+  background: color-mix(in srgb, var(--guest-accent) 15%, var(--guest-tab)) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--guest-accent2-safe) 28%, transparent) !important;
+}
+
+/* Guest surfaces stay sufficiently opaque, especially Glass/Y2K, to prevent background bleed. */
+body.guest-page .panel,
+body.guest-page .guest-mobile-tabs,
+body.guest-page .search-result-card,
+body.guest-page .song-item,
+body.guest-page .my-song-item,
+body.guest-page .preview-dialog,
+body.guest-page .manual-reserve {
+  text-shadow: none !important;
+}
+body.guest-page[data-tv-theme="glass"] {
+  --guest-panel-a: rgba(27, 38, 65, .92);
+  --guest-panel-b: rgba(13, 21, 39, .96);
+  --guest-input: rgba(12, 21, 40, .94);
+  --guest-tab: rgba(17, 28, 50, .95);
+}
+body.guest-page[data-tv-theme="y2k"] {
+  --guest-muted: #4d5b72;
+  --guest-accent: #5d55c9;
+  --guest-accent-2: #247f89;
+  --guest-panel-a: rgba(245,248,252,.97);
+  --guest-panel-b: rgba(215,225,235,.98);
+  --guest-input: #f9fbfd;
+  --guest-tab: #e5edf4;
+}
+body.guest-page[data-tv-theme="clay"] {
+  --guest-muted: #66524d;
+  --guest-accent: #b85f5c;
+  --guest-accent-2: #684d8c;
+  --guest-panel-a: rgba(250,235,229,.99);
+  --guest-panel-b: rgba(224,201,194,.99);
+}
+body.guest-page[data-tv-theme="collage"] {
+  --guest-muted: #5f544b;
+  --guest-accent: #a7443d;
+  --guest-accent-2: #2e5f50;
+}
+body.guest-page[data-tv-theme="minimal"] { --guest-muted:#4b5563; }
+body.guest-page[data-tv-theme="studio"] { --guest-muted:#5b5046; --guest-accent:#8e5d28; --guest-accent-2:#8a642e; }
+body.guest-page[data-tv-theme="popart"] { --guest-accent:#c6273a; --guest-accent-2:#164f9f; }
+body.guest-page[data-tv-theme="vector"] { --guest-accent:#cf4f45; --guest-accent-2:#55cdb7; }
+body.guest-page[data-tv-theme="retro"] { --guest-accent:#c85f25; }
+body.guest-page[data-tv-theme="bohemian"] { --guest-accent:#c25e3f; }
+body.guest-page[data-tv-theme="victorian"] { --guest-accent:#cf6876; }
+body.guest-page[data-tv-theme="swiss"] { --guest-accent:#c61924; --guest-muted:#555555; }
+body.guest-page[data-tv-theme="handwritten"] { --guest-muted:#5b5953; --guest-accent:#31558e; }
+
+/* Lively themes: reduce background intensity on mobile so reading stays comfortable. */
+body.guest-page::before {
+  opacity: .38 !important;
+  filter: saturate(.82) contrast(.96) !important;
+}
+body.guest-page[data-tv-theme="studio"]::before,
+body.guest-page[data-tv-theme="minimal"]::before,
+body.guest-page[data-tv-theme="collage"]::before,
+body.guest-page[data-tv-theme="popart"]::before,
+body.guest-page[data-tv-theme="clay"]::before,
+body.guest-page[data-tv-theme="editorial"]::before,
+body.guest-page[data-tv-theme="y2k"]::before,
+body.guest-page[data-tv-theme="swiss"]::before,
+body.guest-page[data-tv-theme="handwritten"]::before {
+  opacity: .24 !important;
+  filter: saturate(.70) contrast(.94) !important;
+}
+body.guest-page[data-tv-theme="maximal"]::before,
+body.guest-page[data-tv-theme="disco"]::before,
+body.guest-page[data-tv-theme="cyberpunk"]::before,
+body.guest-page[data-tv-theme="graffiti"]::before,
+body.guest-page[data-tv-theme="surreal"]::before,
+body.guest-page[data-tv-theme="aurora"]::before {
+  opacity: .31 !important;
+  filter: saturate(.76) brightness(.97) !important;
+}
+
+/* Decorative styles should never distort reading surfaces. */
+body.guest-page[data-tv-theme="handwritten"] .panel:nth-of-type(odd),
+body.guest-page[data-tv-theme="handwritten"] .panel:nth-of-type(even) {
+  transform: none !important;
+}
+body.guest-page[data-tv-theme="popart"] .panel,
+body.guest-page[data-tv-theme="popart"] .guest-mobile-tabs,
+body.guest-page[data-tv-theme="popart"] .search-result-card {
+  box-shadow: 2px 2px 0 rgba(17,17,17,.72), 0 7px 18px rgba(0,0,0,.10) !important;
+}
+body.guest-page[data-tv-theme="pixel"] .panel,
+body.guest-page[data-tv-theme="pixel"] .guest-mobile-tabs,
+body.guest-page[data-tv-theme="pixel"] .search-result-card,
+body.guest-page[data-tv-theme="pixel"] .btn {
+  box-shadow: 2px 2px 0 rgba(124,255,87,.18) !important;
+}
+body.guest-page[data-tv-theme="clay"] .panel,
+body.guest-page[data-tv-theme="clay"] .guest-mobile-tabs,
+body.guest-page[data-tv-theme="clay"] .search-result-card {
+  box-shadow: 5px 5px 13px rgba(125,87,80,.11), -4px -4px 11px rgba(255,255,255,.24) !important;
+}
+
+/* Light themes must explicitly use dark UI text in native/form controls. */
+body.guest-page[data-tv-theme="studio"],
+body.guest-page[data-tv-theme="minimal"],
+body.guest-page[data-tv-theme="collage"],
+body.guest-page[data-tv-theme="popart"],
+body.guest-page[data-tv-theme="clay"],
+body.guest-page[data-tv-theme="editorial"],
+body.guest-page[data-tv-theme="y2k"],
+body.guest-page[data-tv-theme="swiss"],
+body.guest-page[data-tv-theme="handwritten"] {
+  color-scheme: light;
+}
+
+/* Don't let theme-change animation flash too brightly. */
+body.tv-mode.tv-theme-switching::after,
+body.guest-page.guest-theme-switching::after {
+  opacity: .55;
+  filter: saturate(.75);
+}
+
+@media (max-width: 620px) {
+  .tv-theme-picker select {
+    font-size: .72rem !important;
+  }
+  body.guest-page .guest-theme-badge {
+    font-size: .56rem !important;
+    font-weight: 800 !important;
+  }
+}
+
+/* ---------- Comfort palette tuning for the most saturated themes ---------- */
+body.tv-mode[data-tv-theme="neon"] {
+  --tv-bg-a:#0b0920; --tv-bg-b:#040712; --tv-surface-a:rgba(27,21,48,.98); --tv-surface-b:rgba(8,10,24,.99);
+  --tv-border:#77dfe8; --tv-accent:#7766d9; --tv-accent-2:#79dde2; --tv-muted:#b7bed2;
+  --tv-button-active-a:#7657d4; --tv-button-active-b:#4938a9;
+}
+body.tv-mode[data-tv-theme="disco"] {
+  --tv-bg-a:#1a0c25; --tv-bg-b:#080610; --tv-surface-a:rgba(45,23,52,.98); --tv-surface-b:rgba(12,10,22,.99);
+  --tv-border:#df6cbd; --tv-accent:#d85aa8; --tv-accent-2:#72d9dc; --tv-muted:#c7bdd2;
+  --tv-button-active-a:#cf589f; --tv-button-active-b:#743eba;
+}
+body.tv-mode[data-tv-theme="christmas"] {
+  --tv-bg-a:#12281d; --tv-bg-b:#07110d; --tv-surface-a:rgba(29,55,41,.98); --tv-surface-b:rgba(10,22,16,.99);
+  --tv-border:#cf5862; --tv-accent:#cf5862; --tv-accent-2:#dfbd69; --tv-muted:#c3d0c7;
+  --tv-button-active-a:#bd4753; --tv-button-active-b:#812f39;
+}
+body.tv-mode[data-tv-theme="spider"] {
+  --tv-bg-a:#0d2037; --tv-bg-b:#050b13; --tv-surface-a:rgba(20,46,76,.98); --tv-surface-b:rgba(7,17,31,.99);
+  --tv-border:#d95662; --tv-accent:#d95662; --tv-accent-2:#66aee8; --tv-muted:#bdcadb;
+  --tv-button-active-a:#c54856; --tv-button-active-b:#852937;
+}
+body.tv-mode[data-tv-theme="pink"] {
+  --tv-bg-a:#3a2031; --tv-bg-b:#160d14; --tv-surface-a:rgba(73,39,61,.98); --tv-surface-b:rgba(27,15,24,.99);
+  --tv-border:#df91b5; --tv-accent:#da82aa; --tv-accent-2:#ecc4d7; --tv-muted:#d8c3cf;
+  --tv-button-active-a:#c86f9a; --tv-button-active-b:#8b4667;
+}
+body.tv-mode[data-tv-theme="maximal"] {
+  --tv-bg-a:#32173a; --tv-bg-b:#150a19; --tv-surface-a:rgba(55,27,63,.98); --tv-surface-b:rgba(22,12,27,.99);
+  --tv-border:#ddb95d; --tv-accent:#d260a5; --tv-accent-2:#a4d36f; --tv-text:#fff8f2; --tv-muted:#d6c8da;
+  --tv-button-a:#623055; --tv-button-b:#251327; --tv-button-active-a:#ca5b9e; --tv-button-active-b:#833d6d;
+  --tv-led:#94cf6d; --tv-led-warn:#dcb85c; --tv-led-hot:#d96471;
+}
+body.tv-mode[data-tv-theme="vector"] {
+  --tv-bg-a:#244c70; --tv-bg-b:#17344e; --tv-surface-a:rgba(39,79,114,.98); --tv-surface-b:rgba(20,49,73,.99);
+  --tv-border:#dac364; --tv-accent:#d46359; --tv-accent-2:#75d1bf; --tv-muted:#c7d4df;
+}
+body.tv-mode[data-tv-theme="cyberpunk"] {
+  --tv-bg-a:#101118; --tv-bg-b:#05060a; --tv-surface-a:rgba(25,27,35,.98); --tv-surface-b:rgba(8,9,14,.99);
+  --tv-border:#c9d25c; --tv-accent:#61d5db; --tv-accent-2:#d0d96b; --tv-muted:#b7c0c0;
+  --tv-button-active-a:#c45a9e; --tv-button-active-b:#7d3968; --tv-led:#64dbe0; --tv-led-warn:#d3d96a; --tv-led-hot:#d75a9f;
+}
+body.tv-mode[data-tv-theme="popart"] {
+  --tv-bg-a:#e3c969; --tv-bg-b:#d69a58; --tv-surface-a:rgba(248,236,183,.99); --tv-surface-b:rgba(229,198,113,.99);
+  --tv-border:#252525; --tv-border-soft:rgba(37,37,37,.34); --tv-accent:#c93648; --tv-accent-2:#225da8; --tv-text:#171717; --tv-muted:#51463e;
+  --tv-button-a:#fffaf0; --tv-button-b:#ddca8d; --tv-button-active-a:#b92d40; --tv-button-active-b:#7e1f2d;
+}
+body.tv-mode[data-tv-theme="clay"] {
+  --tv-bg-a:#e8d4cd; --tv-bg-b:#d6bbb3; --tv-surface-a:rgba(250,239,235,.99); --tv-surface-b:rgba(225,204,198,.99);
+  --tv-border:#a9857b; --tv-accent:#b6605d; --tv-accent-2:#70548d; --tv-text:#3f3634; --tv-muted:#665752;
+  --tv-button-active-a:#8b6aa8; --tv-button-active-b:#634b7b;
+}
+body.tv-mode[data-tv-theme="y2k"] {
+  --tv-bg-a:#d8e2eb; --tv-bg-b:#bac7d4; --tv-surface-a:rgba(248,251,253,.97); --tv-surface-b:rgba(216,226,235,.98);
+  --tv-border:#7770c8; --tv-accent:#6259c5; --tv-accent-2:#2f8d96; --tv-text:#202b42; --tv-muted:#536075;
+  --tv-button-active-a:#a45e88; --tv-button-active-b:#6f4e9b;
+}
+body.tv-mode[data-tv-theme="graffiti"] {
+  --tv-bg-a:#25262d; --tv-bg-b:#0d0e12; --tv-surface-a:rgba(41,43,51,.98); --tv-surface-b:rgba(14,15,20,.99);
+  --tv-border:#8ec66c; --tv-accent:#d9619c; --tv-accent-2:#9ed780; --tv-muted:#bdc0c8;
+  --tv-button-active-a:#c6538b; --tv-button-active-b:#81365d;
+}
+
+body.guest-page[data-tv-theme="neon"] { --guest-accent:#7766d9; --guest-accent-2:#79dde2; --guest-border-strong:#77dfe8; }
+body.guest-page[data-tv-theme="disco"] { --guest-accent:#d85aa8; --guest-accent-2:#72d9dc; --guest-border-strong:#df6cbd; }
+body.guest-page[data-tv-theme="christmas"] { --guest-accent:#c84f5a; --guest-accent-2:#d7b75f; --guest-border-strong:#cf5862; }
+body.guest-page[data-tv-theme="spider"] { --guest-accent:#c94d59; --guest-accent-2:#5c9fda; --guest-border-strong:#d95662; }
+body.guest-page[data-tv-theme="pink"] { --guest-accent:#cc729e; --guest-accent-2:#e7b9ce; --guest-border-strong:#d983ae; }
+body.guest-page[data-tv-theme="maximal"] { --guest-bg-a:#32173a; --guest-bg-b:#150a19; --guest-panel-a:rgba(55,27,63,.96); --guest-panel-b:rgba(22,12,27,.98); --guest-accent:#c45b99; --guest-accent-2:#9dcc6a; --guest-muted:#d2c5d5; }
+body.guest-page[data-tv-theme="cyberpunk"] { --guest-accent:#59c7ce; --guest-accent-2:#c8d15d; --guest-border-strong:#c9d25c; }
+body.guest-page[data-tv-theme="graffiti"] { --guest-accent:#c95a91; --guest-accent-2:#91c972; --guest-border-strong:#8ec66c; }
