@@ -1,0 +1,211 @@
+/* G8Code Announcements — four student-only feed presentations (V4.0).
+   Only the #gaFeed tree is restyled. Admin, modal, media viewer, replies,
+   reactions and the Firestore/RTDB-free preference behavior remain shared. */
+
+/* Hide decorative LIVE status; keep aria-live connection status for screen readers. */
+.ga-connection-sr{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;padding:0!important;border:0!important}
+.ga-feed-style-control{position:relative;z-index:2;flex:none}
+.ga-feed-style-trigger{display:flex;align-items:center;justify-content:center;gap:8px;min-height:40px;max-width:235px;padding:9px 12px;border-radius:12px;border:1px solid var(--ga-border);background:var(--ga-raised);color:var(--ga-ink);font-size:12px;font-weight:750;white-space:nowrap}
+.ga-feed-style-trigger svg{flex:none;color:var(--ga-purple)}
+.ga-feed-style-trigger strong{font-size:12px;color:var(--ga-purple);font-weight:850}
+.ga-feed-style-chevron{font-size:18px;color:var(--ga-muted);line-height:1;transition:transform .18s ease}
+.ga-feed-style-trigger[aria-expanded="true"] .ga-feed-style-chevron{transform:rotate(180deg)}
+.ga-feed-style-trigger:focus-visible,.ga-feed-style-options button:focus-visible,.ga-feed-style-menu-head button:focus-visible{outline:2px solid var(--ga-primary);outline-offset:2px}
+.ga-feed-style-backdrop{position:fixed;inset:0;z-index:1;background:transparent}
+.ga-feed-style-menu{position:absolute;right:0;top:calc(100% + 9px);z-index:2;width:min(335px,calc(100vw - 22px));padding:13px;box-shadow:0 22px 62px #101b3350;border:1px solid var(--ga-border);background:var(--ga-surface);color:var(--ga-ink);border-radius:18px}
+.ga-feed-style-menu-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:1px 3px 13px}
+.ga-feed-style-menu-head strong{font-size:15px;font-weight:850;letter-spacing:-.25px}
+.ga-feed-style-menu-head small{display:block;color:var(--ga-muted);font-size:11px;margin-top:4px}
+.ga-feed-style-menu-head button{width:31px;height:31px;display:grid;place-items:center;flex:none;border:0;border-radius:50%;background:var(--ga-raised);color:var(--ga-ink);font-size:21px}
+.ga-feed-style-options{display:grid;gap:6px}
+.ga-feed-style-options button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:63px;padding:10px;border-radius:12px;border:1px solid transparent;background:transparent;color:var(--ga-ink)}
+.ga-feed-style-options button:hover{background:var(--ga-raised)}
+.ga-feed-style-options button.selected{background:color-mix(in srgb,var(--ga-primary) 9%,var(--ga-surface));border-color:color-mix(in srgb,var(--ga-primary) 35%,var(--ga-border))}
+.ga-feed-style-symbol{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:11px;background:var(--ga-raised);color:var(--ga-purple);font-size:21px;font-weight:850;line-height:1}
+.ga-feed-style-copy{min-width:0;flex:1}
+.ga-feed-style-copy strong{display:block;font-size:13px;font-weight:800}
+.ga-feed-style-copy small{display:block;margin-top:4px;font-size:10px;color:var(--ga-muted);line-height:1.3}
+.ga-feed-style-check{color:var(--ga-purple);font-weight:900;font-size:17px;opacity:0}
+.ga-feed-style-options button.selected .ga-feed-style-check{opacity:1}
+.ga-feed-style-handle{display:none}
+
+/* Common social-timeline essentials, applied only to student feeds. */
+body[data-ga-feed-style="facebook"] #gaFeed .ga-card,
+body[data-ga-feed-style="threads"] #gaFeed .ga-card,
+body[data-ga-feed-style="x"] #gaFeed .ga-card{transition:border-color .16s ease,box-shadow .16s ease}
+body[data-ga-feed-style="facebook"] #gaFeed .ga-card:has(.ga-reactions-open),
+body[data-ga-feed-style="threads"] #gaFeed .ga-card:has(.ga-reactions-open),
+body[data-ga-feed-style="x"] #gaFeed .ga-card:has(.ga-reactions-open){z-index:5}
+
+/* FACEBOOK — large cards, relaxed rhythm, media-first blocks. */
+body[data-ga-feed-style="facebook"] .ga-workspace{grid-template-columns:minmax(210px,245px) minmax(0,750px);max-width:1180px}
+body[data-ga-feed-style="facebook"] #gaFeed{gap:23px}
+body[data-ga-feed-style="facebook"] #gaFeed .ga-card{border:1px solid var(--ga-border);border-radius:15px;box-shadow:0 5px 22px rgba(29,36,67,.075);background:var(--ga-surface)}
+body[data-ga-feed-style="facebook"].ga-dark #gaFeed .ga-card{box-shadow:0 5px 22px #0003}
+body[data-ga-feed-style="facebook"] #gaFeed .ga-post-head{padding:17px 19px 13px}
+body[data-ga-feed-style="facebook"] #gaFeed .ga-avatar{border-radius:50%;width:45px;height:45px;background:linear-gradient(140deg,#e8e8ff,#c6dcff);font-size:23px}
+body[data-ga-feed-style="facebook"] #gaFeed .ga-post-author strong{font-size:14px}
+body[data-ga-feed-style="facebook"] #gaFeed .ga-post-body--text{margin:0 17px 15px;padding:22px;border-radius:13px}
+body[data-ga-feed-style="facebook"] #gaFeed .ga-post-body--media{padding:3px 19px 16px}
+body[data-ga-feed-style="facebook"] #gaFeed .ga-card-files{gap:10px}
+body[data-ga-feed-style="facebook"] #gaFeed .ga-images{gap:3px;border-radius:0}
+body[data-ga-feed-style="facebook"] #gaFeed .ga-image{height:clamp(190px,28vw,290px)}
+body[data-ga-feed-style="facebook"] #gaFeed .ga-image:only-child{height:clamp(250px,38vw,390px)}
+body[data-ga-feed-style="facebook"] #gaFeed .ga-post-footer{padding:10px 17px 13px}
+body[data-ga-feed-style="facebook"] #gaFeed .ga-post-totals{padding:10px 3px;font-size:12px}
+body[data-ga-feed-style="facebook"] #gaFeed .ga-post-actions{gap:9px}
+body[data-ga-feed-style="facebook"] #gaFeed .ga-post-actions button{font-size:13px;font-weight:750}
+
+/* THREADS — airy threaded conversation, avatar spine, borderless feed. */
+body[data-ga-feed-style="threads"] .ga-workspace{grid-template-columns:minmax(185px,230px) minmax(0,635px);max-width:1050px}
+body[data-ga-feed-style="threads"] #gaFeed{gap:0;background:var(--ga-surface);border:1px solid var(--ga-border);border-radius:18px;padding:2px 20px;box-shadow:var(--ga-shadow)}
+body[data-ga-feed-style="threads"] #gaFeed .ga-card{margin:0;border:0;border-radius:0;border-bottom:1px solid var(--ga-border);box-shadow:none;background:transparent;position:relative;padding:7px 0 16px;overflow:visible}
+body[data-ga-feed-style="threads"] #gaFeed .ga-card:last-child{border-bottom:0}
+body[data-ga-feed-style="threads"] #gaFeed .ga-card::before{content:"";position:absolute;top:69px;bottom:30px;left:20px;border-left:2px solid var(--ga-border);pointer-events:none}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-head{padding:12px 4px 8px;gap:13px}
+body[data-ga-feed-style="threads"] #gaFeed .ga-avatar{width:40px;height:40px;border-radius:50%;background:var(--ga-raised);border:1px solid var(--ga-border);font-size:20px}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-author strong{font-size:14px;font-weight:850}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-body{margin:0 0 11px 57px;max-width:calc(100% - 57px);padding:0;border-radius:0}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-body--text[data-bg="plain"]{background:transparent;color:var(--ga-ink)}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-body--text:not([data-bg="plain"]){padding:12px;border-radius:12px}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-body h2{font-size:15px;font-weight:850;margin-bottom:8px;line-height:1.4}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-rich{font-size:13px;line-height:1.62}
+body[data-ga-feed-style="threads"] #gaFeed .ga-card-files{margin-left:57px;padding:0 0 12px;width:calc(100% - 57px)}
+body[data-ga-feed-style="threads"] #gaFeed .ga-card-files>.ga-link-card,
+body[data-ga-feed-style="threads"] #gaFeed .ga-card-files>.ga-video{margin:0;width:100%}
+body[data-ga-feed-style="threads"] #gaFeed .ga-images{border:1px solid var(--ga-border);border-radius:13px;overflow:hidden;gap:3px}
+body[data-ga-feed-style="threads"] #gaFeed .ga-image{height:155px}
+body[data-ga-feed-style="threads"] #gaFeed .ga-image:only-child{height:220px}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-footer{margin-left:57px;padding:1px 0 0;border:0}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-totals{border:0;padding:0;margin-top:6px;justify-content:flex-start;gap:15px;font-size:11px}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-actions{display:flex;gap:12px;padding:0;max-width:300px}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-actions .ga-react-wrap,
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-actions .ga-comment-main{flex:0 1 auto;width:auto}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-actions .ga-react-main,
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-actions .ga-comment-main{min-height:36px;padding:4px 6px;background:transparent;justify-content:flex-start;border:0}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-actions .ga-react-main{font-size:0;gap:5px}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-actions .ga-react-main::before{content:attr(data-ga-reaction-glyph);font-size:21px;line-height:1}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-actions .ga-react-main::after{content:attr(data-ga-reaction-caption);font-size:11px}
+body[data-ga-feed-style="threads"] #gaFeed .ga-post-actions .ga-comment-main{font-size:11px}
+body[data-ga-feed-style="threads"] #gaFeed .ga-comments{padding:12px 0 10px 57px}
+body[data-ga-feed-style="threads"] #gaFeed .ga-reaction-picker .ga-reaction-choice{font-size:13px}
+
+/* X — streamlined single timeline, compact spacing and horizontal controls. */
+body[data-ga-feed-style="x"] .ga-workspace{grid-template-columns:minmax(180px,220px) minmax(0,670px);max-width:1060px}
+body[data-ga-feed-style="x"] #gaFeed{gap:0;background:var(--ga-surface);border:1px solid var(--ga-border);border-radius:16px;overflow:visible}
+body[data-ga-feed-style="x"] #gaFeed .ga-card{background:transparent;border:0;border-bottom:1px solid var(--ga-border);border-radius:0;box-shadow:none;padding:0 17px 8px}
+body[data-ga-feed-style="x"] #gaFeed .ga-card:last-child{border-bottom:0}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-head{padding:14px 0 7px;gap:10px}
+body[data-ga-feed-style="x"] #gaFeed .ga-avatar{width:38px;height:38px;border-radius:50%;background:var(--ga-raised);font-size:19px}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-author strong{font-size:13px;font-weight:850}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-author small{margin-top:1px}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-body{margin:0 0 8px 48px;max-width:calc(100% - 48px);padding:0;border-radius:0}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-body--text[data-bg="plain"]{background:transparent;color:var(--ga-ink)}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-body--text:not([data-bg="plain"]){padding:11px;border-radius:10px}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-body h2{font-size:14px;font-weight:850;letter-spacing:0;line-height:1.4;margin-bottom:5px}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-rich{font-size:12px;line-height:1.52}
+body[data-ga-feed-style="x"] #gaFeed .ga-card-files{margin-left:48px;width:calc(100% - 48px);padding:0 0 8px}
+body[data-ga-feed-style="x"] #gaFeed .ga-card-files>.ga-link-card,
+body[data-ga-feed-style="x"] #gaFeed .ga-card-files>.ga-video{margin:0;width:100%}
+body[data-ga-feed-style="x"] #gaFeed .ga-images{border:1px solid var(--ga-border);border-radius:12px;overflow:hidden;gap:3px}
+body[data-ga-feed-style="x"] #gaFeed .ga-image{height:145px}
+body[data-ga-feed-style="x"] #gaFeed .ga-image:only-child{height:225px}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-footer{padding:0 0 5px;margin-left:48px;border:0}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-totals{font-size:10px;padding:4px 0;border:0;gap:12px;justify-content:flex-start}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-actions{display:flex;gap:14px;padding:0;max-width:350px}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-actions .ga-react-wrap,
+body[data-ga-feed-style="x"] #gaFeed .ga-post-actions .ga-comment-main{flex:0 1 auto;width:auto}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-actions .ga-react-main,
+body[data-ga-feed-style="x"] #gaFeed .ga-post-actions .ga-comment-main{background:transparent;border:0;min-height:34px;padding:3px 4px;color:var(--ga-muted);justify-content:flex-start;font-size:11px}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-actions .ga-react-main{font-size:0;gap:5px}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-actions .ga-react-main::before{content:attr(data-ga-reaction-glyph);font-size:19px;line-height:1}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-actions .ga-react-main::after{content:attr(data-ga-reaction-caption);font-size:11px}
+body[data-ga-feed-style="x"] #gaFeed .ga-post-actions .ga-react-main.active{color:var(--ga-purple)}
+body[data-ga-feed-style="x"] #gaFeed .ga-comments{padding:10px 0 8px 48px}
+
+/* On tablets preserve the existing responsive sidebar; on phones make each
+   feed style intentionally mobile-first instead of shrinking desktop cards. */
+@media(max-width:900px) and (min-width:691px){
+ body[data-ga-feed-style="facebook"] .ga-workspace,
+ body[data-ga-feed-style="threads"] .ga-workspace,
+ body[data-ga-feed-style="x"] .ga-workspace{grid-template-columns:185px minmax(0,1fr);gap:16px;padding:20px 14px}
+}
+@media(max-width:690px){
+ .ga-feed-style-trigger{padding:7px 8px;gap:5px;min-height:35px;max-width:152px;border-radius:10px}
+ .ga-feed-style-trigger svg{width:17px;height:17px}
+ .ga-feed-style-trigger-text{display:none}
+ .ga-feed-style-trigger strong{font-size:11px}
+ .ga-feed-style-chevron{font-size:16px}
+ .ga-feed-style-menu{position:fixed;right:0;left:0;top:auto;bottom:0;width:100%;padding:7px 14px max(16px,env(safe-area-inset-bottom));border-radius:22px 22px 0 0;max-height:min(85dvh,630px);overflow-y:auto;overscroll-behavior:contain;box-shadow:0 -18px 50px #03081959}
+ .ga-feed-style-backdrop{background:rgba(4,9,22,.48);backdrop-filter:blur(3px)}
+ .ga-feed-style-handle{display:block;width:40px;height:4px;border-radius:100px;background:var(--ga-border);margin:2px auto 16px}
+ .ga-feed-style-options{gap:8px}
+ .ga-feed-style-options button{min-height:67px}
+ body.ga-feed-style-menu-open{overflow:hidden}
+ body[data-ga-feed-style="facebook"] .ga-workspace,
+ body[data-ga-feed-style="threads"] .ga-workspace,
+ body[data-ga-feed-style="x"] .ga-workspace{display:block;padding:14px 10px 65px}
+ body[data-ga-feed-style="facebook"] #gaFeed{gap:12px}
+ body[data-ga-feed-style="facebook"] #gaFeed .ga-card{border-radius:13px}
+ body[data-ga-feed-style="facebook"] #gaFeed .ga-post-head{padding:13px 12px 10px}
+ body[data-ga-feed-style="facebook"] #gaFeed .ga-avatar{width:39px;height:39px}
+ body[data-ga-feed-style="facebook"] #gaFeed .ga-post-body--text{margin:0 10px 12px;padding:15px}
+ body[data-ga-feed-style="facebook"] #gaFeed .ga-post-body--media{padding:2px 12px 13px}
+ body[data-ga-feed-style="facebook"] #gaFeed .ga-image{height:165px}
+ body[data-ga-feed-style="facebook"] #gaFeed .ga-image:only-child{height:240px}
+ body[data-ga-feed-style="facebook"] #gaFeed .ga-post-footer{padding:8px 11px 11px}
+ body[data-ga-feed-style="threads"] #gaFeed{border-radius:13px;padding:0 12px}
+ body[data-ga-feed-style="threads"] #gaFeed .ga-card{padding:5px 0 13px}
+ body[data-ga-feed-style="threads"] #gaFeed .ga-card::before{left:18px;top:62px;bottom:23px}
+ body[data-ga-feed-style="threads"] #gaFeed .ga-post-head{padding:11px 2px 8px;gap:10px}
+ body[data-ga-feed-style="threads"] #gaFeed .ga-avatar{width:37px;height:37px}
+ body[data-ga-feed-style="threads"] #gaFeed .ga-post-body{margin-left:49px;max-width:calc(100% - 49px)}
+ body[data-ga-feed-style="threads"] #gaFeed .ga-card-files{margin-left:49px;width:calc(100% - 49px)}
+ body[data-ga-feed-style="threads"] #gaFeed .ga-post-footer{margin-left:49px}
+ body[data-ga-feed-style="threads"] #gaFeed .ga-comments{padding-left:49px}
+ body[data-ga-feed-style="threads"] #gaFeed .ga-image{height:115px}
+ body[data-ga-feed-style="threads"] #gaFeed .ga-image:only-child{height:176px}
+ body[data-ga-feed-style="x"] #gaFeed{border-radius:12px}
+ body[data-ga-feed-style="x"] #gaFeed .ga-card{padding:0 10px 7px}
+ body[data-ga-feed-style="x"] #gaFeed .ga-post-head{gap:8px;padding-top:11px}
+ body[data-ga-feed-style="x"] #gaFeed .ga-avatar{width:34px;height:34px}
+ body[data-ga-feed-style="x"] #gaFeed .ga-post-body{margin-left:42px;max-width:calc(100% - 42px)}
+ body[data-ga-feed-style="x"] #gaFeed .ga-card-files{margin-left:42px;width:calc(100% - 42px)}
+ body[data-ga-feed-style="x"] #gaFeed .ga-post-footer{margin-left:42px}
+ body[data-ga-feed-style="x"] #gaFeed .ga-comments{padding-left:42px}
+ body[data-ga-feed-style="x"] #gaFeed .ga-image{height:114px}
+ body[data-ga-feed-style="x"] #gaFeed .ga-image:only-child{height:173px}
+}
+@media(max-width:365px){
+ .ga-feed-style-trigger{padding:7px 6px}
+ .ga-feed-style-trigger strong{font-size:10px}
+ .ga-feed-style-trigger svg{width:15px;height:15px}
+}
+@media(prefers-reduced-motion:reduce){.ga-feed-style-chevron,body[data-ga-feed-style] #gaFeed .ga-card{transition:none}}
+
+/* Student Announcements: keep the mobile header to exactly two text lines.
+   Only the feed-style CONTROL is icon-only; the selection sheet still displays
+   all names and descriptions, and the full label remains visible on desktop. */
+@media(max-width:690px){
+ .ga-top .ga-feed-style-control{flex:0 0 36px!important;width:36px!important;min-width:36px!important;max-width:36px!important}
+ .ga-top #gaFeedStyleButton{
+  width:36px!important;height:36px!important;min-width:36px!important;
+  min-height:36px!important;max-width:36px!important;max-height:36px!important;
+  padding:0!important;gap:0!important;border-radius:11px!important;display:grid!important;
+  place-items:center!important;flex:0 0 36px!important;
+ }
+ .ga-top #gaFeedStyleButton svg{width:19px!important;height:19px!important;margin:0!important;display:block!important}
+ .ga-top #gaFeedStyleButton .ga-feed-style-trigger-text,
+ .ga-top #gaFeedStyleButton #gaFeedStyleCurrent,
+ .ga-top #gaFeedStyleButton .ga-feed-style-chevron{display:none!important}
+ .ga-top .ga-heading{flex:1 1 0!important;min-width:0!important;overflow:hidden}
+ .ga-top .ga-heading strong,
+ .ga-top .ga-heading small{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis}
+}
+@media(max-width:350px){
+ /* A second logo is redundant when the heading already says G8Code. Hiding
+    only at very narrow widths lets both heading lines remain fully readable. */
+ .ga-top .ga-logo{display:none!important}
+ .ga-top{gap:7px!important}
+ .ga-top .ga-heading strong{font-size:13px!important}
+}

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark"><title>Announcements · G8Code</title>
+<link rel="icon" href="favicon.png"><link rel="stylesheet" href="announcements.css?v=810-scheduled-publish"><link rel="stylesheet" href="announcements-post-modal.css?v=837-mobile-comments-navigation">
+<link rel="stylesheet" href="announcements-feed-styles.css?v=20261108-mobile-icon-only-v1">
+<script src="firebase-config.js"></script><script src="g8code-messages-drive-config.js"></script>
+<script src="announcements-photo-cache.js?v=529" defer></script>
+<script defer src="g8code-push-config.js?v=2"></script>
+<script defer src="g8code-push.js?v=752-two-way-push"></script>
+<script defer src="g8code-admin-activity-events.js?v=1"></script>
+<script src="announcements.js?v=752-two-way-push" defer></script>
+</head>
+<body>
+<div class="ga-app" id="gaApp">
+<header class="ga-top"><a href="index.html" id="gaBack" class="ga-back" aria-label="Back to G8Code">‹</a><div class="ga-logo" aria-label="Announcements"><svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10v4l8 3V7l-8 3Z"/><path d="M11 7l9-4v18l-9-4"/><path d="m6 16 2 5"/><path d="M20 9a4 4 0 0 1 0 6"/></svg></div><div class="ga-heading"><strong>G8Code <em>Announcements</em></strong><small id="gaHeaderSubtitle">Your class bulletin, in one place</small></div><div class="ga-top-actions">
+  <button id="gaTheme" type="button" aria-label="Switch theme" title="Switch theme">◐</button>
+  <span id="gaConnection" class="ga-connection-sr" role="status" aria-live="polite">Connecting…</span>
+  <div id="gaFeedStyleControl" class="ga-feed-style-control" hidden>
+    <button id="gaFeedStyleButton" type="button" class="ga-feed-style-trigger" aria-label="Choose feed style" aria-haspopup="dialog" aria-expanded="false" aria-controls="gaFeedStyleMenu" title="Change announcement feed style">
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      <span class="ga-feed-style-trigger-text">Feed Style</span><strong id="gaFeedStyleCurrent">Default</strong><span aria-hidden="true" class="ga-feed-style-chevron">⌄</span>
+    </button>
+    <div id="gaFeedStyleBackdrop" class="ga-feed-style-backdrop" hidden></div>
+    <section id="gaFeedStyleMenu" class="ga-feed-style-menu" role="dialog" aria-label="Choose announcement feed style" aria-modal="false" hidden>
+      <div class="ga-feed-style-handle" aria-hidden="true"></div>
+      <div class="ga-feed-style-menu-head"><div><strong>Choose a feed style</strong><small>Only changes how announcements look.</small></div><button type="button" id="gaFeedStyleClose" aria-label="Close feed style options">×</button></div>
+      <div class="ga-feed-style-options" role="group" aria-label="Feed styles">
+        <button type="button" data-ga-feed-style-option="default" aria-pressed="true"><span class="ga-feed-style-symbol">▦</span><span class="ga-feed-style-copy"><strong>Default</strong><small>Original G8Code announcement feed</small></span><span class="ga-feed-style-check" aria-hidden="true">✓</span></button>
+        <button type="button" data-ga-feed-style-option="facebook" aria-pressed="false"><span class="ga-feed-style-symbol">f</span><span class="ga-feed-style-copy"><strong>Facebook</strong><small>Rich newsfeed cards and photos</small></span><span class="ga-feed-style-check" aria-hidden="true">✓</span></button>
+        <button type="button" data-ga-feed-style-option="threads" aria-pressed="false"><span class="ga-feed-style-symbol">@</span><span class="ga-feed-style-copy"><strong>Threads</strong><small>Minimal conversation timeline</small></span><span class="ga-feed-style-check" aria-hidden="true">✓</span></button>
+        <button type="button" data-ga-feed-style-option="x" aria-pressed="false"><span class="ga-feed-style-symbol">𝕏</span><span class="ga-feed-style-copy"><strong>X (Twitter)</strong><small>Compact, text-first timeline</small></span><span class="ga-feed-style-check" aria-hidden="true">✓</span></button>
+      </div>
+    </section>
+  </div>
+</div></header>
+<section id="gaGate" class="ga-gate" aria-live="polite"><div class="ga-gate-card"><div class="ga-gate-icon">📣</div><h1 id="gaGateTitle">Opening Announcements</h1><p id="gaGateText">Checking your G8Code account…</p><form id="gaLogin" class="ga-login" hidden><label for="gaLoginRole">Sign in as</label><select id="gaLoginRole"><option value="student">Student</option><option value="teacher">Teacher / Admin</option></select><label for="gaLoginIdentity" id="gaIdentityLabel">Student ID</label><input id="gaLoginIdentity" autocomplete="username" placeholder="Student ID" required><label for="gaLoginPassword">Password</label><input id="gaLoginPassword" type="password" autocomplete="current-password" required><button type="submit" id="gaLoginButton">Sign in to Announcements</button><p class="ga-error" id="gaLoginError" hidden></p></form><a href="index.html">Back to G8Code login</a></div></section>
+<div id="gaWorkspace" class="ga-workspace" hidden>
+ <aside class="ga-sidebar"><div class="ga-side-intro"><span>CLASS COMMUNICATION</span><h2>Keep everyone<br>in the loop.</h2><p>Updates, class materials, and conversations from your teacher.</p></div><nav class="ga-filters" aria-label="Announcement views"><button type="button" class="active" data-ga-filter="all">☷ All posts <b id="gaAllCount">0</b></button><button type="button" data-ga-filter="unread">● New & unread <b id="gaUnreadCount">0</b></button><button type="button" data-ga-filter="pinned">⌑ Pinned</button><button type="button" data-ga-filter="drafts" class="ga-teacher-only">✎ Drafts</button><button type="button" data-ga-filter="scheduled" class="ga-teacher-only">◷ Scheduled <b id="gaScheduledCount">0</b></button><button type="button" data-ga-filter="archived" class="ga-teacher-only">▤ Archived</button></nav><div class="ga-side-footer">Class updates, all in one place <small>See the latest posts from your teacher.</small></div></aside>
+ <main class="ga-main"><div class="ga-main-head"><div><small class="ga-overline" id="gaGreeting">SCHOOL BULLETIN</small><h1 id="gaTitle">Class announcements</h1><p id="gaSubtitle">Your latest updates and resources appear here.</p></div><button id="gaNew" type="button" class="ga-primary ga-teacher-only" hidden>＋ New post</button></div><div class="ga-feed-tools"><label class="ga-search">⌕ <input id="gaSearch" type="search" placeholder="Search announcements" aria-label="Search announcements"></label><button id="gaRefresh" type="button" title="Refresh announcements" aria-label="Refresh announcements">↻</button><span id="gaFeedStatus" role="status">Loading…</span></div><div class="ga-engagement-filters ga-teacher-only" hidden aria-label="Filter admin announcements by audience">
+ <label>Show announcements for <select id="gaAudienceTypeFilter" aria-label="Filter announcements by audience"><option value="all">All Announcements</option><option value="everyone">For All Sections</option><option value="students">Selected Students Only</option></select></label>
+ <p class="ga-smallprint ga-audience-filter-hint" id="gaAudienceFilterHint">Showing every announcement across all audiences and publication statuses.</p>
+ 
+ </div><div id="gaFeed" class="ga-feed" aria-live="polite"></div><p id="gaFeedMore" class="ga-footnote">Only announcements meant for your account are shown.</p></main>
+</div>
+<div class="ga-modal ga-post-modal" id="gaPostModal" role="dialog" aria-modal="true" aria-labelledby="gaPostModalTitle" hidden>
+ <div class="ga-modal-backdrop" data-ga-close="post"></div>
+ <section class="ga-post-dialog" aria-label="Announcement and comments">
+  <header class="ga-post-dialog-header">
+   <button type="button" id="gaPostBack" class="ga-post-back" aria-label="Back to full announcement" hidden>‹</button>
+   <strong id="gaPostModalTitle">ICT Teacher’s post</strong>
+   <button type="button" id="gaPostClose" aria-label="Close announcement and return to feed">×</button>
+  </header>
+  <nav id="gaMobileReactionBar" class="ga-mobile-reactions" aria-label="React to this announcement" hidden>
+   <div id="gaMobileReactionChoices" class="ga-mobile-reaction-choices" role="group" aria-label="Choose your reaction">
+    <button type="button" data-ga-mobile-reaction="👍" aria-label="Like" aria-pressed="false"><span aria-hidden="true">👍</span> Like <small class="ga-mobile-reaction-count"></small></button>
+    <button type="button" data-ga-mobile-reaction="❤️" aria-label="Love" aria-pressed="false"><span aria-hidden="true">❤️</span> Love <small class="ga-mobile-reaction-count"></small></button>
+    <button type="button" data-ga-mobile-reaction="🤗" aria-label="Care" aria-pressed="false"><span aria-hidden="true">🤗</span> Care <small class="ga-mobile-reaction-count"></small></button>
+   </div>
+   <small id="gaMobileCommentCount" class="ga-mobile-comment-count">0 comments</small>
+  </nav>
+  <div id="gaPostDialogScroll" class="ga-post-dialog-scroll" tabindex="0"><div id="gaPostDialogBody"></div></div>
+  <footer id="gaPostCommentDock" class="ga-post-comment-dock" aria-label="Write a comment"></footer>
+ </section>
+</div>
+<div class="ga-modal" id="gaComposerModal" role="dialog" aria-modal="true" aria-labelledby="gaComposeTitle" hidden><div class="ga-modal-backdrop" data-ga-close="composer"></div><section class="ga-compose-dialog"><header class="ga-dialog-header"><div><small>TEACHER POST CREATOR</small><h2 id="gaComposeTitle">Create announcement</h2></div><button type="button" id="gaComposeClose" aria-label="Close announcement editor">×</button></header><div class="ga-compose-scroll"><div class="ga-compose-content">
+<label class="ga-field"><span>Announcement title</span><input id="gaPostTitle" maxlength="140" placeholder="e.g. ICT 8 — Weekly Reminders" required></label>
+<div class="ga-field"><span>Announcement design</span><div class="ga-design-row"><label>Background <select id="gaBackground"><option value="plain">Classic</option><option value="blue">Soft blue</option><option value="lavender">Lavender</option><option value="yellow">Warm yellow</option><option value="mint">Mint</option><option value="rose">Rose</option><option value="navy">Midnight blue</option><option value="gradient">Gradient</option><option value="custom">Custom color</option></select></label><label id="gaCustomBackgroundWrap" hidden>Custom background <input type="color" id="gaCustomBackground" value="#e8f0ff" aria-label="Custom announcement background color"></label><label>Font <select id="gaFont"><option value="Arial">Arial</option><option value="Georgia">Georgia</option><option value="Verdana">Verdana</option><option value="Trebuchet MS">Trebuchet</option><option value="Times New Roman">Times New Roman</option><option value="Courier New">Monospace</option></select></label></div><small id="gaMediaBackgroundHint" hidden>Media post: background colors are automatically hidden while attachments are included. Your chosen background will return for text-only posts.</small></div>
+<div class="ga-field"><span>Message</span><div class="ga-toolbar" role="toolbar" aria-label="Text formatting"><button type="button" data-ga-cmd="bold" title="Bold"><b>B</b></button><button type="button" data-ga-cmd="italic" title="Italic"><i>I</i></button><button type="button" data-ga-cmd="underline" title="Underline"><u>U</u></button><button type="button" data-ga-cmd="insertUnorderedList" title="Bullets">☷</button><button type="button" data-ga-cmd="insertOrderedList" title="Numbered list">1.</button><button type="button" data-ga-cmd="justifyLeft" title="Align left">☰</button><button type="button" data-ga-cmd="justifyCenter" title="Center">≡</button><button type="button" data-ga-cmd="justifyRight" title="Align right">☷</button><label class="ga-toolbar-picker" title="Text size">Size <select id="gaTextSize"><option value="3">Normal</option><option value="2">Small</option><option value="4">Large</option><option value="5">Heading</option><option value="6">Display</option></select></label><label class="ga-toolbar-picker" title="Text color">A <input type="color" id="gaTextColor" value="#172b4d"></label><button type="button" id="gaInsertLink">🔗 Link</button><button type="button" data-ga-cmd="removeFormat" title="Clear formatting">Tx</button></div><div id="gaRichText" class="ga-rich-text" contenteditable="true" role="textbox" aria-label="Announcement message" aria-multiline="true" data-placeholder="Share a class update, reminders, instructions, or anything students should know…"></div><small>Your text formatting will be included when you publish.</small></div>
+<div class="ga-field"><span>Attachments <small>(mix images and PDFs in the same post)</small></span><div class="ga-attach-buttons"><button id="gaAddImages" type="button">▧ Add images · max 10</button><button id="gaAddPdf" type="button">▤ Add PDFs</button><button id="gaAddLink" type="button">🔗 Web link</button><button id="gaAddYoutube" type="button">▶ YouTube</button><button id="gaAddLesson" type="button">📘 Lesson</button><button id="gaAddActivity" type="button">✎ Activity</button></div><input id="gaImageFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden><input id="gaPdfFiles" type="file" accept="application/pdf,.pdf" multiple hidden><div id="gaAttachmentList" class="ga-attachment-list"></div><p class="ga-smallprint">Attach images and PDFs together in one post. Keep this page open until uploads finish.</p></div>
+<div class="ga-field"><span>Who can see this?</span><div class="ga-audience-types"><label><input type="radio" name="gaAudience" value="all" checked> All Students</label><label><input type="radio" name="gaAudience" value="sections"> Selected Sections</label><label><input type="radio" name="gaAudience" value="students"> Selected Students</label></div><div id="gaAudiencePicker" hidden><input type="search" id="gaAudienceSearch" placeholder="Search sections or students"><div id="gaAudienceList" class="ga-audience-list"></div></div><p id="gaAudienceCount" class="ga-smallprint">Loading students…</p></div>
+<div class="ga-publish-settings" id="gaPublishSettings">
+ <strong>When should this announcement be published?</strong>
+ <div class="ga-publish-modes" role="radiogroup" aria-label="Publish timing">
+  <label><input type="radio" name="gaPublishTiming" value="now" checked> ⚡ Publish Now <small>Students can see it immediately.</small></label>
+  <label><input type="radio" name="gaPublishTiming" value="schedule"> 🗓 Schedule Publication <small>Automatically publish later.</small></label>
+ </div>
+ <div class="ga-schedule-fields" id="gaScheduleFields" hidden>
+  <label for="gaScheduleDate">Publication date &amp; time <span>Philippine Time (UTC+08:00)</span></label>
+  <input id="gaScheduleDate" type="datetime-local" step="60" aria-describedby="gaScheduleNote">
+  <small id="gaScheduleNote">The automatic publisher checks about once a minute, even when you are logged out. Students cannot see scheduled posts early.</small>
+ </div>
+</div>
+<div class="ga-options"><label><input id="gaAllowReplies" type="checkbox" checked> Allow students to reply</label><label><input id="gaPinned" type="checkbox"> Pin this announcement</label></div><div id="gaComposePreview" class="ga-compose-preview"></div><p id="gaComposeStatus" class="ga-status" role="status" aria-live="polite"></p></div></div><footer class="ga-dialog-footer"><button type="button" id="gaSaveDraft">Save Draft</button><button type="button" id="gaPublish" class="ga-primary">⚡ Publish Now</button></footer></section></div>
+<div class="ga-modal" id="gaResourcePicker" role="dialog" aria-modal="true" aria-labelledby="gaPickerTitle" hidden>
+  <div class="ga-modal-backdrop" data-ga-close="resource"></div>
+  <section class="ga-picker-dialog">
+    <header class="ga-picker-head"><div><small>ATTACH FROM G8CODE</small><h2 id="gaPickerTitle">Choose a Lesson</h2><p id="gaPickerDescription">Select a published resource from your existing G8Code library.</p></div><button id="gaPickerClose" type="button" aria-label="Close resource picker">×</button></header>
+    <div class="ga-picker-tools"><label class="ga-picker-search">⌕ <input id="gaPickerSearch" type="search" autocomplete="off" placeholder="Search by title or term…" aria-label="Search lessons or activities"></label><select id="gaPickerTerm" aria-label="Filter resource by term"><option value="all">All terms</option><option value="term1">Term 1</option><option value="term2">Term 2</option><option value="term3">Term 3</option></select></div>
+    <div id="gaPickerList" class="ga-picker-list" role="list" aria-live="polite"></div>
+    <footer class="ga-picker-footer"><span id="gaPickerCount">Choose an item to attach.</span><button id="gaPickerDone" type="button">Done</button></footer>
+  </section>
+</div>
+<div class="ga-modal" id="gaReactorsModal" role="dialog" aria-modal="true" aria-labelledby="gaReactorsTitle" hidden>
+ <div class="ga-modal-backdrop" data-ga-close="reactors"></div>
+ <section class="ga-reactors-dialog"><header class="ga-reactors-header"><div><small>ANNOUNCEMENT ENGAGEMENT</small><h2 id="gaReactorsTitle">Students who reacted</h2><p id="gaReactorsPostTitle"></p></div><button id="gaReactorsClose" type="button" aria-label="Close reaction list">×</button></header>
+ <div id="gaReactorsTabs" class="ga-reactors-tabs" role="group" aria-label="Filter reactions"></div>
+ <label class="ga-reactors-search">⌕ <input type="search" id="gaReactorsSearch" autocomplete="off" placeholder="Search by student name or section" aria-label="Search students who reacted"></label>
+ <div id="gaReactorsList" class="ga-reactors-list" aria-live="polite"></div>
+ <footer id="gaReactorsSummary" class="ga-reactors-summary"></footer></section>
+</div>
+<div id="gaViewerModal" class="ga-modal" role="dialog" aria-modal="true" aria-label="Attachment viewer" hidden><div class="ga-modal-backdrop" data-ga-close="viewer"></div><section class="ga-viewer-dialog"><header><strong id="gaViewerTitle">Attachment</strong><div><button id="gaViewerDownload" type="button">↓ Download</button><button id="gaViewerClose" type="button" aria-label="Close attachment viewer">×</button></div></header><div id="gaViewerBody"></div><p id="gaViewerError" role="alert"></p></section></div>
+<div id="gaToast" class="ga-toast" role="status" aria-live="polite" hidden></div>
+</div>
+</body></html>
