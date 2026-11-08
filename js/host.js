@@ -95,6 +95,9 @@ const tvReactionLayer = document.querySelector("#tvReactionLayer");
 const tvDedicationOverlay = document.querySelector("#tvDedicationOverlay");
 const tvDedicationText = document.querySelector("#tvDedicationText");
 const tvDedicationFrom = document.querySelector("#tvDedicationFrom");
+const tvSongIntroOverlay = document.querySelector("#tvSongIntroOverlay");
+const tvSongIntroTitle = document.querySelector("#tvSongIntroTitle");
+const tvSongIntroSinger = document.querySelector("#tvSongIntroSinger");
 
 let db;
 let user;
@@ -123,6 +126,15 @@ const handledSingerRequestIds = new Set();
 const seenReactionNonces = new Set();
 let dedicationOverlayTimer = null;
 let lastDedicationSongId = null;
+// Song introductions are visual-only: no Firebase writes, playback commands or
+// changes to the existing dedication display/timing.
+const SONG_INTRO_VISIBLE_MS = 3600;
+const SONG_INTRO_FRESH_MS = 12000;
+let songIntroWaitTimer = null;
+let songIntroHideTimer = null;
+let songIntroRequestToken = 0;
+let pendingSongIntroId = null;
+let lastShownSongIntroId = null;
 let autoStartTimer = null;
 let autoStartInFlight = false;
 
@@ -547,6 +559,81 @@ function showDedicationForSong(song) {
   }, 2800);
 }
 
+// A brief karaoke-style text-only overlay. It never pauses or delays YouTube.
+// The dedication overlay is left unchanged; if one is visible, the song intro
+// waits for its original auto-hide so the two presentations never overlap.
+function cancelSongIntro() {
+  songIntroRequestToken += 1;
+  window.clearTimeout(songIntroWaitTimer);
+  window.clearTimeout(songIntroHideTimer);
+  songIntroWaitTimer = null;
+  songIntroHideTimer = null;
+  pendingSongIntroId = null;
+  if (tvSongIntroOverlay) {
+    tvSongIntroOverlay.classList.remove("is-showing");
+    tvSongIntroOverlay.hidden = true;
+  }
+}
+
+function queueSongIntro(song) {
+  if (!tvSongIntroOverlay || !song?.queueItemId || !document.body.classList.contains("tv-mode")) return;
+  const songId = String(song.queueItemId);
+  if (songId === pendingSongIntroId || songId === lastShownSongIntroId) return;
+
+  // On host recovery or entering TV mid-song, do not flash an old title.
+  const startedAt = Number(song.startedAt || 0);
+  if (startedAt && hostServerTimeOffsetReady && hostServerNowMs() - startedAt > SONG_INTRO_FRESH_MS) return;
+
+  cancelSongIntro();
+  pendingSongIntroId = songId;
+  const requestToken = songIntroRequestToken;
+  const title = String(song.title || "Untitled song").trim() || "Untitled song";
+  const singer = String(song.singerName || "Guest").trim() || "Guest";
+  if (tvSongIntroTitle) tvSongIntroTitle.textContent = title;
+  if (tvSongIntroSinger) tvSongIntroSinger.textContent = singer;
+  const characters = Array.from(title).length;
+  tvSongIntroOverlay.dataset.titleLength = characters > 88 ? "very-long" : characters > 48 ? "long" : "normal";
+
+  const queuedAt = Date.now();
+  function revealWhenReady() {
+    if (requestToken !== songIntroRequestToken ||
+        !document.body.classList.contains("tv-mode") ||
+        String(currentSong?.queueItemId || "") !== songId) return;
+
+    // Wait for the original dedication to auto-hide AND for YouTube to
+    // actually enter PLAYING. Neither condition changes/pauses playback.
+    const dedicationVisible = Boolean(tvDedicationOverlay && !tvDedicationOverlay.hidden);
+    let videoPlaying = false;
+    try {
+      videoPlaying = Boolean(playerReady && player && window.YT?.PlayerState &&
+        player.getPlayerState() === window.YT.PlayerState.PLAYING);
+    } catch {}
+    if (dedicationVisible || !videoPlaying) {
+      if (Date.now() - queuedAt < SONG_INTRO_FRESH_MS) {
+        songIntroWaitTimer = window.setTimeout(revealWhenReady, 90);
+      } else {
+        // Avoid covering an unfinished dedication or announcing a stale song.
+        pendingSongIntroId = null;
+        lastShownSongIntroId = songId;
+      }
+      return;
+    }
+    pendingSongIntroId = null;
+    lastShownSongIntroId = songId;
+    tvSongIntroOverlay.hidden = false;
+    tvSongIntroOverlay.classList.remove("is-showing");
+    void tvSongIntroOverlay.offsetWidth;
+    tvSongIntroOverlay.classList.add("is-showing");
+    songIntroHideTimer = window.setTimeout(() => {
+      if (requestToken !== songIntroRequestToken) return;
+      tvSongIntroOverlay.classList.remove("is-showing");
+      tvSongIntroOverlay.hidden = true;
+      songIntroHideTimer = null;
+    }, SONG_INTRO_VISIBLE_MS);
+  }
+  songIntroWaitTimer = window.setTimeout(revealWhenReady, 0);
+}
+
 // Only Full Mode needs a readable marquee: rather than hiding long titles,
 // slowly pan the title text *inside* its compact reserved space.
 let fullModeTitleFrame = 0;
@@ -845,6 +932,9 @@ function stopPlaybackSyncHeartbeat() {
 }
 
 function renderCurrentSong(song) {
+  const previousSongId = String(currentSong?.queueItemId || "");
+  const incomingSongId = String(song?.queueItemId || "");
+  if (previousSongId !== incomingSongId) cancelSongIntro();
   currentSong = song || null;
   showPlayerError("");
   renderTvQueueStrip();
@@ -890,6 +980,7 @@ function renderCurrentSong(song) {
   updateAmbilightForSong(currentSong);
   renderSingerPreview();
   showDedicationForSong(currentSong);
+  queueSongIntro(currentSong);
   renderHistory();
 }
 
@@ -1415,6 +1506,7 @@ async function showSession(sessionId) {
 }
 
 function showUnlock(sessionId, migration = false) {
+  cancelSongIntro();
   activeSessionId = sessionId;
   createPanel.hidden = true;
   sessionPanel.hidden = true;
@@ -1486,6 +1578,7 @@ async function enterTvMode({ full = false } = {}) {
   scheduleTvMarqueeRefresh();
   renderSingerPreview();
   showDedicationForSong(currentSong);
+  queueSongIntro(currentSong);
   try {
     if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
       await document.documentElement.requestFullscreen();
@@ -1497,6 +1590,7 @@ async function enterTvMode({ full = false } = {}) {
 }
 
 async function exitTvMode() {
+  cancelSongIntro();
   setQrOverlay(false);
   setFullModeEnabled(false);
   document.body.classList.remove("tv-mode");
@@ -1877,7 +1971,10 @@ tvExitBtn?.addEventListener("click", () => {
 document.addEventListener("fullscreenchange", () => {
   const fullscreen = Boolean(document.fullscreenElement);
   document.body.classList.toggle("tv-mode", fullscreen);
-  if (!fullscreen) setFullModeEnabled(false);
+  if (!fullscreen) {
+    cancelSongIntro();
+    setFullModeEnabled(false);
+  }
   fullscreenBtn.textContent = fullscreen ? "⛶ Exit TV" : "📺 TV Mode";
   if (!fullscreen && !document.body.classList.contains("tv-mode")) {
     setQrOverlay(false);

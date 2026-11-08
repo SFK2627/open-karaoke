@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Host</title>
-  <link rel="stylesheet" href="./css/style.css?v=20261108-full-overlay-more-counter-2">
+  <link rel="stylesheet" href="./css/style.css?v=20261108-song-intro-v1">
 </head>
 <body class="host-page">
   <header class="topbar">
@@ -175,6 +175,11 @@
             <span class="tv-dedication-kicker">💬 DEDICATION</span>
             <strong id="tvDedicationText"></strong>
             <small id="tvDedicationFrom"></small>
+          </div>
+          <!-- Additive, text-only karaoke song introduction; shown only in TV/Full Mode. -->
+          <div class="tv-song-intro-overlay" id="tvSongIntroOverlay" hidden aria-hidden="true">
+            <strong class="tv-song-intro-title" id="tvSongIntroTitle"></strong>
+            <span class="tv-song-intro-singer" id="tvSongIntroSinger"></span>
           </div>
         </div>
 
@@ -365,6 +370,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module" src="./js/host.js?v=20261108-full-overlay-more-counter-2"></script>
+  <script type="module" src="./js/host.js?v=20261108-song-intro-v1"></script>
 </body>
 </html>
