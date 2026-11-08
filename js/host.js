@@ -546,6 +546,46 @@ function showDedicationForSong(song) {
   }, 2800);
 }
 
+// Only Full Mode needs a readable marquee: rather than hiding long titles,
+// slowly pan the title text *inside* its compact reserved space.
+let fullModeTitleFrame = 0;
+let fullModeQueueTimer = null;
+function scheduleFullModeTitleRefresh() {
+  if (fullModeTitleFrame) cancelAnimationFrame(fullModeTitleFrame);
+  fullModeTitleFrame = requestAnimationFrame(() => {
+    fullModeTitleFrame = 0;
+    if (!document.body.classList.contains("tv-full-mode")) return;
+    document.querySelectorAll(".tv-full-song strong, .tv-queue-text strong").forEach(viewport => {
+      const inner = viewport.querySelector(".tv-full-title-inner");
+      if (!inner) return;
+      viewport.classList.remove("is-scrolling");
+      const distance = Math.ceil(inner.scrollWidth - viewport.clientWidth);
+      if (distance > 4) {
+        inner.style.setProperty("--tv-title-travel", `${distance + 3}px`);
+        inner.style.setProperty("--tv-title-duration", `${Math.max(10, Math.min(28, 8 + distance / 24)).toFixed(1)}s`);
+        viewport.classList.add("is-scrolling");
+      }
+    });
+  });
+}
+function stopFullModeQueueRotation() {
+  if (fullModeQueueTimer) clearInterval(fullModeQueueTimer);
+  fullModeQueueTimer = null;
+}
+function startFullModeQueueRotation() {
+  stopFullModeQueueRotation();
+  fullModeQueueTimer = window.setInterval(() => {
+    if (!document.body.classList.contains("tv-full-mode") || document.hidden || !tvQueueStrip) return;
+    const maxLeft = tvQueueStrip.scrollWidth - tvQueueStrip.clientWidth;
+    if (maxLeft < 8) return;
+    const firstCard = tvQueueStrip.querySelector(".tv-queue-card");
+    const cardStep = (firstCard?.getBoundingClientRect().width || 120) + 6;
+    const next = tvQueueStrip.scrollLeft + (cardStep * 2);
+    tvQueueStrip.scrollTo({ left: next > maxLeft - 6 ? 0 : Math.min(next, maxLeft), behavior: "smooth" });
+  }, 9500);
+}
+window.addEventListener("resize", scheduleFullModeTitleRefresh);
+
 function renderTvQueueStrip() {
   if (!tvQueueStrip) return;
   const waiting = waitingEntries();
@@ -556,18 +596,23 @@ function renderTvQueueStrip() {
     return;
   }
 
-  const visible = waiting.slice(0, 7);
+  // Full Mode shows more reservations in the SAME space, not wider cards.
+  // Standard TV Mode keeps its original 7-item display and queue geometry.
+  const inFullMode = document.body.classList.contains("tv-full-mode");
+  const visible = waiting.slice(0, inFullMode ? 15 : 7);
   const extra = waiting.length - visible.length;
   tvQueueStrip.innerHTML = visible.map(([, item], index) => `
     <div class="tv-queue-card" title="${escapeHtml(item.title)} — ${escapeHtml(item.singerName)}">
       <span class="tv-queue-number">${index + 1}</span>
       <img src="${escapeHtml(item.thumbnail)}" alt="" loading="lazy">
       <span class="tv-queue-text">
-        <strong>${escapeHtml(item.title)}</strong>
+        <strong><span class="tv-full-title-inner">${escapeHtml(item.title)}</span></strong>
         <small>👤 ${escapeHtml(item.singerName)}</small>
       </span>
+      <span class="tv-full-singer-badge" title="Reserved by ${escapeHtml(item.singerName)}" aria-label="Reserved by ${escapeHtml(item.singerName)}">🎤 ${escapeHtml(item.singerName)}</span>
     </div>
   `).join("") + (extra > 0 ? `<span class="tv-queue-more">+${extra} more</span>` : "");
+  scheduleFullModeTitleRefresh();
 }
 
 function renderHostQueue() {
@@ -752,10 +797,18 @@ function renderCurrentSong(song) {
   // The optional Full Mode has its own compact title in the top overlay;
   // original TV footer values and playback data are unchanged.
   if (tvFullNowTitle) {
-    tvFullNowTitle.textContent = currentSong?.title || "Waiting for a song…";
-    tvFullNowTitle.title = tvFullNowTitle.textContent;
+    const title = currentSong?.title || "Waiting for a song…";
+    const inner = tvFullNowTitle.querySelector(".tv-full-title-inner");
+    if (inner) inner.textContent = title;
+    else tvFullNowTitle.textContent = title;
+    tvFullNowTitle.title = title;
   }
-  if (tvFullNowSinger) tvFullNowSinger.textContent = currentSong?.singerName || "Waiting for singer…";
+  if (tvFullNowSinger) {
+    const singer = currentSong?.singerName || "Waiting…";
+    tvFullNowSinger.textContent = `🎤 ${singer}`;
+    tvFullNowSinger.title = currentSong ? `Reserved by ${singer}` : "Waiting for singer";
+  }
+  scheduleFullModeTitleRefresh();
 
   if (!currentSong) {
     nowPlayingTitle.textContent = "Waiting for a song…";
@@ -1359,7 +1412,17 @@ function setFullModeEnabled(enabled) {
     if (label) label.textContent = active ? "TV View" : "Full";
   }
   scheduleTvMarqueeRefresh();
-  if (active) focusTvShortcuts();
+  // Rebuild the queue when toggling views: normal TV uses 7 entries,
+  // Full Mode can rotate up to 15 without affecting playback or ordering.
+  renderTvQueueStrip();
+  if (active) {
+    startFullModeQueueRotation();
+    scheduleFullModeTitleRefresh();
+    focusTvShortcuts();
+  } else {
+    stopFullModeQueueRotation();
+    if (tvQueueStrip) tvQueueStrip.scrollLeft = 0;
+  }
 }
 
 async function enterTvMode({ full = false } = {}) {

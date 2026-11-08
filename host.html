@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Host</title>
-  <link rel="stylesheet" href="./css/style.css?v=20261108-full-mode-shortcuts-fonts-2">
+  <link rel="stylesheet" href="./css/style.css?v=20261108-full-overlay-compact-badges-1">
 </head>
 <body class="host-page">
   <header class="topbar">
@@ -98,12 +98,12 @@
           <div class="tv-full-now" aria-live="polite">
             <span class="tv-full-label">NOW PLAYING</span>
             <span class="tv-full-song">
-              <strong id="tvFullNowTitle" title="Waiting for a song">Waiting for a song…</strong>
-              <small id="tvFullNowSinger">Waiting for singer…</small>
+              <strong id="tvFullNowTitle" title="Waiting for a song"><span class="tv-full-title-inner">Waiting for a song…</span></strong>
+              <small id="tvFullNowSinger" class="tv-full-singer-badge" title="Reserved by guest">🎤 Waiting…</small>
             </span>
           </div>
           <div class="tv-up-next-area">
-            <span class="tv-up-next-label">UP NEXT</span>
+            <span class="tv-up-next-label"><span class="tv-up-next-word">UP NEXT</span><span class="tv-full-next-arrow" aria-hidden="true">→</span></span>
             <div class="tv-queue-strip" id="tvQueueStrip">
               <span class="tv-queue-empty">Waiting for reservations…</span>
             </div>
@@ -364,6 +364,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module" src="./js/host.js?v=20261108-full-mode-shortcuts-fonts-2"></script>
+  <script type="module" src="./js/host.js?v=20261108-full-overlay-compact-badges-1"></script>
 </body>
 </html>

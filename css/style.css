@@ -7723,7 +7723,11 @@ body.tv-mode.tv-full-mode .player-ambilight { display: none !important; }
 body.tv-mode.tv-full-mode .player-stage::before,
 body.tv-mode.tv-full-mode .player-stage::after { display: none !important; }
 
-/* Small translucent top-only information bar, ON TOP of the video. */
+/* Full Mode overlay only (2026-11-08): broadcast-style translucent queue.
+   No changes to normal TV Mode, video player, playback, or its footer. */
+.tv-full-next-arrow,
+.tv-full-singer-badge { display: none; }
+
 body.tv-mode.tv-full-mode .tv-karaoke-header {
   position: absolute !important;
   inset: 0 0 auto !important;
@@ -7733,102 +7737,248 @@ body.tv-mode.tv-full-mode .tv-karaoke-header {
   height: 64px !important;
   min-height: 64px !important;
   max-height: 64px !important;
-  gap: clamp(6px, 1vw, 16px) !important;
-  padding: 8px clamp(10px, 1.5vw, 28px) !important;
-  background: linear-gradient(180deg, rgba(0,0,0,.88), rgba(0,0,0,.65)) !important;
+  gap: clamp(5px, .65vw, 11px) !important;
+  padding: 7px clamp(7px, 1.1vw, 20px) !important;
+  background: linear-gradient(180deg, rgba(5, 9, 15, .30), rgba(5, 9, 15, .13)) !important;
   border: 0 !important;
-  border-bottom: 1px solid rgba(255,255,255,.15) !important;
+  border-bottom: 1px solid rgba(255,255,255,.16) !important;
   border-radius: 0 !important;
-  box-shadow: 0 8px 26px rgba(0,0,0,.18) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(2px) !important;
+  -webkit-backdrop-filter: blur(2px) !important;
+  overflow: visible !important;
   transform: none !important;
-  overflow: hidden !important;
   font-family: var(--karaoke-ui-font, system-ui, sans-serif) !important;
 }
 body.tv-mode.tv-full-mode .tv-karaoke-header::after { display: none !important; }
+
+/* Badge overlaps a drawn top border, but remains INSIDE the overlay
+   strip's clip region. Text can move; the card itself never grows. */
 body.tv-mode.tv-full-mode .tv-full-now {
-  flex: 0 1 38%;
-  min-width: 0;
+  position: relative;
+  isolation: isolate;
   display: flex !important;
-  align-items: center;
-  gap: 10px;
-  height: 46px;
-  padding: 0 10px;
-  border: 1px solid rgba(255,255,255,.16);
-  border-radius: 10px;
-  background: rgba(0,0,0,.42);
+  flex: 0 0 clamp(205px, 22vw, 315px) !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  height: 48px !important;
+  gap: 6px !important;
+  padding: 13px 9px 3px !important;
+  border: 0 !important;
+  border-radius: 9px !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+body.tv-mode.tv-full-mode .tv-full-now::before,
+body.tv-mode.tv-full-mode .tv-queue-card::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 8px 0 0;
+  border: 1px solid rgba(240,244,255,.32);
+  border-radius: 9px;
+  background: rgba(8, 13, 22, .27);
+  box-shadow: 0 3px 12px rgba(0,0,0,.08);
+  pointer-events: none;
 }
 body.tv-mode.tv-full-mode .tv-full-label {
   flex: 0 0 auto;
-  color: #ffc479;
-  font-size: .59rem;
-  font-weight: 900;
-  letter-spacing: .07em;
+  color: #ffd393 !important;
+  font-size: .52rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .06em !important;
+  line-height: 1.1 !important;
   white-space: nowrap;
+  opacity: 1 !important;
 }
 body.tv-mode.tv-full-mode .tv-full-song {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  display: block !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+  color: #fff !important;
+}
+body.tv-mode.tv-full-mode .tv-full-song strong,
+body.tv-mode.tv-full-mode .tv-queue-text strong {
+  display: block !important;
+  position: relative;
   min-width: 0;
-  flex: 1;
-  gap: 2px;
-  color: #fff;
+  width: 100%;
+  color: #fff !important;
+  font-weight: 800 !important;
+  line-height: 1.22 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: clip !important;
+  opacity: 1 !important;
 }
 body.tv-mode.tv-full-mode .tv-full-song strong {
-  display: block;
+  font-size: clamp(.75rem, 1.04vw, 1.01rem) !important;
+}
+body.tv-mode.tv-full-mode .tv-full-title-inner {
+  display: inline-block;
+  width: max-content;
+  max-width: none;
+  white-space: nowrap;
+  transform: translateX(0);
+}
+body.tv-mode.tv-full-mode .is-scrolling > .tv-full-title-inner {
+  animation: fullModeTitlePan var(--tv-title-duration, 12s) linear infinite alternate;
+}
+@keyframes fullModeTitlePan {
+  0%, 13% { transform: translateX(0); }
+  87%, 100% { transform: translateX(calc(-1 * var(--tv-title-travel, 0px))); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.tv-mode.tv-full-mode .is-scrolling > .tv-full-title-inner { animation: none !important; }
+}
+body.tv-mode.tv-full-mode .tv-full-singer-badge {
+  display: block !important;
+  position: absolute !important;
+  z-index: 5;
+  top: 0px !important;
+  right: 6px !important;
+  left: auto !important;
+  width: max-content;
+  max-width: min(115px, 79%);
+  height: 17px;
+  padding: 2px 7px !important;
+  border: 1px solid rgba(205,182,255,.78) !important;
+  border-radius: 999px !important;
+  background: rgba(72,46,112,.92) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.22);
   color: #fff !important;
-  font-size: clamp(.75rem, 1.25vw, 1rem);
-  line-height: 1.1;
+  font-size: .59rem !important;
+  font-weight: 800 !important;
+  line-height: 11px !important;
+  text-shadow: none !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  opacity: 1 !important;
+  box-sizing: border-box !important;
+  pointer-events: none;
 }
-body.tv-mode.tv-full-mode .tv-full-song small {
-  display: block;
-  color: #c7ceda !important;
-  font-size: .67rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+
 body.tv-mode.tv-full-mode .tv-up-next-area {
-  flex: 1 1 40%;
-  min-width: 0;
-  gap: 8px !important;
+  display: grid !important;
+  grid-template-columns: 54px minmax(0,1fr) !important;
+  align-items: center !important;
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  height: 48px !important;
+  gap: 5px !important;
 }
 body.tv-mode.tv-full-mode .tv-up-next-label {
-  flex: 0 0 auto;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: column !important;
   min-width: 0 !important;
-  height: 46px;
-  padding: 0 10px !important;
-  border-radius: 10px !important;
-  background: rgba(0,0,0,.42) !important;
-  border: 1px solid rgba(255,255,255,.16) !important;
+  width: 54px !important;
+  height: 40px !important;
+  padding: 0 1px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: rgba(8,13,22,.25) !important;
+  box-shadow: none !important;
   color: #fff !important;
-  font-size: .6rem !important;
+  font-size: .52rem !important;
+  line-height: 1.1 !important;
+  letter-spacing: .04em !important;
+  opacity: 1 !important;
 }
-body.tv-mode.tv-full-mode .tv-queue-strip { height: 46px !important; gap: 6px !important; }
+/* Themes add decorative label glyphs in normal TV mode. In Full Mode,
+   the only direction indicator is the right-pointing arrow. */
+body.tv-mode.tv-full-mode .tv-up-next-label::before,
+body.tv-mode.tv-full-mode .tv-up-next-label::after {
+  content: none !important;
+  display: none !important;
+}
+body.tv-mode.tv-full-mode .tv-full-next-arrow {
+  display: block !important;
+  color: #ffd393 !important;
+  font-family: system-ui,sans-serif !important;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  line-height: .85 !important;
+}
+body.tv-mode.tv-full-mode .tv-queue-strip {
+  display: flex !important;
+  align-items: stretch !important;
+  height: 48px !important;
+  min-width: 0 !important;
+  gap: 6px !important;
+  padding: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
 body.tv-mode.tv-full-mode .tv-queue-card {
-  flex: 0 0 min(195px, 52%) !important;
+  position: relative !important;
+  isolation: isolate;
+  flex: 0 0 clamp(102px, 8.9vw, 137px) !important;
   grid-template-columns: minmax(0,1fr) !important;
-  height: 46px !important;
-  padding: 6px 9px 6px 26px !important;
-  border-radius: 10px !important;
-  border-color: rgba(255,255,255,.18) !important;
-  background: rgba(0,0,0,.42) !important;
+  align-items: center !important;
+  height: 48px !important;
+  min-width: 0 !important;
+  gap: 0 !important;
+  padding: 14px 6px 3px 23px !important;
+  border: 0 !important;
+  border-radius: 9px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
 }
 body.tv-mode.tv-full-mode .tv-queue-card img { display: none !important; }
-body.tv-mode.tv-full-mode .tv-queue-number { top: 50% !important; left: 5px !important; transform: translateY(-50%); }
-body.tv-mode.tv-full-mode .tv-queue-text strong { color: #fff !important; font-size: .72rem !important; }
-body.tv-mode.tv-full-mode .tv-queue-text small { color: #c7ceda !important; font-size: .60rem !important; }
+body.tv-mode.tv-full-mode .tv-queue-number {
+  position: absolute !important;
+  top: 23px !important;
+  left: 6px !important;
+  display: grid !important;
+  place-items: center !important;
+  transform: none !important;
+  min-width: 14px !important;
+  height: 14px !important;
+  padding: 0 2px !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  background: rgba(255,203,126,.18) !important;
+  color: #ffe4b3 !important;
+  font-size: .55rem !important;
+  font-weight: 800 !important;
+  box-shadow: none !important;
+}
+body.tv-mode.tv-full-mode .tv-queue-text {
+  display: block !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  gap: 0 !important;
+}
+body.tv-mode.tv-full-mode .tv-queue-text strong {
+  font-size: .71rem !important;
+}
+body.tv-mode.tv-full-mode .tv-queue-text small { display: none !important; }
+body.tv-mode.tv-full-mode .tv-queue-more {
+  height: 40px;
+  align-self: flex-end;
+  font-size: .64rem !important;
+  color: #fff !important;
+  white-space: nowrap;
+  background: rgba(8,13,22,.25) !important;
+  border-radius: 8px;
+}
 body.tv-mode.tv-full-mode .tv-queue-empty {
-  height: 46px !important;
-  font-size: .68rem !important;
-  border-color: rgba(255,255,255,.17) !important;
-  background: rgba(0,0,0,.42) !important;
-  color: #ced5e4 !important;
+  display: flex !important;
+  flex: 1 1 auto;
+  align-items: center !important;
+  height: 40px !important;
+  padding: 0 10px !important;
+  font-size: .7rem !important;
+  color: #fff !important;
+  border: 1px dashed rgba(255,255,255,.2) !important;
+  border-radius: 8px !important;
+  background: rgba(8,13,22,.22) !important;
 }
 body.tv-mode.tv-full-mode .tv-singer-preview,
 body.tv-mode.tv-full-mode .tv-theme-quick,
@@ -7837,39 +7987,50 @@ body.tv-mode.tv-full-mode .tv-qr-corner,
 body.tv-mode.tv-full-mode .tv-shortcut-hint { display: none !important; }
 body.tv-mode.tv-full-mode .tv-header-actions { flex: 0 0 auto; gap: 5px !important; }
 body.tv-mode.tv-full-mode .tv-icon-btn {
-  min-width: 46px !important;
+  min-width: 43px !important;
   width: auto !important;
   height: 46px !important;
-  padding: 5px 8px !important;
-  border-radius: 10px !important;
-  background: rgba(0,0,0,.42) !important;
-  border: 1px solid rgba(255,255,255,.2) !important;
+  padding: 4px 6px !important;
+  border-radius: 9px !important;
+  background: rgba(8,13,22,.28) !important;
+  border: 1px solid rgba(255,255,255,.35) !important;
   color: #fff !important;
+  opacity: 1 !important;
 }
-body.tv-mode.tv-full-mode .tv-icon-btn span { color: #e8e8e8 !important; display: block !important; }
-
+body.tv-mode.tv-full-mode .tv-icon-btn span {
+  display: block !important;
+  color: #fff !important;
+  font-size: .51rem !important;
+  opacity: 1 !important;
+}
 @media (max-width: 850px) {
-  body.tv-mode.tv-full-mode .tv-karaoke-header { height: 56px !important; min-height: 56px !important; max-height: 56px !important; gap: 5px !important; padding: 5px 8px !important; }
-  body.tv-mode.tv-full-mode .tv-full-now { height: 44px; flex-basis: 43%; gap: 5px; padding: 0 6px; }
-  body.tv-mode.tv-full-mode .tv-full-label { font-size: .5rem; }
-  body.tv-mode.tv-full-mode .tv-full-song strong { font-size: .73rem; }
-  body.tv-mode.tv-full-mode .tv-full-song small { font-size: .58rem; }
-  body.tv-mode.tv-full-mode .tv-up-next-label { display: none !important; }
+  body.tv-mode.tv-full-mode .tv-karaoke-header {
+    height: 56px !important; min-height: 56px !important; max-height: 56px !important;
+    gap: 4px !important; padding: 4px 7px !important;
+  }
+  body.tv-mode.tv-full-mode .tv-full-now { flex-basis: clamp(145px, 28vw, 220px) !important; height: 46px !important; padding-left: 6px !important; }
+  body.tv-mode.tv-full-mode .tv-full-label { font-size: .45rem !important; }
+  body.tv-mode.tv-full-mode .tv-full-song strong { font-size: .72rem !important; }
+  body.tv-mode.tv-full-mode .tv-up-next-area { grid-template-columns: 32px minmax(0,1fr) !important; height: 46px !important; gap: 3px !important; }
+  body.tv-mode.tv-full-mode .tv-up-next-label { width: 32px !important; font-size: .46rem !important; }
+  body.tv-mode.tv-full-mode .tv-up-next-word { display: none !important; }
   body.tv-mode.tv-full-mode .tv-queue-strip,
-  body.tv-mode.tv-full-mode .tv-queue-card,
-  body.tv-mode.tv-full-mode .tv-queue-empty { height: 44px !important; }
-  body.tv-mode.tv-full-mode .tv-queue-card { flex-basis: 92% !important; }
-  body.tv-mode.tv-full-mode .tv-icon-btn { height: 44px !important; min-width: 40px !important; padding-inline: 5px !important; }
-  body.tv-mode.tv-full-mode .tv-icon-btn span { font-size: .48rem !important; }
+  body.tv-mode.tv-full-mode .tv-queue-card { height: 46px !important; }
+  body.tv-mode.tv-full-mode .tv-queue-card { flex-basis: 108px !important; }
+  body.tv-mode.tv-full-mode .tv-icon-btn { height: 44px !important; min-width: 35px !important; padding-inline: 4px !important; }
+  body.tv-mode.tv-full-mode .tv-icon-btn span { font-size: .45rem !important; }
 }
 @media (max-width: 560px) {
-  body.tv-mode.tv-full-mode .tv-full-label { display: none; }
-  body.tv-mode.tv-full-mode .tv-full-now { flex-basis: 45%; }
-  body.tv-mode.tv-full-mode .tv-queue-text small { display: none; }
+  body.tv-mode.tv-full-mode .tv-full-now { flex-basis: 36% !important; padding-left: 5px !important; gap: 3px !important; }
+  body.tv-mode.tv-full-mode .tv-full-label { display: none !important; }
+  body.tv-mode.tv-full-mode .tv-queue-card { flex-basis: 96px !important; }
+  body.tv-mode.tv-full-mode .tv-up-next-area { grid-template-columns: 23px minmax(0,1fr) !important; }
+  body.tv-mode.tv-full-mode .tv-up-next-label { width: 23px !important; }
+  body.tv-mode.tv-full-mode .tv-icon-btn { min-width: 30px !important; padding-inline: 2px !important; }
   body.tv-mode.tv-full-mode .tv-icon-btn span { display: none !important; }
-  body.tv-mode.tv-full-mode .tv-icon-btn { min-width: 34px !important; }
+  body.tv-mode.tv-full-mode .tv-header-actions { gap: 2px !important; }
+  body.tv-mode.tv-full-mode .tv-full-singer-badge { max-width: 88% !important; font-size: .5rem !important; }
 }
-
 
 /* ================================================================
    FULL MODE SHORTCUTS + LARGER TV TITLES (2026-11-08)
@@ -7912,13 +8073,6 @@ body.tv-mode:not(.tv-full-mode) #nowPlayingTitle.tv-marquee-text {
 body.tv-mode:not(.tv-full-mode) #nowPlayingSinger.tv-marquee-text {
   font-size: clamp(1.05rem, 1.76vw, 1.45rem) !important;
   line-height: 1 !important;
-}
-/* Full Mode's 46px top information holder is also unchanged. */
-body.tv-mode.tv-full-mode .tv-full-song strong {
-  font-size: clamp(.85rem, 1.32vw, 1.13rem) !important;
-}
-body.tv-mode.tv-full-mode .tv-full-song small {
-  font-size: .75rem !important;
 }
 
 /* Aurora's display font has a taller natural line box; retain its
