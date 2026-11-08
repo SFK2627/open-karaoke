@@ -8080,3 +8080,43 @@ body.tv-mode:not(.tv-full-mode) #nowPlayingSinger.tv-marquee-text {
 body.tv-mode:not(.tv-full-mode)[data-tv-theme="aurora"] .tv-retro-reserved .tv-marquee-wrap {
   height: 31px !important;
 }
+
+/* Full Mode only: small +N badge for upcoming reservations outside the
+   visible strip. It uses a separate grid slot, never covering song cards. */
+.tv-queue-hidden-count { display: none !important; }
+body.tv-mode.tv-full-mode .tv-up-next-area.tv-has-remaining {
+  grid-template-columns: 54px minmax(0, 1fr) 38px !important;
+}
+body.tv-mode.tv-full-mode .tv-queue-hidden-count:not([hidden]) {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  min-width: 0;
+  padding: 0 2px;
+  border: 1px solid rgba(255,221,170,.45);
+  border-radius: 8px;
+  background: rgba(12,16,27,.27);
+  color: #fff;
+  font-size: .74rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  opacity: 1;
+  font-family: var(--karaoke-ui-font, system-ui, sans-serif);
+}
+@media (max-width: 1024px) {
+  body.tv-mode.tv-full-mode .tv-up-next-area.tv-has-remaining {
+    grid-template-columns: 32px minmax(0, 1fr) 36px !important;
+  }
+}
+@media (max-width: 560px) {
+  body.tv-mode.tv-full-mode .tv-up-next-area.tv-has-remaining {
+    grid-template-columns: 23px minmax(0, 1fr) 32px !important;
+  }
+  body.tv-mode.tv-full-mode .tv-queue-hidden-count:not([hidden]) {
+    font-size: .60rem;
+    height: 26px;
+  }
+}

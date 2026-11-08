@@ -78,6 +78,7 @@ const volumeValue = document.querySelector("#volumeValue");
 const playerError = document.querySelector("#playerError");
 const playerMessage = document.querySelector("#playerMessage");
 const tvQueueStrip = document.querySelector("#tvQueueStrip");
+const tvQueueHiddenCount = document.querySelector("#tvQueueHiddenCount");
 const tvQrToggleBtn = document.querySelector("#tvQrToggleBtn");
 const tvExitBtn = document.querySelector("#tvExitBtn");
 const tvQrOverlay = document.querySelector("#tvQrOverlay");
@@ -550,6 +551,57 @@ function showDedicationForSong(song) {
 // slowly pan the title text *inside* its compact reserved space.
 let fullModeTitleFrame = 0;
 let fullModeQueueTimer = null;
+let fullModeCounterFrame = 0;
+let fullModeOverflowDirty = true;
+// The +N badge counts songs still to the RIGHT of the visible queue viewport.
+// It takes its own tiny grid slot; no queue card or video gets covered.
+function updateFullModeRemainingCount() {
+  if (!tvQueueStrip || !tvQueueHiddenCount) return;
+  const area = tvQueueStrip.closest(".tv-up-next-area");
+  const full = document.body.classList.contains("tv-full-mode");
+  const cards = tvQueueStrip.querySelectorAll(".tv-queue-card");
+  if (!full || !cards.length) {
+    area?.classList.remove("tv-has-remaining");
+    tvQueueHiddenCount.hidden = true;
+    tvQueueHiddenCount.textContent = "";
+    return;
+  }
+
+  // First measure at the original width; only reserve badge space when
+  // some reservation cannot fit. Keeps the same number of cards otherwise.
+  if (fullModeOverflowDirty) {
+    // Recheck whether the queue overflows only when contents or window size
+    // change. Never resize the grid every time the song strip scrolls.
+    area?.classList.remove("tv-has-remaining");
+    const overflow = tvQueueStrip.scrollWidth > tvQueueStrip.clientWidth + 2;
+    if (overflow) area?.classList.add("tv-has-remaining");
+    fullModeOverflowDirty = false;
+  }
+  if (!area?.classList.contains("tv-has-remaining")) {
+    tvQueueHiddenCount.hidden = true;
+    tvQueueHiddenCount.textContent = "";
+    return;
+  }
+  const rightEdge = tvQueueStrip.getBoundingClientRect().right;
+  let hiddenToRight = 0;
+  cards.forEach(card => {
+    if (card.getBoundingClientRect().right > rightEdge + 1) hiddenToRight += 1;
+  });
+  tvQueueHiddenCount.hidden = hiddenToRight === 0;
+  tvQueueHiddenCount.textContent = hiddenToRight ? `+${hiddenToRight}` : "";
+  tvQueueHiddenCount.title = hiddenToRight ? `${hiddenToRight} more upcoming song${hiddenToRight === 1 ? "" : "s"}` : "";
+  tvQueueHiddenCount.setAttribute("aria-label", tvQueueHiddenCount.title || "No more upcoming songs to the right");
+}
+function scheduleFullModeRemainingCount(reflow = false) {
+  if (reflow === true) fullModeOverflowDirty = true;
+  if (fullModeCounterFrame) cancelAnimationFrame(fullModeCounterFrame);
+  fullModeCounterFrame = requestAnimationFrame(() => {
+    fullModeCounterFrame = 0;
+    updateFullModeRemainingCount();
+  });
+}
+tvQueueStrip?.addEventListener("scroll", scheduleFullModeRemainingCount, { passive: true });
+window.addEventListener("resize", () => scheduleFullModeRemainingCount(true));
 function scheduleFullModeTitleRefresh() {
   if (fullModeTitleFrame) cancelAnimationFrame(fullModeTitleFrame);
   fullModeTitleFrame = requestAnimationFrame(() => {
@@ -593,13 +645,14 @@ function renderTvQueueStrip() {
 
   if (!waiting.length) {
     tvQueueStrip.innerHTML = `<span class="tv-queue-empty">${currentSong ? "Waiting for more reservations…" : "Reserve a song — the first one starts automatically."}</span>`;
+    scheduleFullModeRemainingCount(true);
     return;
   }
 
-  // Full Mode shows more reservations in the SAME space, not wider cards.
-  // Standard TV Mode keeps its original 7-item display and queue geometry.
+  // Full Mode rotates all upcoming reservations, while Standard TV Mode
+  // retains its original 7-card presentation and +more summary.
   const inFullMode = document.body.classList.contains("tv-full-mode");
-  const visible = waiting.slice(0, inFullMode ? 15 : 7);
+  const visible = inFullMode ? waiting : waiting.slice(0, 7);
   const extra = waiting.length - visible.length;
   tvQueueStrip.innerHTML = visible.map(([, item], index) => `
     <div class="tv-queue-card" title="${escapeHtml(item.title)} — ${escapeHtml(item.singerName)}">
@@ -613,6 +666,7 @@ function renderTvQueueStrip() {
     </div>
   `).join("") + (extra > 0 ? `<span class="tv-queue-more">+${extra} more</span>` : "");
   scheduleFullModeTitleRefresh();
+  scheduleFullModeRemainingCount(true);
 }
 
 function renderHostQueue() {
