@@ -8148,7 +8148,7 @@ body.tv-mode .tv-song-intro-overlay {
 body.tv-mode .tv-song-intro-overlay[hidden],
 body:not(.tv-mode) .tv-song-intro-overlay { display: none !important; }
 body.tv-mode .tv-song-intro-overlay.is-showing {
-  animation: tvSongIntroReveal 3.6s ease-in-out both;
+  animation: tvSongIntroReveal 8s ease-in-out both;
 }
 body.tv-mode .tv-song-intro-title {
   display: block;
@@ -8181,8 +8181,8 @@ body.tv-mode .tv-song-intro-singer {
 }
 @keyframes tvSongIntroReveal {
   0% { opacity: 0; transform: translateY(12px) scale(.985); }
-  12% { opacity: 1; transform: translateY(0) scale(1); }
-  77% { opacity: 1; transform: translateY(0) scale(1); }
+  6% { opacity: 1; transform: translateY(0) scale(1); }
+  88% { opacity: 1; transform: translateY(0) scale(1); }
   100% { opacity: 0; transform: translateY(-9px) scale(1.015); }
 }
 @media (max-width: 640px) {
@@ -8365,4 +8365,56 @@ body.tv-mode .tv-song-intro-singer {
   .host-page .tv-score-outro.is-showing,
   .host-page .tv-score-stars,
   .host-page .tv-score-sparkles i { animation: none !important; opacity: 1; }
+}
+
+
+/* ================================================================
+   TV VIDEO TEXT LEGIBILITY — 8-SECOND SONG INTRO UPDATE
+   Text only. No card, overlay background, video size or footer changes.
+   Solid text + near-black stroke + layered shadows remain legible even
+   against white footage, spotlights and bright scene transitions.
+   ================================================================ */
+body.tv-mode .tv-song-intro-title {
+  color: #fff;
+  -webkit-text-stroke: 1.8px rgba(0, 0, 0, .98);
+  paint-order: stroke fill;
+  text-shadow:
+    0 2px 2px rgba(0, 0, 0, 1),
+    0 4px 8px rgba(0, 0, 0, 1),
+    0 9px 22px rgba(0, 0, 0, .94),
+    0 0 36px rgba(0, 0, 0, .75);
+}
+body.tv-mode .tv-song-intro-singer {
+  color: #fff;
+  -webkit-text-stroke: 1.25px rgba(0, 0, 0, .98);
+  paint-order: stroke fill;
+  text-shadow:
+    0 2px 3px rgba(0, 0, 0, 1),
+    0 5px 12px rgba(0, 0, 0, .94),
+    0 0 28px rgba(0, 0, 0, .72);
+}
+/* Readability for Now Playing and guest names in FULL Mode's top row.
+   Keep badges, song cards and positions identical. */
+body.tv-mode.tv-full-mode .tv-full-song strong,
+body.tv-mode.tv-full-mode .tv-queue-text strong {
+  -webkit-text-stroke: .45px rgba(0, 0, 0, .96);
+  paint-order: stroke fill;
+  text-shadow: 0 1px 3px rgba(0,0,0,1), 0 2px 7px rgba(0,0,0,.92);
+}
+body.tv-mode.tv-full-mode .tv-full-singer-badge {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 1) !important;
+}
+/* Original TV footer — typography protection only. */
+body.tv-mode:not(.tv-full-mode) #nowPlayingTitle.tv-marquee-text,
+body.tv-mode:not(.tv-full-mode) #nowPlayingSinger.tv-marquee-text {
+  -webkit-text-stroke: .6px rgba(0, 0, 0, .96);
+  paint-order: stroke fill;
+  text-shadow: 0 1px 3px rgba(0,0,0,1), 0 3px 9px rgba(0,0,0,.88);
+}
+/* Scoring singer and result words: no timing or style-layout changes. */
+.host-page .tv-score-rating,
+.host-page .tv-score-singer {
+  -webkit-text-stroke: .85px rgba(0, 0, 0, .95);
+  paint-order: stroke fill;
+  text-shadow: 0 2px 5px rgba(0,0,0,1), 0 5px 15px rgba(0,0,0,.92);
 }

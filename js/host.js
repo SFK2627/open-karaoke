@@ -133,7 +133,7 @@ let dedicationOverlayTimer = null;
 let lastDedicationSongId = null;
 // Song introductions are visual-only: no Firebase writes, playback commands or
 // changes to the existing dedication display/timing.
-const SONG_INTRO_VISIBLE_MS = 3600;
+const SONG_INTRO_VISIBLE_MS = 8000;
 const SONG_INTRO_FRESH_MS = 12000;
 let songIntroWaitTimer = null;
 let songIntroHideTimer = null;
@@ -176,24 +176,25 @@ function pickEntertainmentScore() {
 }
 
 function scoreFeedback(score) {
+  // Each spoken line is deliberately short: do NOT read the singer or points aloud.
   if (score >= 95) return {
     label: "EXCELLENT SINGER!",
-    message: "Wow! You're an excellent singer! What an amazing performance!",
+    message: "Wow! You're an excellent singer!",
     className: "excellent"
   };
   if (score >= 90) return {
     label: "GREAT SINGER!",
-    message: "Fantastic job! You're a great singer!",
+    message: "Wow! You're a great singer!",
     className: "great"
   };
   if (score >= 85) return {
     label: "GOOD SINGER!",
-    message: "Nice work! You're a good singer! Keep it up!",
+    message: "Nice! You're a good singer!",
     className: "good"
   };
   return {
     label: "KEEP SINGING!",
-    message: "Nice performance! Keep singing and enjoy the music!",
+    message: "Keep singing! You did great!",
     className: "keep"
   };
 }
@@ -241,6 +242,25 @@ function playScoringJingle() {
   }
 }
 
+function preferredAnnouncerVoice(voices) {
+  // SpeechSynthesis does not expose a standard gender property, so voice names
+  // are only a best-effort preference. Never require a paid voice service.
+  const englishVoices = (voices || []).filter(voice => /^en(?:-|_|$)/i.test(voice.lang || ""));
+  const femaleName = /\b(?:female|jenny|aria|zira|samantha|victoria|karen|ava|serena|susan|olivia|emma|allison|moira|fiona|tessa|hazel|catherine|amelia|sara|siri female|google uk english female)\b/i;
+  const maleName = /\b(?:male|david|mark|daniel|george|alex|fred|thomas)\b/i;
+  englishVoices.sort((a, b) => {
+    const rank = voice => {
+      const name = String(voice.name || "");
+      return (femaleName.test(name) ? 100 : 0)
+        - (maleName.test(name) ? 80 : 0)
+        + (/natural|neural|premium|enhanced/i.test(name) ? 8 : 0)
+        + (/^en-US$/i.test(voice.lang) ? 3 : 0);
+    };
+    return rank(b) - rank(a);
+  });
+  return englishVoices[0] || null;
+}
+
 function announceScoring(outro) {
   if (!activeScoreOutro || activeScoreOutro !== outro || !scoringEnabled) return;
   try {
@@ -248,15 +268,14 @@ function announceScoring(outro) {
     const Utterance = window.SpeechSynthesisUtterance;
     if (!synth || !Utterance) return; // Browser may not support spoken announcements.
     synth.cancel();
-    const safeSinger = String(outro.singer || "Singer").replace(/[\r\n]+/g, " ").slice(0, 30);
-    const speech = new Utterance(`${safeSinger}, you scored ${outro.score} points! ${outro.feedback.message}`);
+    // Spoken message ONLY: no guest name and no numeric score.
+    const speech = new Utterance(outro.feedback.message);
     speech.lang = "en-US";
-    speech.rate = 1.06;
-    speech.pitch = 1.06;
-    speech.volume = .95;
-    const voices = synth.getVoices?.() || [];
-    speech.voice = voices.find(voice => /^en(-|_)/i.test(voice.lang) && /natural|google|microsoft/i.test(voice.name))
-      || voices.find(voice => /^en(-|_)/i.test(voice.lang)) || null;
+    speech.rate = 1.16; // Energetic but still clear and short.
+    speech.pitch = 1.2; // Brighter tone; actual timbre depends on installed voices.
+    speech.volume = 1;
+    const voice = preferredAnnouncerVoice(synth.getVoices?.() || []);
+    if (voice) speech.voice = voice;
     synth.speak(speech);
   } catch (error) {
     console.debug("Karaoke announcer voice unavailable:", error?.message || error);
