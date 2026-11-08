@@ -7602,8 +7602,8 @@ body.tv-mode .tv-qr-corner {
   inset: auto 10px 94px auto !important;
   z-index: 32 !important;
   box-sizing: border-box !important;
-  width: 86px !important;
-  max-width: 86px !important;
+  width: 100px !important;
+  max-width: 100px !important;
   height: auto !important;
   margin: 0 !important;
   padding: 5px !important;
@@ -7617,7 +7617,7 @@ body.tv-mode .tv-qr-corner {
   justify-self: auto !important;
 }
 body.tv-mode .tv-qr-corner-label {
-  font-size: 6px !important;
+  font-size: 7px !important;
   line-height: 1.1 !important;
   letter-spacing: .03em !important;
 }
@@ -7630,7 +7630,7 @@ body.tv-mode .tv-qr-corner-image {
   overflow: hidden !important;
 }
 body.tv-mode .tv-qr-corner-room {
-  font-size: 7px !important;
+  font-size: 8px !important;
   line-height: 1.1 !important;
   max-width: 100%;
   overflow: hidden;
@@ -7640,4 +7640,13 @@ body.tv-mode .tv-qr-corner-room {
    Hide the mini card instead of risking overlap; top-right QR button remains. */
 @media (max-aspect-ratio: 17/10) {
   body.tv-mode .tv-qr-corner { display: none !important; }
+}
+
+/* Extra safety for narrower widescreen ratios: preserve the original small
+   mini card until the right-side gutter comfortably fits the 100px variant. */
+@media (min-aspect-ratio: 17/10) and (max-aspect-ratio: 44/25) {
+  body.tv-mode .tv-qr-corner {
+    width: 86px !important;
+    max-width: 86px !important;
+  }
 }
