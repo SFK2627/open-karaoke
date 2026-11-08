@@ -145,37 +145,17 @@ let lastShownSongIntroId = null;
 // It runs on the Host only; no database writes, permissions, or extra services.
 const SCORE_STORAGE_KEY = "openKaraokeHostScoringEnabled";
 const SCORE_OUTRO_DURATION_MS = 7600;
-const SCORE_COUNT_DURATION_MS = 1800;
+const SCORE_COUNT_DURATION_MS = 2400;
 let scoringEnabled = (() => {
   try { return localStorage.getItem(SCORE_STORAGE_KEY) !== "false"; }
   catch { return true; }
 })();
 let activeScoreOutro = null;
 const scoredSongIds = new Map();
-let scoreAudioContext = null;
-const activeScoreEffectMixers = new Set();
-// Unlock Web Audio from a real Host interaction so the bass impact is not
-// silently blocked when YouTube reaches ENDED much later without a click.
-function unlockScoreEffectsAudio() {
-  if (!scoringEnabled) return;
-  try {
-    const Ctor = window.AudioContext || window.webkitAudioContext;
-    if (!Ctor) return;
-    if (!scoreAudioContext) scoreAudioContext = new Ctor();
-    if (scoreAudioContext.state !== "running") scoreAudioContext.resume().catch(() => {});
-  } catch {}
-}
-document.addEventListener("pointerdown", unlockScoreEffectsAudio, { passive: true });
-document.addEventListener("keydown", unlockScoreEffectsAudio);
-let activeAnnouncerAudio = null;
+// Only the Host's supplied MP3 is played during the scoring outro.
+// No announcer, browser TTS, jingle or extra background sounds.
 let activeBassAudio = null;
 const SCORE_CUSTOM_BASS_URL = "https://audio.jukehost.co.uk/01a1ba8d-d62e-7177-8838-80264a6d4866";
-const SCORE_FEMALE_CLIPS = Object.freeze({
-  excellent: "../assets/audio/score-excellent.mp3",
-  great: "../assets/audio/score-great.mp3",
-  good: "../assets/audio/score-good.mp3",
-  keep: "../assets/audio/score-keep.mp3"
-});
 
 
 function renderScoringToggle() {
@@ -203,125 +183,49 @@ function scoreFeedback(score) {
   // Each spoken line is deliberately short: do NOT read the singer or points aloud.
   if (score >= 95) return {
     label: "EXCELLENT SINGER!",
-    message: "Wow! You're an excellent singer!",
     className: "excellent"
   };
   if (score >= 90) return {
     label: "GREAT SINGER!",
-    message: "Wow! You're a great singer!",
     className: "great"
   };
   if (score >= 85) return {
     label: "GOOD SINGER!",
-    message: "Nice! You're a good singer!",
     className: "good"
   };
   return {
     label: "KEEP SINGING!",
-    message: "Keep singing! You did great!",
     className: "keep"
   };
 }
 
 function stopScoringAudio() {
-  for (const audio of [activeBassAudio, activeAnnouncerAudio]) {
-    if (!audio) continue;
-    try { audio.pause(); audio.currentTime = 0; audio.removeAttribute("src"); audio.load(); } catch {}
-  }
+  // Stop the supplied MP3 on manual Next/Skip, Stop, scoring OFF or session end.
+  const audio = activeBassAudio;
   activeBassAudio = null;
-  activeAnnouncerAudio = null;
-  for (const mixer of activeScoreEffectMixers) { try { mixer.disconnect(); } catch {} }
-  activeScoreEffectMixers.clear();
-  try { window.speechSynthesis?.cancel(); } catch {}
+  if (!audio) return;
+  try { audio.pause(); audio.currentTime = 0; audio.removeAttribute("src"); audio.load(); } catch {}
 }
 
 function cancelScoringOutro() {
   const outro = activeScoreOutro;
   if (!outro) return;
   activeScoreOutro = null;
-  for (const timer of ["finishTimer", "speakTimer", "voiceStartTimer", "bassStartTimer", "bassFallbackTimer", "voiceFailTimer", "safetyTimer"]) {
-    window.clearTimeout(outro[timer]);
-  }
+  window.clearTimeout(outro.finishTimer);
+  window.clearTimeout(outro.audioStartTimer);
+  window.clearTimeout(outro.safetyTimer);
   stopScoringAudio();
   if (outro.countFrame) window.cancelAnimationFrame(outro.countFrame);
   if (tvScoreOutro) {
-    tvScoreOutro.classList.remove("is-showing");
+    tvScoreOutro.classList.remove("is-showing", "is-locked");
     tvScoreOutro.hidden = true;
   }
 }
 
-// Original local sound fallback / celebration: bass impact first (only if the
-// custom MP3 fails), then bright fanfare BEHIND the female spoken announcement.
-function playScoringJingle({ bass = false, fanfare = false } = {}) {
-  try {
-    const AudioCtor = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtor || (!bass && !fanfare)) return;
-    if (!scoreAudioContext) scoreAudioContext = new AudioCtor();
-    if (scoreAudioContext.state !== "running") scoreAudioContext.resume().catch(() => {});
-    const ctx = scoreAudioContext;
-    const t0 = ctx.currentTime + .04;
-    const limiter = ctx.createDynamicsCompressor();
-    limiter.threshold.value = -13;
-    limiter.knee.value = 5;
-    limiter.ratio.value = 4;
-    limiter.attack.value = .002;
-    limiter.release.value = .18;
-    limiter.connect(ctx.destination);
-    activeScoreEffectMixers.add(limiter);
-    function tone(start, from, to, duration, peak, wave = "sine") {
-      const oscillator = ctx.createOscillator();
-      const gain = ctx.createGain();
-      oscillator.type = wave;
-      oscillator.frequency.setValueAtTime(from, start);
-      oscillator.frequency.exponentialRampToValueAtTime(Math.max(20, to), start + duration);
-      gain.gain.setValueAtTime(.0001, start);
-      gain.gain.exponentialRampToValueAtTime(peak, start + Math.min(.018, duration / 6));
-      gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
-      oscillator.connect(gain);
-      gain.connect(limiter);
-      oscillator.start(start);
-      oscillator.stop(start + duration + .006);
-    }
-    if (bass) {
-      tone(t0, 165, 53, .59, .26);
-      tone(t0 + .015, 240, 106, .32, .10, "triangle");
-      tone(t0 + .23, 128, 59, .34, .14);
-    }
-    if (fanfare) {
-      // Reduced volume: clearly audible excitement without masking speech.
-      [392, 493.88, 587.33, 783.99, 1046.5].forEach((note, i) => {
-        const start = t0 + i * .17;
-        tone(start, note, note, i === 4 ? .48 : .28, i === 4 ? .065 : .048, "triangle");
-        tone(start, note * 2, note * 2, .13, .011);
-      });
-      // A quiet sustained chord below the voice after the fanfare.
-      [392, 493.88, 587.33].forEach((note, i) =>
-        tone(t0 + .95 + i * .035, note, note, 1.25, .012, "sine"));
-    }
-    window.setTimeout(() => {
-      try { limiter.disconnect(); } catch {}
-      activeScoreEffectMixers.delete(limiter);
-    }, 3200);
-  } catch (error) {
-    console.debug("Karaoke scoring effects unavailable:", error?.message || error);
-  }
-}
-
-// The bundled voice clips are generated from a US-English *female* voice model
-// (CMU SLT), so this stable local audio takes precedence over browser speech.
-// Browser voice selection below is used ONLY if the local voice file fails.
-function preferredAnnouncerVoice(voices) {
-  const femaleUS = /\b(?:jenny|aria|zira|samantha|ava|salli|joanna|kendra|kimberly|nicole|susan|allison|victoria|emma|olivia|female)\b/i;
-  const nonFemale = /\b(?:male|david|mark|daniel|george|alex|fred|thomas|guy|ryan|brian|matthew|eric|christopher|james)\b/i;
-  return (voices || []).filter(v => /^en-US$/i.test(v.lang || "") &&
-    femaleUS.test(v.name || "") && !nonFemale.test(v.name || ""))
-    .sort((a,b) => (/neural|natural/i.test(b.name) ? 1 : 0) -
-                    (/neural|natural/i.test(a.name) ? 1 : 0))[0] || null;
-}
-
 function finishScoringWhenReady(outro) {
   if (activeScoreOutro !== outro || !scoringEnabled) return;
-  // Never auto-advance in the middle of a bass MP3 or female announcement.
+  // Give the score its full visual moment and let the supplied MP3 finish.
+  // A stalled/inaccessible remote MP3 cannot hold up the next song forever.
   if (!outro.baseTimeElapsed || outro.audioPhase !== "done") return;
   if (activeSessionId !== outro.sessionId || String(currentSong?.queueItemId || "") !== outro.songId) return;
   const id = outro.songId;
@@ -332,144 +236,45 @@ function finishScoringWhenReady(outro) {
   });
 }
 
-function markScoringVoiceDone(outro) {
-  if (activeScoreOutro !== outro) return;
-  window.clearTimeout(outro.voiceFailTimer);
-  outro.audioPhase = "done";
-  finishScoringWhenReady(outro);
-}
-
-function announceWithBrowserFemale(outro) {
-  if (activeScoreOutro !== outro || !scoringEnabled) return;
-  try {
-    const synth = window.speechSynthesis;
-    const Utterance = window.SpeechSynthesisUtterance;
-    const voice = synth && Utterance ? preferredAnnouncerVoice(synth.getVoices?.() || []) : null;
-    if (!voice) {
-      // Unknown/default voice could be male or use a different accent.
-      console.warn("No US-English female announcer voice is available.");
-      markScoringVoiceDone(outro);
-      return;
-    }
-    synth.cancel();
-    const speech = new Utterance(outro.feedback.message);
-    speech.lang = "en-US";
-    speech.voice = voice;
-    speech.pitch = 1.04;
-    speech.rate = 1.13;
-    speech.volume = 1;
-    let done = false;
-    const finish = () => { if (!done) { done = true; markScoringVoiceDone(outro); } };
-    speech.onend = finish;
-    speech.onerror = finish;
-    outro.voiceFailTimer = window.setTimeout(() => { synth.cancel(); finish(); }, 4400);
-    synth.speak(speech);
-  } catch (error) {
-    console.warn("English female speech could not start:", error?.message || error);
-    markScoringVoiceDone(outro);
-  }
-}
-
-function playBundledFemaleAnnouncer(outro) {
-  if (activeScoreOutro !== outro || !scoringEnabled) return;
-  try {
-    const clip = SCORE_FEMALE_CLIPS[outro.feedback.className];
-    if (!clip) { announceWithBrowserFemale(outro); return; }
-    const audio = new Audio(new URL(clip, import.meta.url).href);
-    audio.preload = "auto";
-    audio.volume = 1;
-    // Keep original English pronunciation, no aggressive pitch shifting.
-    audio.playbackRate = 1;
-    activeAnnouncerAudio = audio;
-    let failed = false;
-    const fail = () => {
-      if (failed || activeScoreOutro !== outro) return;
-      failed = true;
-      window.clearTimeout(outro.voiceFailTimer);
-      if (activeAnnouncerAudio === audio) activeAnnouncerAudio = null;
-      try { audio.pause(); audio.removeAttribute("src"); audio.load(); } catch {}
-      announceWithBrowserFemale(outro);
-    };
-    audio.addEventListener("ended", () => {
-      if (activeAnnouncerAudio === audio) activeAnnouncerAudio = null;
-      markScoringVoiceDone(outro);
-    }, { once:true });
-    audio.addEventListener("error", fail, { once:true });
-    audio.addEventListener("playing", () => {
-      // Once it starts, allow the whole sentence to finish; do not trigger
-      // another voice in the middle of an already-playing announcement.
-      window.clearTimeout(outro.voiceFailTimer);
-      outro.voiceFailTimer = window.setTimeout(() => {
-        if (activeScoreOutro !== outro) return;
-        try { audio.pause(); } catch {}
-        markScoringVoiceDone(outro);
-      }, 5500);
-    }, { once: true });
-    // Do not keep the next song waiting if a local audio file was omitted.
-    outro.voiceFailTimer = window.setTimeout(fail, 3700);
-    const promise = audio.play();
-    promise?.catch?.(fail);
-  } catch (error) {
-    console.warn("Bundled announcer unavailable:", error?.message || error);
-    announceWithBrowserFemale(outro);
-  }
-}
-
 function startScoringOutroAudio(outro) {
   if (activeScoreOutro !== outro || !scoringEnabled) return;
-  outro.audioPhase = "bass";
-  const startFanfareAndVoice = () => {
-    if (outro.fanfareStarted || activeScoreOutro !== outro || !scoringEnabled) return;
-    outro.fanfareStarted = true;
-    outro.audioPhase = "voice";
-    window.clearTimeout(outro.bassStartTimer);
-    window.clearTimeout(outro.bassFallbackTimer);
-    playScoringJingle({ fanfare: true });
-    outro.speakTimer = window.setTimeout(() => playBundledFemaleAnnouncer(outro), 350);
-  };
+  outro.audioPhase = "loading";
   let settled = false;
-  const useOriginalBassFallback = () => {
-    if (settled || activeScoreOutro !== outro) return;
+  const settle = reason => {
+    if (settled) return;
     settled = true;
-    window.clearTimeout(outro.bassStartTimer);
-    if (activeBassAudio) {
-      try { activeBassAudio.pause(); activeBassAudio.removeAttribute("src"); activeBassAudio.load(); } catch {}
+    window.clearTimeout(outro.audioStartTimer);
+    if (activeScoreOutro !== outro) return;
+    if (reason && reason !== "ended") {
+      console.warn("Supplied scoring MP3 unavailable (continuing without audio):", reason);
+      stopScoringAudio();
+    } else {
       activeBassAudio = null;
     }
-    playScoringJingle({ bass: true });
-    outro.bassFallbackTimer = window.setTimeout(startFanfareAndVoice, 1050);
+    outro.audioPhase = "done";
+    finishScoringWhenReady(outro);
   };
   try {
     const audio = new Audio(SCORE_CUSTOM_BASS_URL);
     audio.preload = "auto";
-    audio.volume = .94;
+    audio.volume = 1;
     activeBassAudio = audio;
     let started = false;
     audio.addEventListener("playing", () => {
+      if (activeScoreOutro !== outro) return;
       started = true;
-      window.clearTimeout(outro.bassStartTimer);
-    }, { once:true });
-    audio.addEventListener("ended", () => {
-      if (settled || activeScoreOutro !== outro) return;
-      settled = true;
-      activeBassAudio = null;
-      startFanfareAndVoice();
-    }, { once:true });
-    audio.addEventListener("error", useOriginalBassFallback, { once:true });
-    // A streaming bass file must start promptly. If it cannot, never block the
-    // scoring results or play a second overlapping bass sound.
-    outro.bassStartTimer = window.setTimeout(() => {
-      if (!started) useOriginalBassFallback();
-    }, 2500);
-    // Source may be long / stalled; never hang on a remote audio dependency.
-    outro.bassFallbackTimer = window.setTimeout(() => {
-      if (!settled && activeScoreOutro === outro) useOriginalBassFallback();
-    }, 10000);
-    const promise = audio.play();
-    promise?.catch?.(useOriginalBassFallback);
+      outro.audioPhase = "playing";
+      window.clearTimeout(outro.audioStartTimer);
+    }, { once: true });
+    audio.addEventListener("ended", () => settle("ended"), { once: true });
+    audio.addEventListener("error", () => settle("load error"), { once: true });
+    // No synthesized fallback or voice: if streaming is blocked, show silent score.
+    outro.audioStartTimer = window.setTimeout(() => {
+      if (!started) settle("stream startup timeout");
+    }, 4500);
+    audio.play()?.catch?.(error => settle(error?.message || "autoplay blocked"));
   } catch (error) {
-    console.warn("Custom score bass unavailable:", error?.message || error);
-    useOriginalBassFallback();
+    settle(error?.message || "audio unsupported");
   }
 }
 
@@ -485,10 +290,8 @@ function beginScoringOutro() {
   scoredSongIds.set(songId, score);
   const outro = {
     songId, sessionId: activeSessionId, score, feedback, singer,
-    finishTimer: null, speakTimer: null, voiceStartTimer: null,
-    bassStartTimer: null, bassFallbackTimer: null, voiceFailTimer: null,
-    safetyTimer: null, baseTimeElapsed: false, audioPhase: "bass", fanfareStarted: false,
-    countFrame: null
+    finishTimer: null, audioStartTimer: null, safetyTimer: null,
+    baseTimeElapsed: false, audioPhase: "loading", countFrame: null
   };
   activeScoreOutro = outro;
   // The playback has ended. Keep the old currentSong until the score completes
@@ -500,7 +303,7 @@ function beginScoringOutro() {
     if (tvScoreSinger) tvScoreSinger.textContent = singer;
     tvScoreOutro.dataset.rating = feedback.className;
     tvScoreOutro.hidden = false;
-    tvScoreOutro.classList.remove("is-showing");
+    tvScoreOutro.classList.remove("is-showing", "is-locked");
     void tvScoreOutro.offsetWidth;
     tvScoreOutro.classList.add("is-showing");
   }
@@ -511,7 +314,10 @@ function beginScoringOutro() {
     const eased = 1 - Math.pow(1 - progress, 3);
     if (tvScoreNumber) tvScoreNumber.textContent = String(Math.round(score * eased));
     if (progress < 1) outro.countFrame = window.requestAnimationFrame(count);
-    else outro.countFrame = null;
+    else {
+      outro.countFrame = null;
+      if (activeScoreOutro === outro) tvScoreOutro?.classList.add("is-locked");
+    }
   };
   outro.countFrame = window.requestAnimationFrame(count);
   startScoringOutroAudio(outro);
@@ -520,7 +326,7 @@ function beginScoringOutro() {
     outro.baseTimeElapsed = true;
     finishScoringWhenReady(outro);
   }, SCORE_OUTRO_DURATION_MS);
-  // Network audio must never hold a karaoke room indefinitely.
+  // A remote MP3 must not strand a karaoke queue if the connection stalls.
   outro.safetyTimer = window.setTimeout(() => {
     if (activeScoreOutro !== outro) return;
     stopScoringAudio();

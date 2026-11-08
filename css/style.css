@@ -8276,7 +8276,7 @@ body.tv-mode .tv-song-intro-singer {
   line-height: .93;
   letter-spacing: -.075em;
   padding-right: .07em;
-  background: linear-gradient(170deg, #fff9db 0%, #ffd572 49%, #e99039 100%);
+  background: linear-gradient(170deg, #fffef2 0%, #ffdf83 45%, #ffc443 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -8417,4 +8417,173 @@ body.tv-mode:not(.tv-full-mode) #nowPlayingSinger.tv-marquee-text {
   -webkit-text-stroke: .85px rgba(0, 0, 0, .95);
   paint-order: stroke fill;
   text-shadow: 0 2px 5px rgba(0,0,0,1), 0 5px 15px rgba(0,0,0,.92);
+}
+
+
+/* ====================================================================
+   SCORING OUTRO V2 — score-focused energetic visual, MP3-only audio.
+   Only the score layer is affected, not the YouTube player or TV UI.
+   ==================================================================== */
+.host-page .tv-score-outro {
+  isolation: isolate;
+  gap: clamp(2px, .7vh, 8px);
+  padding: clamp(8px, 2.1vmin, 30px);
+  background:
+    radial-gradient(ellipse at 50% 48%, rgba(50, 29, 98, .76), rgba(7, 9, 29, .83) 63%, rgba(2, 5, 20, .91) 100%);
+}
+.host-page .tv-score-outro::before,
+.host-page .tv-score-outro::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: -1;
+  border-radius: 50%;
+  opacity: .85;
+}
+.host-page .tv-score-outro::before {
+  width: 140vmax; height: 140vmax;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 217, 102, .13) 0deg, transparent 11deg, transparent 28deg);
+  animation: scoreLightSpin 24s linear infinite;
+}
+.host-page .tv-score-outro::after {
+  width: min(85vmin, 900px); height: min(85vmin, 900px);
+  background: radial-gradient(circle, rgba(255, 174, 57, .16), rgba(139, 70, 245, .09) 42%, transparent 70%);
+  animation: scorePulseAura 2.1s ease-in-out infinite alternate;
+}
+.host-page .tv-score-energy { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.host-page .tv-score-energy i { position: absolute; width: 38vmax; height: 38vmax; border-radius: 50%; filter: blur(36px); opacity: .2; animation: scoreEnergyFloat 6s ease-in-out infinite alternate; }
+.host-page .tv-score-energy i:nth-child(1) { left: -24%; top: -40%; background: #f59e0b; }
+.host-page .tv-score-energy i:nth-child(2) { right: -25%; top: -45%; background: #a855f7; animation-delay: -2s; }
+.host-page .tv-score-energy i:nth-child(3) { left: -23%; bottom: -57%; background: #ec4899; animation-delay: -3s; }
+.host-page .tv-score-energy i:nth-child(4) { right: -25%; bottom: -57%; background: #f59e0b; animation-delay: -1s; }
+.host-page .tv-score-kicker,
+.host-page .tv-score-figure,
+.host-page .tv-score-stars,
+.host-page .tv-score-rating,
+.host-page .tv-score-singer { position: relative; z-index: 2; }
+.host-page .tv-score-kicker {
+  font-size: clamp(.7rem, 1.55vmin, 1.2rem);
+  letter-spacing: .22em;
+  text-shadow: 0 2px 6px #000, 0 0 24px rgba(255, 208, 95, .7);
+  animation: scoreKickerIn .65s ease-out both;
+}
+.host-page .tv-score-figure {
+  width: clamp(168px, 36vh, 435px);
+  height: clamp(168px, 36vh, 435px);
+  max-width: 39vw;
+  max-height: 47%;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  border: clamp(4px, .55vmin, 8px) solid rgba(255, 202, 73, .95);
+  background: radial-gradient(circle, rgba(62, 34, 82, .68) 0%, rgba(10, 8, 26, .56) 76%);
+  box-shadow: 0 0 0 6px rgba(255, 208, 106, .12), 0 0 50px rgba(255, 186, 67, .65), 0 0 110px rgba(192, 83, 255, .25), inset 0 0 47px rgba(255, 198, 80, .15);
+  animation: scoreCircleReveal 1.1s cubic-bezier(.2,1.35,.35,1) both, scoreCircleBreath 1.8s ease-in-out 1.2s infinite alternate;
+}
+.host-page .tv-score-figure::before,
+.host-page .tv-score-figure::after { content: ""; position: absolute; border-radius: 50%; pointer-events: none; }
+.host-page .tv-score-figure::before {
+  inset: -15px; border: 3px dashed rgba(255, 225, 129, .6);
+  animation: scoreLightSpin 14s linear infinite;
+}
+.host-page .tv-score-figure::after {
+  inset: -28px; border: 2px solid rgba(255, 217, 141, .22);
+  box-shadow: 0 0 22px rgba(255, 192, 100, .26);
+  animation: scoreCircleBreath 1.65s ease-in-out infinite alternate;
+}
+.host-page .tv-score-figure strong {
+  font-size: clamp(5rem, 24vh, 16rem);
+  line-height: .94;
+  letter-spacing: -.07em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 4px 16px rgba(12, 8, 27, .88);
+  filter: drop-shadow(0 0 24px rgba(255, 203, 99, .5));
+}
+.host-page .tv-score-figure span {
+  font-size: clamp(.9rem, 2.3vmin, 1.55rem);
+  letter-spacing: .31em;
+  margin-top: clamp(5px, 1vh, 13px);
+}
+.host-page .tv-score-outro.is-locked .tv-score-figure strong { animation: scoreFinalNumber .8s cubic-bezier(.2,1.25,.25,1) both; }
+.host-page .tv-score-stars {
+  font-size: clamp(1.55rem, 4.7vmin, 3.5rem);
+  line-height: 1.1;
+  letter-spacing: .18em;
+  animation: scoreStarsArrive .8s cubic-bezier(.2,1.5,.3,1) 2.25s both;
+  text-shadow: 0 0 15px #f5b64b, 0 0 35px rgba(255, 204, 64, .6);
+}
+.host-page .tv-score-rating {
+  max-width: 100%;
+  font-size: clamp(1.65rem, 7vmin, 6.25rem);
+  line-height: 1.05;
+  font-weight: 1000;
+  letter-spacing: -.025em;
+  -webkit-text-stroke: clamp(.5px, .13vmin, 1.7px) rgba(10, 4, 19, .9);
+  text-shadow: 0 4px 6px rgba(0,0,0,.97), 0 0 30px rgba(255, 199, 82, .65);
+  animation: scoreRatingReveal .82s cubic-bezier(.17,1.3,.25,1) 2.28s both;
+}
+.host-page .tv-score-singer {
+  font-size: clamp(1.1rem, 3vmin, 2.3rem);
+  font-weight: 850;
+  animation: scoreKickerIn .7s ease-out 2.6s both;
+}
+.host-page .tv-score-sparkles { z-index: 3; }
+.host-page .tv-score-sparkles i {
+  left: calc(3% + var(--i, 0) * 4.9%);
+  bottom: -5%;
+  width: clamp(7px, 1.15vmin, 17px);
+  height: clamp(12px, 2.1vmin, 26px);
+  border-radius: 2px;
+  background: #fcd34d;
+  box-shadow: 0 0 15px rgba(255, 209, 84, .4);
+  animation: scoreConfettiRise calc(3s + var(--i, 0) * .06s) cubic-bezier(.2,.75,.35,1) infinite;
+  animation-delay: calc(1.3s + var(--i, 0) * .13s);
+}
+.host-page .tv-score-sparkles i:nth-child(1) { --i: 0; background: #fcd34d; }
+.host-page .tv-score-sparkles i:nth-child(2) { --i: 1; background: #f9a8d4; }
+.host-page .tv-score-sparkles i:nth-child(3) { --i: 2; background: #a5b4fc; }
+.host-page .tv-score-sparkles i:nth-child(4) { --i: 3; background: #67e8f9; }
+.host-page .tv-score-sparkles i:nth-child(5) { --i: 4; background: #ffffff; }
+.host-page .tv-score-sparkles i:nth-child(6) { --i: 5; background: #fcd34d; }
+.host-page .tv-score-sparkles i:nth-child(7) { --i: 6; background: #f9a8d4; }
+.host-page .tv-score-sparkles i:nth-child(8) { --i: 7; background: #a5b4fc; }
+.host-page .tv-score-sparkles i:nth-child(9) { --i: 8; background: #67e8f9; }
+.host-page .tv-score-sparkles i:nth-child(10) { --i: 9; background: #ffffff; }
+.host-page .tv-score-sparkles i:nth-child(11) { --i: 10; background: #fcd34d; }
+.host-page .tv-score-sparkles i:nth-child(12) { --i: 11; background: #f9a8d4; }
+.host-page .tv-score-sparkles i:nth-child(13) { --i: 12; background: #a5b4fc; }
+.host-page .tv-score-sparkles i:nth-child(14) { --i: 13; background: #67e8f9; }
+.host-page .tv-score-sparkles i:nth-child(15) { --i: 14; background: #ffffff; }
+.host-page .tv-score-sparkles i:nth-child(16) { --i: 15; background: #fcd34d; }
+.host-page .tv-score-sparkles i:nth-child(17) { --i: 16; background: #f9a8d4; }
+.host-page .tv-score-sparkles i:nth-child(18) { --i: 17; background: #a5b4fc; }
+.host-page .tv-score-sparkles i:nth-child(19) { --i: 18; background: #67e8f9; }
+.host-page .tv-score-sparkles i:nth-child(20) { --i: 19; background: #ffffff; }
+@keyframes scoreLightSpin { to { transform: rotate(360deg); } }
+@keyframes scorePulseAura { from { opacity:.25; transform:scale(.89); } to { opacity:.78; transform:scale(1.13); } }
+@keyframes scoreEnergyFloat { from { transform:translate(-3%,3%) scale(.85); } to { transform:translate(7%,-5%) scale(1.14); } }
+@keyframes scoreKickerIn { from { opacity:0; transform:translateY(-25px) scale(.94); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes scoreCircleReveal { 0% { opacity:0; transform:scale(.25) rotate(-30deg); } 64% { opacity:1; transform:scale(1.12) rotate(5deg); } 100% { transform:scale(1) rotate(0deg); } }
+@keyframes scoreCircleBreath { from { filter:brightness(1); } to { filter:brightness(1.32); } }
+@keyframes scoreFinalNumber { 0% { transform:scale(1); } 40% { transform:scale(1.23); } 72% { transform:scale(.94); } 100% { transform:scale(1); } }
+@keyframes scoreStarsArrive { from { opacity:0; transform:translateY(30px) scale(.5); } 65% { opacity:1; transform:translateY(-5px) scale(1.15); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes scoreRatingReveal { 0% { opacity:0; transform:scale(.6) translateY(30px); filter:blur(6px); } 70% { opacity:1; transform:scale(1.09) translateY(-4px); filter:blur(0); } 100% { opacity:1; transform:scale(1) translateY(0); } }
+@keyframes scoreConfettiRise { 0% { opacity:0; transform:translate(0,0) rotate(0deg) scale(.8); } 14% { opacity:1; } 86% { opacity:1; } 100% { opacity:0; transform:translate(calc((var(--i, 0) - 9) * 1.5vw), -82vh) rotate(680deg) scale(.55); } }
+@media (max-width: 700px), (max-height: 550px) {
+  .host-page .tv-score-outro { gap: 1px; padding: 7px 10px; }
+  .host-page .tv-score-figure { width: min(28vh, 32vw); height: min(28vh, 32vw); min-width: 90px; min-height: 90px; }
+  .host-page .tv-score-figure strong { font-size: clamp(2.7rem, 16vh, 7.5rem); }
+  .host-page .tv-score-figure span { font-size: .65rem; margin-top: 1px; }
+  .host-page .tv-score-rating { font-size: clamp(1rem, 5vmin, 2.4rem); }
+  .host-page .tv-score-stars { font-size: clamp(.85rem, 4vmin, 1.65rem); }
+  .host-page .tv-score-singer { font-size: clamp(.85rem, 3vmin, 1.3rem); }
+  .host-page .tv-score-figure::before { inset:-8px; }
+  .host-page .tv-score-figure::after { inset:-12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .host-page .tv-score-outro::before, .host-page .tv-score-outro::after,
+  .host-page .tv-score-energy i, .host-page .tv-score-figure,
+  .host-page .tv-score-figure::before, .host-page .tv-score-figure::after,
+  .host-page .tv-score-figure strong, .host-page .tv-score-stars,
+  .host-page .tv-score-rating, .host-page .tv-score-singer,
+  .host-page .tv-score-sparkles i { animation: none !important; opacity: 1; }
 }
