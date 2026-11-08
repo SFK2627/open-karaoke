@@ -17,10 +17,10 @@ import {
 } from "./queue.js?v=20260909-singerremote1";
 import {
   isYouTubeSearchConfigured,
-  searchYouTubeVideos,
   createYouTubePlayer,
   youtubePlayerErrorMessage
-} from "./youtube.js?v=20261108-phase3";
+} from "./youtube.js?v=20261108-queue-quota";
+import { searchYouTubeVideosShared } from "./search-cache.js?v=20261108-queue-quota";
 
 const GUEST_BUILD = "20260910-featurepack4";
 
@@ -1386,7 +1386,8 @@ async function reserveSongById(title, videoId, thumbnail = "", dedication = clea
     singerName: activeName,
     guestId: user.uid,
     dedication,
-    addedAt: Date.now(),
+    // Server-authored time is required by RTDB rules; local time cannot jump the queue.
+    addedAt: serverTimestamp(),
     status: "waiting"
   });
   if (dedicationInput) dedicationInput.value = "";
@@ -1720,9 +1721,9 @@ searchForm.addEventListener("submit", async event => {
   searchResults.textContent = "Loading results…";
 
   try {
-    const { results, cached } = await searchYouTubeVideos(query, 8);
+    const { results, cached, source } = await searchYouTubeVideosShared(db, activeSessionId, user.uid, query, 8);
     renderSearchResults(results);
-    setMessage(searchMessage, cached ? "Showing cached results to save API usage." : `${results.length} result${results.length === 1 ? "" : "s"} found.`, "success");
+    setMessage(searchMessage, cached ? (source === "shared" ? "Results shared by your room — no extra YouTube search used." : "Showing saved results — no extra YouTube search used.") : `${results.length} result${results.length === 1 ? "" : "s"} found.`, "success");
   } catch (error) {
     console.error(error);
     searchResults.className = "search-results empty-state";

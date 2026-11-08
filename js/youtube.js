@@ -70,10 +70,10 @@ function decodeEntities(value) {
 }
 
 function searchCacheKey(query, maxResults) {
-  return `openKaraokeYT:${maxResults}:${query.trim().toLowerCase()}`;
+  return `openKaraokeYT:${maxResults}:${String(query || "").trim().replace(/\s+/g, " ").toLowerCase()}`;
 }
 
-function readCachedSearch(query, maxResults) {
+export function readCachedSearch(query, maxResults) {
   try {
     const raw = localStorage.getItem(searchCacheKey(query, maxResults)) || sessionStorage.getItem(searchCacheKey(query, maxResults));
     if (!raw) return null;
@@ -85,7 +85,7 @@ function readCachedSearch(query, maxResults) {
   }
 }
 
-function writeCachedSearch(query, maxResults, results) {
+export function writeCachedSearch(query, maxResults, results) {
   try {
     const key = searchCacheKey(query, maxResults);
     const value = JSON.stringify({ savedAt: Date.now(), results });
@@ -103,6 +103,9 @@ function writeCachedSearch(query, maxResults, results) {
   }
 }
 
+const inFlightSearches = new Map();
+const QUOTA_COOLDOWN_KEY = "openKaraokeYTQuotaCooldown";
+
 export async function searchYouTubeVideos(query, maxResults = 8) {
   const cleanQuery = String(query || "").trim();
   if (!cleanQuery) throw new Error("Enter a song or artist to search.");
@@ -113,6 +116,26 @@ export async function searchYouTubeVideos(query, maxResults = 8) {
   const cached = readCachedSearch(cleanQuery, maxResults);
   if (cached) return { results: cached, cached: true };
 
+  // A quota failure is not solved by immediately repeating the same API call.
+  try {
+    if (Number(localStorage.getItem(QUOTA_COOLDOWN_KEY) || 0) > Date.now()) {
+      const error = new Error("YouTube search quota was reached. Try a saved search or reserve using a direct YouTube link.");
+      error.code = "YOUTUBE_QUOTA";
+      throw error;
+    }
+  } catch (error) {
+    if (error?.code === "YOUTUBE_QUOTA") throw error;
+  }
+
+  const requestKey = searchCacheKey(cleanQuery, maxResults);
+  if (inFlightSearches.has(requestKey)) return inFlightSearches.get(requestKey);
+  const pending = requestYouTubeVideos(cleanQuery, maxResults);
+  inFlightSearches.set(requestKey, pending);
+  try { return await pending; }
+  finally { inFlightSearches.delete(requestKey); }
+}
+
+async function requestYouTubeVideos(cleanQuery, maxResults) {
   const params = new URLSearchParams({
     part: "snippet",
     type: "video",
@@ -122,12 +145,27 @@ export async function searchYouTubeVideos(query, maxResults = 8) {
     key: youtubeConfig.apiKey
   });
 
-  const response = await fetch(`https://www.googleapis.com/youtube/v3/search?${params.toString()}`);
+  const abort = new AbortController();
+  const timeout = setTimeout(() => abort.abort(), 10000);
+  let response;
+  try { response = await fetch(`https://www.googleapis.com/youtube/v3/search?${params.toString()}`, { signal: abort.signal }); }
+  catch (error) {
+    if (error?.name === "AbortError") throw new Error("YouTube search took too long. Please try again or use a YouTube link.");
+    throw error;
+  } finally { clearTimeout(timeout); }
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const message = data?.error?.message || "YouTube search failed. Try again later.";
-    throw new Error(message);
+    const reasons = (data?.error?.errors || []).map(item => String(item?.reason || ""));
+    const quotaHit = reasons.some(reason => /quotaExceeded|dailyLimitExceeded|rateLimitExceeded|userRateLimitExceeded/i.test(reason)) ||
+      (response.status === 403 && /quota exceeded|quota has been exceeded|daily limit/i.test(data?.error?.message || ""));
+    if (quotaHit) {
+      try { localStorage.setItem(QUOTA_COOLDOWN_KEY, String(Date.now() + 10 * 60 * 1000)); } catch {}
+      const error = new Error("YouTube search quota reached. Use a previous search or reserve using a direct YouTube link.");
+      error.code = "YOUTUBE_QUOTA";
+      throw error;
+    }
+    throw new Error(data?.error?.message || "YouTube search failed. Try again later.");
   }
 
   const results = (data.items || [])

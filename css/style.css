@@ -7592,3 +7592,48 @@ body.tv-mode .tv-qr-corner-room { color: var(--tv-muted-safe); font-size: .6rem;
   body.guest-page .guest-feedback-toast { bottom: calc(146px + env(safe-area-inset-bottom)); }
   body.guest-page:has(input:focus) .guest-reaction-dock { display: none; }
 }
+
+/* TV QR placement correction — intentionally outside the player AND title holder.
+   Reserve a slim rail at the right of the video, directly above the STATUS
+   section of the existing footer. This replaces the earlier floating overlay.
+   No changes to player controls, YouTube iframe or theme variables. */
+body.tv-mode .player-card {
+  --tv-qr-rail: clamp(104px, 9.2vw, 138px);
+  grid-template-columns: minmax(0, 1fr) var(--tv-qr-rail) !important;
+}
+body.tv-mode .tv-karaoke-header {
+  grid-column: 1 / -1 !important;
+}
+body.tv-mode .player-shell {
+  grid-column: 1 !important;
+  width: min(calc(100vw - var(--tv-qr-rail) - 18px), calc((100dvh - 144px) * 1.7777778)) !important;
+  height: min(calc(100dvh - 144px), calc((100vw - var(--tv-qr-rail) - 18px) / 1.7777778)) !important;
+  max-width: calc(100vw - var(--tv-qr-rail) - 18px) !important;
+}
+body.tv-mode .tv-retro-bar {
+  grid-column: 1 / -1 !important;
+}
+body.tv-mode .tv-qr-corner {
+  position: static !important;
+  grid-row: 2 !important;
+  grid-column: 2 !important;
+  align-self: end !important;
+  justify-self: center !important;
+  z-index: 2 !important;
+  width: min(104px, calc(var(--tv-qr-rail) - 12px)) !important;
+  height: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  margin: 0 0 12px !important;
+  padding: 5px !important;
+  gap: 3px !important;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .22) !important;
+}
+body.tv-mode .tv-qr-corner-label { font-size: .43rem !important; letter-spacing: .06em !important; }
+body.tv-mode .tv-qr-corner-image { padding: 3px !important; }
+body.tv-mode .tv-qr-corner-room { font-size: .5rem !important; }
+@media (max-width: 700px) {
+  body.tv-mode .player-card { --tv-qr-rail: 92px; }
+  body.tv-mode .tv-qr-corner { width: 79px !important; margin-bottom: 7px !important; }
+  body.tv-mode .tv-qr-corner-label { font-size: .36rem !important; }
+}
