@@ -6,7 +6,7 @@
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Guest</title>
-  <link rel="stylesheet" href="./css/style.css?v=20260910-featurepack4">
+  <link rel="stylesheet" href="./css/style.css?v=20261108-phase3">
 </head>
 <body class="guest-page">
   <header class="topbar compact-topbar">
@@ -46,6 +46,7 @@
         <button class="btn btn-primary guest-join-button" type="submit">Join Session</button>
       </form>
       <p class="form-message" id="guestMessage" aria-live="polite"></p>
+      <p class="guest-rejoin-hint" id="guestRejoinHint" hidden>Welcome back! Your previous room and singer name have been restored. Tap Join to reconnect.</p>
     </section>
 
     <section class="guest-room" id="roomPanel" hidden>
@@ -63,6 +64,12 @@
           <div class="guest-mini-stat"><span>Guests</span><strong id="roomGuestCount">—</strong></div>
         </div>
       </article>
+
+      <div class="guest-turn-status" id="guestTurnStatus" data-status="idle" role="status" aria-live="polite">
+        <span class="guest-turn-status-icon" id="guestTurnStatusIcon">♪</span>
+        <div class="guest-turn-status-text"><strong id="guestTurnStatusTitle">Ready for karaoke?</strong><small id="guestTurnStatusDetail">Reserve a song to see your place in the queue.</small></div>
+        <button class="guest-alerts-enable" id="guestEnableNotifications" type="button" hidden>Enable alerts</button>
+      </div>
 
       <article class="panel guest-now-playing-card">
         <div class="section-heading guest-now-heading">
@@ -171,6 +178,7 @@
           <input id="searchInput" class="text-input" maxlength="100" autocomplete="off" placeholder="BINI Pantropiko karaoke" aria-label="Search YouTube">
           <button class="btn btn-primary" id="searchBtn" type="submit">🔎 Search</button>
         </form>
+        <div class="guest-recent-searches" id="guestRecentSearches" hidden aria-label="Recent searches"></div>
         <div class="guest-dedication-compose">
           <label class="field-label" for="dedicationInput">💬 Song dedication <span>optional</span></label>
           <input id="dedicationInput" class="text-input" maxlength="80" autocomplete="off" placeholder="Example: For Mama ❤️">
@@ -238,6 +246,12 @@
     </section>
   </div>
 
+  <div class="guest-feedback-toast" id="guestFeedbackToast" role="status" aria-live="polite" hidden>
+    <span id="guestFeedbackText"></span>
+    <button id="guestFeedbackAction" type="button" hidden>View My Songs</button>
+    <button id="guestFeedbackClose" class="guest-feedback-close" type="button" aria-label="Dismiss message">×</button>
+  </div>
+
   <div class="guest-turn-alert" id="guestTurnAlert" hidden role="status" aria-live="assertive">
     <div class="guest-turn-alert-icon" id="guestTurnAlertIcon">🔔</div>
     <div class="guest-turn-alert-copy">
@@ -247,6 +261,6 @@
     <button type="button" id="guestTurnAlertClose" aria-label="Dismiss alert">×</button>
   </div>
 
-  <script type="module" src="./js/guest.js?v=20260910-featurepack4"></script>
+  <script type="module" src="./js/guest.js?v=20261108-phase3"></script>
 </body>
 </html>

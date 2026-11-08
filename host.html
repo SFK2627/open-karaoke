@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Host</title>
-  <link rel="stylesheet" href="./css/style.css?v=20260910-featurepack4">
+  <link rel="stylesheet" href="./css/style.css?v=20261108-phase3">
 </head>
 <body class="host-page">
   <header class="topbar">
@@ -239,6 +239,12 @@
           </div>
         </div>
 
+        <button class="tv-qr-corner" id="tvQrCornerBtn" type="button" aria-label="Enlarge QR code to join karaoke" title="Scan to join — tap to enlarge">
+          <span class="tv-qr-corner-label">SCAN TO JOIN</span>
+          <span class="tv-qr-corner-image" id="tvQrCornerCode" aria-hidden="true"></span>
+          <span class="tv-qr-corner-room" id="tvQrCornerRoom">—</span>
+        </button>
+
         <div class="tv-shortcut-hint" id="tvShortcutHint" aria-hidden="true">
           <span><kbd>Space</kbd> Play/Pause</span>
           <span><kbd>→ / N</kbd> Next</span>
@@ -348,6 +354,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module" src="./js/host.js?v=20260910-featurepack4"></script>
+  <script type="module" src="./js/host.js?v=20261108-phase3"></script>
 </body>
 </html>

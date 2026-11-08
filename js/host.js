@@ -80,6 +80,9 @@ const tvQrOverlay = document.querySelector("#tvQrOverlay");
 const tvQrBackdrop = document.querySelector("#tvQrBackdrop");
 const tvQrCloseBtn = document.querySelector("#tvQrCloseBtn");
 const tvQrCode = document.querySelector("#tvQrCode");
+const tvQrCornerCode = document.querySelector("#tvQrCornerCode");
+const tvQrCornerRoom = document.querySelector("#tvQrCornerRoom");
+const tvQrCornerBtn = document.querySelector("#tvQrCornerBtn");
 const tvQrSessionCode = document.querySelector("#tvQrSessionCode");
 const tvNowSingerPreview = document.querySelector("#tvNowSingerPreview");
 const tvNextSingerPreview = document.querySelector("#tvNextSingerPreview");
@@ -482,16 +485,27 @@ function showTvReaction(reaction) {
   if (!tvReactionLayer || !document.body.classList.contains("tv-mode")) return;
   const emoji = String(reaction?.emoji || "");
   if (!["👏", "❤️", "🔥", "🎤", "😂"].includes(emoji)) return;
-  const item = document.createElement("span");
-  item.className = "tv-floating-reaction";
-  item.style.setProperty("--reaction-x", `${8 + Math.random() * 84}%`);
-  item.style.setProperty("--reaction-shift", `${Math.round((Math.random() - .5) * 120)}px`);
-  item.style.setProperty("--reaction-tilt", `${Math.round((Math.random() - .5) * 26)}deg`);
-  item.style.setProperty("--reaction-duration", `${(2.4 + Math.random() * .9).toFixed(2)}s`);
-  item.innerHTML = `<b>${escapeHtml(emoji)}</b><small>${escapeHtml(reaction?.singerName || "Guest")}</small>`;
-  tvReactionLayer.appendChild(item);
-  while (tvReactionLayer.children.length > 16) tvReactionLayer.firstElementChild?.remove();
-  window.setTimeout(() => item.remove(), 3800);
+  // A single authenticated, rate-limited RTDB reaction produces a visual
+  // cluster. No schema changes or extra writes: multiple guests can overlap.
+  const singerName = String(reaction?.singerName || "Guest");
+  const count = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 1 : 5;
+  const clusterX = 13 + Math.random() * 74;
+  for (let index = 0; index < count; index += 1) {
+    window.setTimeout(() => {
+      if (!tvReactionLayer || !document.body.classList.contains("tv-mode")) return;
+      const item = document.createElement("span");
+      item.className = "tv-floating-reaction";
+      item.style.setProperty("--reaction-x", `${Math.max(7, Math.min(93, clusterX + (Math.random() - .5) * 18))}%`);
+      item.style.setProperty("--reaction-shift", `${Math.round((Math.random() - .5) * 170)}px`);
+      item.style.setProperty("--reaction-tilt", `${Math.round((Math.random() - .5) * 36)}deg`);
+      item.style.setProperty("--reaction-duration", `${(2.6 + Math.random() * 1.1).toFixed(2)}s`);
+      // Show the singer label only on the first emoji to avoid visual clutter.
+      item.innerHTML = `<b>${escapeHtml(emoji)}</b>${index === 0 ? `<small>${escapeHtml(singerName)}</small>` : ""}`;
+      tvReactionLayer.appendChild(item);
+      while (tvReactionLayer.children.length > 35) tvReactionLayer.firstElementChild?.remove();
+      window.setTimeout(() => item.remove(), 4100);
+    }, index * 115);
+  }
 }
 
 function processReactionSnapshot(value) {
@@ -1262,6 +1276,8 @@ async function showSession(sessionId) {
   guestLinkInput.value = guestUrl;
   renderQrCode(document.querySelector("#qrCode"), guestUrl);
   if (tvQrCode) renderQrCode(tvQrCode, guestUrl);
+  if (tvQrCornerCode) renderQrCode(tvQrCornerCode, guestUrl);
+  if (tvQrCornerRoom) tvQrCornerRoom.textContent = sessionId.replace(/^KARAOKE-/, "");
   if (tvQrSessionCode) tvQrSessionCode.textContent = sessionId;
   createPanel.hidden = true;
   unlockPanel.hidden = true;
@@ -1675,6 +1691,7 @@ fullscreenBtn.addEventListener("click", () => {
 });
 
 tvQrToggleBtn?.addEventListener("click", toggleQrOverlay);
+tvQrCornerBtn?.addEventListener("click", () => setQrOverlay(true));
 tvQrCloseBtn?.addEventListener("click", () => setQrOverlay(false));
 tvQrBackdrop?.addEventListener("click", () => setQrOverlay(false));
 tvExitBtn?.addEventListener("click", () => {

@@ -20,7 +20,7 @@ import {
   searchYouTubeVideos,
   createYouTubePlayer,
   youtubePlayerErrorMessage
-} from "./youtube.js?v=20260910-watchidentity1";
+} from "./youtube.js?v=20261108-phase3";
 
 const GUEST_BUILD = "20260910-featurepack4";
 
@@ -104,6 +104,17 @@ const guestTurnAlertIcon = document.querySelector("#guestTurnAlertIcon");
 const guestTurnAlertTitle = document.querySelector("#guestTurnAlertTitle");
 const guestTurnAlertText = document.querySelector("#guestTurnAlertText");
 const guestTurnAlertClose = document.querySelector("#guestTurnAlertClose");
+const guestTurnStatus = document.querySelector("#guestTurnStatus");
+const guestTurnStatusIcon = document.querySelector("#guestTurnStatusIcon");
+const guestTurnStatusTitle = document.querySelector("#guestTurnStatusTitle");
+const guestTurnStatusDetail = document.querySelector("#guestTurnStatusDetail");
+const guestEnableNotifications = document.querySelector("#guestEnableNotifications");
+const guestRejoinHint = document.querySelector("#guestRejoinHint");
+const guestRecentSearches = document.querySelector("#guestRecentSearches");
+const guestFeedbackToast = document.querySelector("#guestFeedbackToast");
+const guestFeedbackText = document.querySelector("#guestFeedbackText");
+const guestFeedbackAction = document.querySelector("#guestFeedbackAction");
+const guestFeedbackClose = document.querySelector("#guestFeedbackClose");
 
 const TV_THEME_IDS = new Set(["classic", "neon", "studio", "disco", "ocean", "christmas", "spider", "gold", "pink", "minimal", "maximal", "futuristic", "vector", "collage", "retro", "cyberpunk", "popart", "glass", "clay", "pixel", "editorial", "y2k", "swiss", "surreal", "bohemian", "victorian", "graffiti", "aurora", "handwritten"]);
 const TV_THEME_LABELS = {
@@ -221,6 +232,9 @@ let lastTurnAwareness = "idle";
 let turnAlertTimer = null;
 let queueSnapshotReady = false;
 let currentSongSnapshotReady = false;
+let guestToastTimer = null;
+let autoRejoinInFlight = false;
+const GUEST_SEARCH_HISTORY_KEY = "openKaraokeRecentSearches";
 // Precision thresholds are intentionally much tighter than the first Watch
 // build. Soft drift is corrected by briefly nudging the muted Guest player's
 // playback rate; larger drift uses a single seek. This avoids visible 1s+ lag
@@ -332,13 +346,74 @@ function setGuestTab(tabName, { scroll = false } = {}) {
     // Save mobile data/CPU when the guest is using Search/Queue/My Songs.
     try { watchPlayer.pauseVideo?.(); } catch {}
   }
-  if (scroll && guestMobileTabs && window.matchMedia("(max-width: 620px)").matches) {
-    guestMobileTabs.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (scroll && window.matchMedia("(max-width: 620px)").matches) {
+    const panel = guestTabPanels.find(item => item.dataset.guestPanel === valid);
+    panel?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
 
 function cleanDedication(value) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, 80);
+}
+
+function showGuestToast(message, { action = false, error = false } = {}) {
+  if (!guestFeedbackToast || !guestFeedbackText) return;
+  window.clearTimeout(guestToastTimer);
+  guestFeedbackText.textContent = message;
+  guestFeedbackToast.dataset.kind = error ? "error" : "success";
+  if (guestFeedbackAction) guestFeedbackAction.hidden = !action;
+  guestFeedbackToast.hidden = false;
+  guestFeedbackToast.classList.add("is-visible");
+  guestToastTimer = window.setTimeout(() => {
+    guestFeedbackToast.classList.remove("is-visible");
+    guestFeedbackToast.hidden = true;
+  }, error ? 6000 : 5200);
+}
+
+function updateNotificationButton() {
+  if (!guestEnableNotifications) return;
+  const available = "Notification" in window && window.isSecureContext;
+  guestEnableNotifications.hidden = !available || Notification.permission !== "default";
+}
+
+function readRecentSearches() {
+  try {
+    const value = JSON.parse(localStorage.getItem(GUEST_SEARCH_HISTORY_KEY) || "[]");
+    return Array.isArray(value) ? value.filter(v => typeof v === "string" && v.length <= 100).slice(0, 5) : [];
+  } catch { return []; }
+}
+
+function drawRecentSearches() {
+  if (!guestRecentSearches) return;
+  guestRecentSearches.replaceChildren();
+  const recent = readRecentSearches();
+  guestRecentSearches.hidden = recent.length === 0;
+  if (!recent.length) return;
+  const label = document.createElement("span");
+  label.textContent = "Recent:";
+  guestRecentSearches.append(label);
+  recent.forEach(query => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.recentQuery = query;
+    button.title = query;
+    button.textContent = query;
+    guestRecentSearches.append(button);
+  });
+  const clear = document.createElement("button");
+  clear.type = "button";
+  clear.className = "guest-clear-searches";
+  clear.dataset.clearSearches = "";
+  clear.textContent = "Clear";
+  guestRecentSearches.append(clear);
+}
+
+function saveRecentSearch(query) {
+  const normalized = String(query || "").trim();
+  if (!normalized) return;
+  const next = [normalized, ...readRecentSearches().filter(item => item.toLowerCase() !== normalized.toLowerCase())].slice(0, 5);
+  try { localStorage.setItem(GUEST_SEARCH_HISTORY_KEY, JSON.stringify(next)); } catch {}
+  drawRecentSearches();
 }
 
 function updateGuestSingerPreview() {
@@ -362,6 +437,17 @@ function showTurnAlert(kind) {
   try {
     navigator.vibrate?.(yourTurn ? [220, 90, 220, 90, 360] : [160, 80, 190]);
   } catch {}
+  // Browser notifications are opt-in, and may not appear when the browser is closed.
+  // Always keep the in-app alert as the reliable fallback.
+  if (document.hidden && "Notification" in window && Notification.permission === "granted") {
+    try {
+      const notification = new Notification(yourTurn ? "🎤 It's your turn!" : "🔔 You're next!", {
+        body: yourTurn ? `Your karaoke song is playing now.` : "Get ready, you're up after this song.",
+        tag: `karaoke-${activeSessionId}-${kind}`
+      });
+      notification.onclick = () => { window.focus(); notification.close(); };
+    } catch (error) { console.debug("Background notification unavailable:", error); }
+  }
   turnAlertTimer = window.setTimeout(() => {
     guestTurnAlert.classList.remove("is-showing");
     window.setTimeout(() => { if (guestTurnAlert) guestTurnAlert.hidden = true; }, 220);
@@ -372,15 +458,35 @@ function updateTurnAwareness() {
   updateGuestSingerPreview();
   if (!queueSnapshotReady || !currentSongSnapshotReady || !user?.uid || !activeSessionId) return;
   const waiting = currentQueue.filter(([, item]) => item?.status === "waiting");
+  const myIndex = waiting.findIndex(([, item]) => item?.guestId === user.uid);
+  const mineCount = waiting.filter(([, item]) => item?.guestId === user.uid).length;
   let stateKey = "idle";
   let alertKind = null;
+  let icon = "♪";
+  let title = "Ready for karaoke?";
+  let detail = "Reserve a song to see your place in the queue.";
+  let state = "idle";
   if (currentSong?.guestId === user.uid) {
     alertKind = "turn";
     stateKey = `turn:${currentSong.queueItemId || currentSong.youtubeVideoId || "current"}`;
-  } else if (currentSong && waiting[0]?.[1]?.guestId === user.uid) {
-    alertKind = "next";
-    stateKey = `next:${waiting[0][0]}`;
+    icon = "🎤";
+    title = "YOUR TURN — YOU'RE SINGING!";
+    detail = currentSong.title || "Your song is playing now.";
+    state = "turn";
+  } else if (myIndex >= 0) {
+    icon = myIndex === 0 ? "🔔" : "🎵";
+    title = myIndex === 0 ? (currentSong ? "YOU'RE NEXT!" : "YOU'RE FIRST IN LINE!") : `Your next song is #${myIndex + 1}`;
+    detail = `${waiting[myIndex][1]?.title || "Reserved song"}${mineCount > 1 ? ` · ${mineCount} songs reserved` : ""}`;
+    state = myIndex === 0 ? "next" : "waiting";
+    if (currentSong && myIndex === 0) {
+      alertKind = "next";
+      stateKey = `next:${waiting[0][0]}`;
+    }
   }
+  if (guestTurnStatus) guestTurnStatus.dataset.status = state;
+  if (guestTurnStatusIcon) guestTurnStatusIcon.textContent = icon;
+  if (guestTurnStatusTitle) guestTurnStatusTitle.textContent = title;
+  if (guestTurnStatusDetail) guestTurnStatusDetail.textContent = detail;
   if (stateKey !== lastTurnAwareness) {
     lastTurnAwareness = stateKey;
     if (alertKind) showTurnAlert(alertKind);
@@ -392,7 +498,7 @@ async function sendLiveReaction(emoji) {
   const allowed = new Set(["👏", "❤️", "🔥", "🎤", "😂"]);
   if (!allowed.has(emoji)) return;
   const now = Date.now();
-  if (now - lastReactionAt < 1200) return;
+  if (now - lastReactionAt < 1200) return false;
   lastReactionAt = now;
   const nonce = `${now.toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
   await set(ref(db, `sessions/${activeSessionId}/reactions/${user.uid}`), {
@@ -402,6 +508,7 @@ async function sendLiveReaction(emoji) {
     nonce,
     createdAt: serverTimestamp()
   });
+  return true;
 }
 
 function renderQueue() {
@@ -1108,10 +1215,15 @@ async function joinSession(sessionId, singerName) {
 
   const thisGuestRef = ref(database, `sessions/${sessionId}/guests/${currentUser.uid}`);
   const now = Date.now();
+  // On a FIRST join, RTDB correctly denies reading an unregistered guest's
+  // record. Rejoining guests may read their existing record. Either way,
+  // creating the own guest entry is permitted by the deployed guest .write rule.
+  const priorGuestSnapshot = await get(thisGuestRef).catch(() => null);
+  const previousJoinedAt = Number(priorGuestSnapshot?.val()?.joinedAt) || now;
 
   await set(thisGuestRef, {
     name: singerName,
-    joinedAt: now,
+    joinedAt: previousJoinedAt,
     lastSeen: now,
     online: true
   });
@@ -1122,7 +1234,7 @@ async function joinSession(sessionId, singerName) {
   user = currentUser;
   activeSessionId = sessionId;
   activeName = singerName;
-  activeJoinedAt = now;
+  activeJoinedAt = previousJoinedAt;
   guestRef = thisGuestRef;
 
   restartRoomListeners();
@@ -1138,6 +1250,8 @@ async function joinSession(sessionId, singerName) {
   setGuestTab("watch");
   startWatchSyncTicker();
   setYouTubeSearchState();
+  updateNotificationButton();
+  if (guestRejoinHint) guestRejoinHint.hidden = true;
 }
 function unsubscribeRoomListeners() {
   unsubscribeHost?.();
@@ -1276,6 +1390,7 @@ async function reserveSongById(title, videoId, thumbnail = "", dedication = clea
     status: "waiting"
   });
   if (dedicationInput) dedicationInput.value = "";
+  return itemId;
 }
 
 async function reserveSongFromInput(title, rawYoutubeValue) {
@@ -1332,10 +1447,12 @@ async function reserveSearchResult(item, button = null) {
   try {
     await reserveSongById(item.title, item.videoId, item.thumbnail);
     setMessage(reserveMessage, `Added “${item.title}” to the queue!`, "success");
+    showGuestToast(`✓ Reserved: ${item.title}`, { action: true });
     if (!previewModal.hidden) closePreview();
   } catch (error) {
     console.error(error);
     setMessage(reserveMessage, error.message || "Could not reserve this song.", "error");
+    showGuestToast(error.message || "Could not reserve this song.", { error: true });
   } finally {
     if (button && !reservationsLocked) button.disabled = false;
   }
@@ -1372,6 +1489,33 @@ async function init() {
         scheduleRoomResync(40);
       }
     });
+    // Rejoin only when this same anonymous Firebase account has an existing
+    // guest record in the saved room. A new QR visit must still ask for a name.
+    const savedSession = localStorage.getItem("openKaraokeGuestSession");
+    const candidate = normalizeSession(urlSession || savedSession);
+    if (isValidSessionCode(candidate) && savedName && (!urlSession || candidate === normalizeSession(savedSession))) {
+      sessionInput.value = candidate;
+      if (guestRejoinHint) guestRejoinHint.hidden = false;
+      if (!autoRejoinInFlight) {
+        autoRejoinInFlight = true;
+        try {
+          const previous = await get(ref(db, `sessions/${candidate}/guests/${user.uid}`));
+          if (previous.exists() && !activeSessionId) {
+            const verifiedName = String(previous.val()?.name || savedName).trim().slice(0, 30);
+            if (verifiedName) {
+              nameInput.value = verifiedName;
+              await joinSession(candidate, verifiedName);
+              showGuestToast("✓ Reconnected to your karaoke room!");
+            }
+          }
+        } catch (error) {
+          // Expired room or changed anonymous identity: allow manual joining.
+          console.debug("Automatic rejoin unavailable:", error?.message || error);
+        } finally {
+          autoRejoinInFlight = false;
+        }
+      }
+    }
   } catch (error) {
     console.error(error);
     setMessage(guestMessage, "Could not connect to Firebase. Ask the host to check the Firebase setup.", "error");
@@ -1415,7 +1559,7 @@ joinForm.addEventListener("submit", async event => {
 guestMobileTabs?.addEventListener("click", event => {
   const button = event.target.closest("[data-guest-tab]");
   if (!button) return;
-  setGuestTab(button.dataset.guestTab);
+  setGuestTab(button.dataset.guestTab, { scroll: true });
   if (button.dataset.guestTab === "watch") {
     // Use the actual tab tap as an autoplay-safe user gesture when possible.
     nudgeWatchPlaybackFromGesture();
@@ -1461,7 +1605,7 @@ function nudgeWatchPlaybackFromGesture() {
     } else if (desiredState === "playing") {
       let localTime = 0;
       try { localTime = Number(watchPlayer.getCurrentTime?.()) || 0; } catch {}
-      if (Math.abs(localTime - expected) > WATCH_DRIFT_SEEK_SECONDS) watchPlayer.seekTo?.(Math.max(0, expected), true);
+      if (Math.abs(localTime - expected) > WATCH_HARD_SEEK_SECONDS) watchPlayer.seekTo?.(Math.max(0, expected), true);
       // Called directly from the tap handler: this preserves the browser user
       // gesture and fixes phones that ignore asynchronous playVideo() calls.
       watchPlayer.playVideo?.();
@@ -1499,12 +1643,44 @@ document.addEventListener("fullscreenchange", () => {
 guestReactionDock?.addEventListener("click", event => {
   const button = event.target.closest("[data-reaction]");
   if (!button) return;
-  sendLiveReaction(button.dataset.reaction).then(() => {
+  sendLiveReaction(button.dataset.reaction).then(sent => {
+    if (!sent) return;
     button.classList.remove("is-popped");
     void button.offsetWidth;
     button.classList.add("is-popped");
     window.setTimeout(() => button.classList.remove("is-popped"), 300);
   }).catch(error => console.debug("Reaction skipped:", error?.message || error));
+});
+
+guestEnableNotifications?.addEventListener("click", async () => {
+  if (!("Notification" in window) || !window.isSecureContext) return;
+  try {
+    const permission = await Notification.requestPermission();
+    updateNotificationButton();
+    showGuestToast(permission === "granted" ? "Turn notifications enabled!" : "In-app alerts are still active.");
+  } catch (error) { console.debug("Notification permission unavailable:", error); }
+});
+
+guestFeedbackClose?.addEventListener("click", () => {
+  window.clearTimeout(guestToastTimer);
+  if (guestFeedbackToast) guestFeedbackToast.hidden = true;
+});
+guestFeedbackAction?.addEventListener("click", () => {
+  window.clearTimeout(guestToastTimer);
+  if (guestFeedbackToast) guestFeedbackToast.hidden = true;
+  setGuestTab("mine", { scroll: true });
+});
+guestRecentSearches?.addEventListener("click", event => {
+  const clear = event.target.closest("[data-clear-searches]");
+  if (clear) {
+    localStorage.removeItem(GUEST_SEARCH_HISTORY_KEY);
+    drawRecentSearches();
+    return;
+  }
+  const selected = event.target.closest("[data-recent-query]");
+  if (!selected) return;
+  searchInput.value = selected.dataset.recentQuery;
+  searchForm.requestSubmit();
 });
 
 guestTurnAlertClose?.addEventListener("click", () => {
@@ -1527,6 +1703,16 @@ searchForm.addEventListener("submit", async event => {
     return;
   }
   lastSearchAt = now;
+  // Pasted YouTube links can use the free direct-link workflow without an API call.
+  if (/youtu\.?be|youtube\.com/i.test(query) && extractYouTubeVideoId(query)) {
+    const manual = document.querySelector(".manual-reserve");
+    if (manual) manual.open = true;
+    youtubeInput.value = query;
+    setMessage(searchMessage, "YouTube link detected. Add the song title below to reserve without searching.", "success");
+    manual?.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+  saveRecentSearch(query);
 
   searchBtn.disabled = true;
   setMessage(searchMessage, "Searching YouTube…");
@@ -1570,9 +1756,11 @@ reserveForm.addEventListener("submit", async event => {
     songTitleInput.value = "";
     youtubeInput.value = "";
     setMessage(reserveMessage, "Song added to the shared queue!", "success");
+    showGuestToast("✓ Song added to the queue!", { action: true });
   } catch (error) {
     console.error(error);
     setMessage(reserveMessage, error.message || "Could not reserve this song.", "error");
+    showGuestToast(error.message || "Could not reserve this song.", { error: true });
   } finally {
     reserveBtn.disabled = reservationsLocked;
   }
@@ -1599,9 +1787,11 @@ mySongs.addEventListener("click", async event => {
   try {
     await remove(ref(db, `sessions/${activeSessionId}/queue/${itemId}`));
     setMessage(reserveMessage, "Reservation cancelled.", "success");
+    showGuestToast("Reservation cancelled.");
   } catch (error) {
     console.error(error);
     setMessage(reserveMessage, "Could not cancel that reservation.", "error");
+    showGuestToast("Could not cancel that reservation.", { error: true });
     button.disabled = false;
   }
 });
@@ -1702,6 +1892,7 @@ leaveBtn.addEventListener("click", async () => {
   } catch (error) {
     console.error(error);
   }
+  localStorage.removeItem("openKaraokeGuestSession");
   activeSessionId = null;
   activeName = null;
   activeJoinedAt = null;
@@ -1713,6 +1904,9 @@ leaveBtn.addEventListener("click", async () => {
   currentSongSnapshotReady = false;
   lastTurnAwareness = "idle";
   window.clearTimeout(turnAlertTimer);
+  if (guestTurnStatus) guestTurnStatus.dataset.status = "idle";
+  if (guestTurnStatusTitle) guestTurnStatusTitle.textContent = "Ready for karaoke?";
+  if (guestTurnStatusDetail) guestTurnStatusDetail.textContent = "Reserve a song to see your place in the queue.";
   if (guestTurnAlert) guestTurnAlert.hidden = true;
   renderQueue();
   stopWatchSyncTicker();
@@ -1749,5 +1943,7 @@ window.addEventListener("online", () => {
 
 document.body.dataset.guestSection = "watch";
 applyGuestTheme(savedGuestTheme(), { animate: false });
+drawRecentSearches();
+updateNotificationButton();
 
 init();

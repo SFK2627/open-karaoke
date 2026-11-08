@@ -75,10 +75,10 @@ function searchCacheKey(query, maxResults) {
 
 function readCachedSearch(query, maxResults) {
   try {
-    const raw = sessionStorage.getItem(searchCacheKey(query, maxResults));
+    const raw = localStorage.getItem(searchCacheKey(query, maxResults)) || sessionStorage.getItem(searchCacheKey(query, maxResults));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!parsed?.savedAt || Date.now() - parsed.savedAt > 10 * 60 * 1000) return null;
+    if (!parsed?.savedAt || Date.now() - parsed.savedAt > 30 * 60 * 1000) return null;
     return Array.isArray(parsed.results) ? parsed.results : null;
   } catch {
     return null;
@@ -87,12 +87,19 @@ function readCachedSearch(query, maxResults) {
 
 function writeCachedSearch(query, maxResults, results) {
   try {
-    sessionStorage.setItem(searchCacheKey(query, maxResults), JSON.stringify({
-      savedAt: Date.now(),
-      results
-    }));
+    const key = searchCacheKey(query, maxResults);
+    const value = JSON.stringify({ savedAt: Date.now(), results });
+    // Keep a small cross-reload cache. This avoids duplicate search.list calls
+    // when guests refresh or rejoin, without unbounded local storage growth.
+    const indexKey = "openKaraokeYTCacheIndex";
+    const previous = JSON.parse(localStorage.getItem(indexKey) || "[]");
+    const index = [key, ...(Array.isArray(previous) ? previous : []).filter(item => item !== key)];
+    index.slice(12).forEach(oldKey => localStorage.removeItem(oldKey));
+    localStorage.setItem(key, value);
+    localStorage.setItem(indexKey, JSON.stringify(index.slice(0, 12)));
   } catch {
-    // Cache is only an optimization; ignore storage failures.
+    // Storage can be disabled or full; use this-tab cache when available.
+    try { sessionStorage.setItem(searchCacheKey(query, maxResults), JSON.stringify({savedAt: Date.now(), results})); } catch {}
   }
 }
 
