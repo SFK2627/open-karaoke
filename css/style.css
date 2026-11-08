@@ -7650,3 +7650,222 @@ body.tv-mode .tv-qr-corner-room {
     max-width: 86px !important;
   }
 }
+
+
+/* =====================================================================
+   FULL VIDEO MODE (opt-in) — independent of the original TV Mode.
+   The host player fills the viewport; Now Playing / Up Next overlap only
+   the top edge. This does not modify RTDB, queue, or video playback.
+   ===================================================================== */
+.tv-full-now { display: none; }
+
+/* The extra button is additive in regular TV; do not resize the player. */
+body.tv-mode .tv-full-toggle { flex: 0 0 auto; }
+body.tv-mode .tv-full-toggle[aria-pressed="true"] {
+  border-color: var(--tv-accent, #eba957) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tv-accent, #eba957) 40%, transparent) !important;
+}
+
+body.tv-mode.tv-full-mode .player-card {
+  position: relative !important;
+  display: block !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  width: 100vw !important;
+  overflow: hidden !important;
+  background: #000 !important;
+}
+body.tv-mode.tv-full-mode .player-shell {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  display: block !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-width: 100vw !important;
+  min-height: 100dvh !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: #000 !important;
+  overflow: hidden !important;
+}
+body.tv-mode.tv-full-mode .player-stage,
+body.tv-mode.tv-full-mode #youtubePlayer {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+/* Cover the screen instead of reserving TV header / footer rows. 16:9
+   displays are uncropped; other ratios crop the outer edges slightly. */
+body.tv-mode.tv-full-mode #youtubePlayer iframe {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  width: max(100vw, 177.7778dvh) !important;
+  height: max(100dvh, 56.25vw) !important;
+  min-width: 100vw !important;
+  min-height: 100dvh !important;
+  transform: translate(-50%, -50%) !important;
+  border: none !important;
+}
+body.tv-mode.tv-full-mode .player-ambilight { display: none !important; }
+body.tv-mode.tv-full-mode .player-stage::before,
+body.tv-mode.tv-full-mode .player-stage::after { display: none !important; }
+
+/* Small translucent top-only information bar, ON TOP of the video. */
+body.tv-mode.tv-full-mode .tv-karaoke-header {
+  position: absolute !important;
+  inset: 0 0 auto !important;
+  z-index: 45 !important;
+  display: flex !important;
+  align-items: center !important;
+  height: 64px !important;
+  min-height: 64px !important;
+  max-height: 64px !important;
+  gap: clamp(6px, 1vw, 16px) !important;
+  padding: 8px clamp(10px, 1.5vw, 28px) !important;
+  background: linear-gradient(180deg, rgba(0,0,0,.88), rgba(0,0,0,.65)) !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(255,255,255,.15) !important;
+  border-radius: 0 !important;
+  box-shadow: 0 8px 26px rgba(0,0,0,.18) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  transform: none !important;
+  overflow: hidden !important;
+  font-family: var(--karaoke-ui-font, system-ui, sans-serif) !important;
+}
+body.tv-mode.tv-full-mode .tv-karaoke-header::after { display: none !important; }
+body.tv-mode.tv-full-mode .tv-full-now {
+  flex: 0 1 38%;
+  min-width: 0;
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  height: 46px;
+  padding: 0 10px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 10px;
+  background: rgba(0,0,0,.42);
+}
+body.tv-mode.tv-full-mode .tv-full-label {
+  flex: 0 0 auto;
+  color: #ffc479;
+  font-size: .59rem;
+  font-weight: 900;
+  letter-spacing: .07em;
+  white-space: nowrap;
+}
+body.tv-mode.tv-full-mode .tv-full-song {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+  color: #fff;
+}
+body.tv-mode.tv-full-mode .tv-full-song strong {
+  display: block;
+  color: #fff !important;
+  font-size: clamp(.75rem, 1.25vw, 1rem);
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.tv-mode.tv-full-mode .tv-full-song small {
+  display: block;
+  color: #c7ceda !important;
+  font-size: .67rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.tv-mode.tv-full-mode .tv-up-next-area {
+  flex: 1 1 40%;
+  min-width: 0;
+  gap: 8px !important;
+}
+body.tv-mode.tv-full-mode .tv-up-next-label {
+  flex: 0 0 auto;
+  min-width: 0 !important;
+  height: 46px;
+  padding: 0 10px !important;
+  border-radius: 10px !important;
+  background: rgba(0,0,0,.42) !important;
+  border: 1px solid rgba(255,255,255,.16) !important;
+  color: #fff !important;
+  font-size: .6rem !important;
+}
+body.tv-mode.tv-full-mode .tv-queue-strip { height: 46px !important; gap: 6px !important; }
+body.tv-mode.tv-full-mode .tv-queue-card {
+  flex: 0 0 min(195px, 52%) !important;
+  grid-template-columns: minmax(0,1fr) !important;
+  height: 46px !important;
+  padding: 6px 9px 6px 26px !important;
+  border-radius: 10px !important;
+  border-color: rgba(255,255,255,.18) !important;
+  background: rgba(0,0,0,.42) !important;
+}
+body.tv-mode.tv-full-mode .tv-queue-card img { display: none !important; }
+body.tv-mode.tv-full-mode .tv-queue-number { top: 50% !important; left: 5px !important; transform: translateY(-50%); }
+body.tv-mode.tv-full-mode .tv-queue-text strong { color: #fff !important; font-size: .72rem !important; }
+body.tv-mode.tv-full-mode .tv-queue-text small { color: #c7ceda !important; font-size: .60rem !important; }
+body.tv-mode.tv-full-mode .tv-queue-empty {
+  height: 46px !important;
+  font-size: .68rem !important;
+  border-color: rgba(255,255,255,.17) !important;
+  background: rgba(0,0,0,.42) !important;
+  color: #ced5e4 !important;
+}
+body.tv-mode.tv-full-mode .tv-singer-preview,
+body.tv-mode.tv-full-mode .tv-theme-quick,
+body.tv-mode.tv-full-mode .tv-retro-bar,
+body.tv-mode.tv-full-mode .tv-qr-corner,
+body.tv-mode.tv-full-mode .tv-shortcut-hint { display: none !important; }
+body.tv-mode.tv-full-mode .tv-header-actions { flex: 0 0 auto; gap: 5px !important; }
+body.tv-mode.tv-full-mode .tv-icon-btn {
+  min-width: 46px !important;
+  width: auto !important;
+  height: 46px !important;
+  padding: 5px 8px !important;
+  border-radius: 10px !important;
+  background: rgba(0,0,0,.42) !important;
+  border: 1px solid rgba(255,255,255,.2) !important;
+  color: #fff !important;
+}
+body.tv-mode.tv-full-mode .tv-icon-btn span { color: #e8e8e8 !important; display: block !important; }
+
+@media (max-width: 850px) {
+  body.tv-mode.tv-full-mode .tv-karaoke-header { height: 56px !important; min-height: 56px !important; max-height: 56px !important; gap: 5px !important; padding: 5px 8px !important; }
+  body.tv-mode.tv-full-mode .tv-full-now { height: 44px; flex-basis: 43%; gap: 5px; padding: 0 6px; }
+  body.tv-mode.tv-full-mode .tv-full-label { font-size: .5rem; }
+  body.tv-mode.tv-full-mode .tv-full-song strong { font-size: .73rem; }
+  body.tv-mode.tv-full-mode .tv-full-song small { font-size: .58rem; }
+  body.tv-mode.tv-full-mode .tv-up-next-label { display: none !important; }
+  body.tv-mode.tv-full-mode .tv-queue-strip,
+  body.tv-mode.tv-full-mode .tv-queue-card,
+  body.tv-mode.tv-full-mode .tv-queue-empty { height: 44px !important; }
+  body.tv-mode.tv-full-mode .tv-queue-card { flex-basis: 92% !important; }
+  body.tv-mode.tv-full-mode .tv-icon-btn { height: 44px !important; min-width: 40px !important; padding-inline: 5px !important; }
+  body.tv-mode.tv-full-mode .tv-icon-btn span { font-size: .48rem !important; }
+}
+@media (max-width: 560px) {
+  body.tv-mode.tv-full-mode .tv-full-label { display: none; }
+  body.tv-mode.tv-full-mode .tv-full-now { flex-basis: 45%; }
+  body.tv-mode.tv-full-mode .tv-queue-text small { display: none; }
+  body.tv-mode.tv-full-mode .tv-icon-btn span { display: none !important; }
+  body.tv-mode.tv-full-mode .tv-icon-btn { min-width: 34px !important; }
+}

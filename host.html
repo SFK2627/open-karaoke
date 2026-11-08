@@ -5,13 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Host</title>
-  <link rel="stylesheet" href="./css/style.css?v=20261108-mini-qr-enlarged">
+  <link rel="stylesheet" href="./css/style.css?v=20261108-full-mode-1">
 </head>
 <body class="host-page">
   <header class="topbar">
     <a class="brand" href="./index.html">🎤 <span>Open Karaoke</span></a>
     <div class="topbar-actions">
       <button class="btn btn-ghost btn-small" id="fullscreenBtn" type="button" hidden>📺 TV Mode</button>
+      <button class="btn btn-ghost btn-small" id="fullModeBtn" type="button" hidden>⛶ Full Mode</button>
       <div class="status-pill" id="connectionStatus" data-state="loading">Connecting…</div>
     </div>
   </header>
@@ -94,6 +95,13 @@
         </div>
 
         <div class="tv-karaoke-header" id="tvKaraokeHeader" aria-label="Karaoke TV controls">
+          <div class="tv-full-now" aria-live="polite">
+            <span class="tv-full-label">NOW PLAYING</span>
+            <span class="tv-full-song">
+              <strong id="tvFullNowTitle" title="Waiting for a song">Waiting for a song…</strong>
+              <small id="tvFullNowSinger">Waiting for singer…</small>
+            </span>
+          </div>
           <div class="tv-up-next-area">
             <span class="tv-up-next-label">UP NEXT</span>
             <div class="tv-queue-strip" id="tvQueueStrip">
@@ -140,6 +148,7 @@
                 <option value="handwritten">Handwritten</option>
               </select>
             </label>
+            <button class="tv-icon-btn tv-full-toggle" id="tvFullToggleBtn" type="button" title="Switch to full video (V)" aria-pressed="false">⛶ <span>Full</span></button>
             <button class="tv-icon-btn" id="tvQrToggleBtn" type="button" title="Show guest QR (Q)">▦ <span>QR</span></button>
             <button class="tv-icon-btn" id="tvExitBtn" type="button" title="Exit TV mode (F)">⛶ <span>Exit</span></button>
           </div>
@@ -252,6 +261,7 @@
           <span><kbd>S</kbd> Stop</span>
           <span><kbd>Q</kbd> QR</span>
           <span><kbd>F</kbd> TV Mode</span>
+          <span><kbd>V</kbd> Full Video</span>
         </div>
 
         <div class="volume-row">
@@ -354,6 +364,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module" src="./js/host.js?v=20261108-phase3"></script>
+  <script type="module" src="./js/host.js?v=20261108-full-mode-1"></script>
 </body>
 </html>

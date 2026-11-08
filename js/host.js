@@ -53,6 +53,10 @@ const lockHostBtn = document.querySelector("#lockHostBtn");
 const tvThemeSelect = document.querySelector("#tvThemeSelect");
 const tvThemeQuickSelect = document.querySelector("#tvThemeQuickSelect");
 const fullscreenBtn = document.querySelector("#fullscreenBtn");
+const fullModeBtn = document.querySelector("#fullModeBtn");
+const tvFullToggleBtn = document.querySelector("#tvFullToggleBtn");
+const tvFullNowTitle = document.querySelector("#tvFullNowTitle");
+const tvFullNowSinger = document.querySelector("#tvFullNowSinger");
 const copyCodeBtn = document.querySelector("#copyCodeBtn");
 const copyLinkBtn = document.querySelector("#copyLinkBtn");
 const playerCard = document.querySelector(".player-card");
@@ -745,6 +749,13 @@ function renderCurrentSong(song) {
   currentSong = song || null;
   showPlayerError("");
   renderTvQueueStrip();
+  // The optional Full Mode has its own compact title in the top overlay;
+  // original TV footer values and playback data are unchanged.
+  if (tvFullNowTitle) {
+    tvFullNowTitle.textContent = currentSong?.title || "Waiting for a song…";
+    tvFullNowTitle.title = tvFullNowTitle.textContent;
+  }
+  if (tvFullNowSinger) tvFullNowSinger.textContent = currentSong?.singerName || "Waiting for singer…";
 
   if (!currentSong) {
     nowPlayingTitle.textContent = "Waiting for a song…";
@@ -1283,6 +1294,7 @@ async function showSession(sessionId) {
   unlockPanel.hidden = true;
   sessionPanel.hidden = false;
   fullscreenBtn.hidden = false;
+  if (fullModeBtn) fullModeBtn.hidden = false;
   localStorage.setItem("openKaraokeHostSession", sessionId);
   watchGuests(sessionId);
   watchQueue(sessionId);
@@ -1300,6 +1312,7 @@ function showUnlock(sessionId, migration = false) {
   createPanel.hidden = true;
   sessionPanel.hidden = true;
   fullscreenBtn.hidden = true;
+  if (fullModeBtn) fullModeBtn.hidden = true;
   unlockPanel.hidden = false;
   unlockSessionCode.textContent = sessionId;
   unlockPinInput.value = "";
@@ -1321,8 +1334,22 @@ function toggleQrOverlay() {
   setQrOverlay(Boolean(tvQrOverlay?.hidden));
 }
 
-async function enterTvMode() {
+function setFullModeEnabled(enabled) {
+  const active = Boolean(enabled);
+  // Separate, opt-in mode. The original TV Mode layout stays untouched.
+  document.body.classList.toggle("tv-full-mode", active);
+  if (tvFullToggleBtn) {
+    tvFullToggleBtn.setAttribute("aria-pressed", String(active));
+    tvFullToggleBtn.title = active ? "Return to standard TV Mode (V)" : "Switch to full video (V)";
+    const label = tvFullToggleBtn.querySelector("span");
+    if (label) label.textContent = active ? "TV View" : "Full";
+  }
+  scheduleTvMarqueeRefresh();
+}
+
+async function enterTvMode({ full = false } = {}) {
   document.body.classList.add("tv-mode");
+  setFullModeEnabled(full);
   fullscreenBtn.textContent = "⛶ Exit TV";
   scheduleTvMarqueeRefresh();
   renderSingerPreview();
@@ -1332,12 +1359,13 @@ async function enterTvMode() {
       await document.documentElement.requestFullscreen();
     }
   } catch {
-    // CSS TV mode still works even if the browser refuses Fullscreen API.
+    // TV and Full Mode still work through CSS if fullscreen is unavailable.
   }
 }
 
 async function exitTvMode() {
   setQrOverlay(false);
+  setFullModeEnabled(false);
   document.body.classList.remove("tv-mode");
   scheduleTvMarqueeRefresh();
   fullscreenBtn.textContent = "📺 TV Mode";
@@ -1351,6 +1379,14 @@ async function toggleTvMode() {
     await exitTvMode();
   } else {
     await enterTvMode();
+  }
+}
+
+async function toggleFullMode() {
+  if (!document.body.classList.contains("tv-mode")) {
+    await enterTvMode({ full: true });
+  } else {
+    setFullModeEnabled(!document.body.classList.contains("tv-full-mode"));
   }
 }
 
@@ -1689,6 +1725,12 @@ endSessionBtn.addEventListener("click", () => endSession());
 fullscreenBtn.addEventListener("click", () => {
   toggleTvMode().catch(error => console.error(error));
 });
+fullModeBtn?.addEventListener("click", () => {
+  toggleFullMode().catch(error => console.error(error));
+});
+tvFullToggleBtn?.addEventListener("click", () => {
+  toggleFullMode().catch(error => console.error(error));
+});
 
 tvQrToggleBtn?.addEventListener("click", toggleQrOverlay);
 tvQrCornerBtn?.addEventListener("click", () => setQrOverlay(true));
@@ -1701,6 +1743,7 @@ tvExitBtn?.addEventListener("click", () => {
 document.addEventListener("fullscreenchange", () => {
   const fullscreen = Boolean(document.fullscreenElement);
   document.body.classList.toggle("tv-mode", fullscreen);
+  if (!fullscreen) setFullModeEnabled(false);
   fullscreenBtn.textContent = fullscreen ? "⛶ Exit TV" : "📺 TV Mode";
   if (!fullscreen && !document.body.classList.contains("tv-mode")) setQrOverlay(false);
   scheduleTvMarqueeRefresh();
@@ -1735,6 +1778,12 @@ document.addEventListener("keydown", event => {
     } else {
       startOrResume().catch(error => console.error(error));
     }
+    return;
+  }
+
+  if (key === "v") {
+    event.preventDefault();
+    toggleFullMode().catch(error => console.error(error));
     return;
   }
 
