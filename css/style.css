@@ -8276,11 +8276,7 @@ body.tv-mode .tv-song-intro-singer {
   line-height: .93;
   letter-spacing: -.075em;
   padding-right: .07em;
-  background: linear-gradient(170deg, #fffef2 0%, #ffdf83 45%, #ffc443 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 5px 16px rgba(255, 172, 67, .25));
+  /* The actual color is defined once in the score-reveal V2 rule below. */
 }
 .host-page .tv-score-figure span {
   margin-top: .35rem;
@@ -8492,11 +8488,27 @@ body.tv-mode:not(.tv-full-mode) #nowPlayingSinger.tv-marquee-text {
 }
 .host-page .tv-score-figure strong {
   font-size: clamp(5rem, 24vh, 16rem);
+  font-weight: 1000;
   line-height: .94;
   letter-spacing: -.07em;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 4px 16px rgba(12, 8, 27, .88);
-  filter: drop-shadow(0 0 24px rgba(255, 203, 99, .5));
+  padding-right: .04em;
+  /* Solid white-gold stays luminous on every background and in all TV themes.
+     Intentionally no text-clipped gradient or transparent fill. */
+  color: #fff1bf;
+  -webkit-text-fill-color: #fff1bf;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-stroke: clamp(.45px, .1vmin, 1.15px) rgba(151, 86, 13, .65);
+  paint-order: stroke fill;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 243, .96),
+    0 3px 0 rgba(213, 146, 39, .78),
+    0 6px 11px rgba(38, 15, 43, .38),
+    0 0 16px rgba(255, 207, 91, .95),
+    0 0 34px rgba(255, 190, 63, .68);
+  filter: none;
 }
 .host-page .tv-score-figure span {
   font-size: clamp(.9rem, 2.3vmin, 1.55rem);
