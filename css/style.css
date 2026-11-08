@@ -7593,47 +7593,51 @@ body.tv-mode .tv-qr-corner-room { color: var(--tv-muted-safe); font-size: .6rem;
   body.guest-page:has(input:focus) .guest-reaction-dock { display: none; }
 }
 
-/* TV QR placement correction — intentionally outside the player AND title holder.
-   Reserve a slim rail at the right of the video, directly above the STATUS
-   section of the existing footer. This replaces the earlier floating overlay.
-   No changes to player controls, YouTube iframe or theme variables. */
-body.tv-mode .player-card {
-  --tv-qr-rail: clamp(104px, 9.2vw, 138px);
-  grid-template-columns: minmax(0, 1fr) var(--tv-qr-rail) !important;
-}
-body.tv-mode .tv-karaoke-header {
-  grid-column: 1 / -1 !important;
-}
-body.tv-mode .player-shell {
-  grid-column: 1 !important;
-  width: min(calc(100vw - var(--tv-qr-rail) - 18px), calc((100dvh - 144px) * 1.7777778)) !important;
-  height: min(calc(100dvh - 144px), calc((100vw - var(--tv-qr-rail) - 18px) / 1.7777778)) !important;
-  max-width: calc(100vw - var(--tv-qr-rail) - 18px) !important;
-}
-body.tv-mode .tv-retro-bar {
-  grid-column: 1 / -1 !important;
-}
+/* TV QR: compact, non-intrusive overlay inside the original unused RIGHT gutter.
+   Do not change .player-card grid columns, .player-shell dimensions, header or
+   footer. The default TV player stays EXACTLY centered at its original size.
+   On aspect ratios with no free side gutter, use the existing header QR button. */
 body.tv-mode .tv-qr-corner {
-  position: static !important;
-  grid-row: 2 !important;
-  grid-column: 2 !important;
-  align-self: end !important;
-  justify-self: center !important;
-  z-index: 2 !important;
-  width: min(104px, calc(var(--tv-qr-rail) - 12px)) !important;
+  position: fixed !important;
+  inset: auto 10px 94px auto !important;
+  z-index: 32 !important;
+  box-sizing: border-box !important;
+  width: 86px !important;
+  max-width: 86px !important;
   height: auto !important;
-  bottom: auto !important;
-  left: auto !important;
-  margin: 0 0 12px !important;
+  margin: 0 !important;
   padding: 5px !important;
-  gap: 3px !important;
-  box-shadow: 0 5px 14px rgba(0, 0, 0, .22) !important;
+  gap: 2px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 3px 12px rgba(0,0,0,.25) !important;
+  overflow: hidden !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  align-self: auto !important;
+  justify-self: auto !important;
 }
-body.tv-mode .tv-qr-corner-label { font-size: .43rem !important; letter-spacing: .06em !important; }
-body.tv-mode .tv-qr-corner-image { padding: 3px !important; }
-body.tv-mode .tv-qr-corner-room { font-size: .5rem !important; }
-@media (max-width: 700px) {
-  body.tv-mode .player-card { --tv-qr-rail: 92px; }
-  body.tv-mode .tv-qr-corner { width: 79px !important; margin-bottom: 7px !important; }
-  body.tv-mode .tv-qr-corner-label { font-size: .36rem !important; }
+body.tv-mode .tv-qr-corner-label {
+  font-size: 6px !important;
+  line-height: 1.1 !important;
+  letter-spacing: .03em !important;
+}
+body.tv-mode .tv-qr-corner-image {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 2px !important;
+  aspect-ratio: 1 !important;
+  overflow: hidden !important;
+}
+body.tv-mode .tv-qr-corner-room {
+  font-size: 7px !important;
+  line-height: 1.1 !important;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Portrait / 4:3 / square displays: no spare gutter beside 16:9 video.
+   Hide the mini card instead of risking overlap; top-right QR button remains. */
+@media (max-aspect-ratio: 17/10) {
+  body.tv-mode .tv-qr-corner { display: none !important; }
 }
