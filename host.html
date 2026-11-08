@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Host</title>
-  <link rel="stylesheet" href="./css/style.css?v=20261108-song-intro-v1">
+  <link rel="stylesheet" href="./css/style.css?v=20261108-scoring-v1">
 </head>
 <body class="host-page">
   <header class="topbar">
@@ -13,6 +13,7 @@
     <div class="topbar-actions">
       <button class="btn btn-ghost btn-small" id="fullscreenBtn" type="button" hidden>📺 TV Mode</button>
       <button class="btn btn-ghost btn-small" id="fullModeBtn" type="button" hidden>⛶ Full Mode</button>
+      <button class="btn btn-ghost btn-small host-scoring-toggle" id="scoringToggleBtn" type="button" aria-pressed="true" title="Turn karaoke entertainment scoring off" hidden>🏆 Scoring <span class="scoring-toggle-state">ON</span></button>
       <div class="status-pill" id="connectionStatus" data-state="loading">Connecting…</div>
     </div>
   </header>
@@ -180,6 +181,17 @@
           <div class="tv-song-intro-overlay" id="tvSongIntroOverlay" hidden aria-hidden="true">
             <strong class="tv-song-intro-title" id="tvSongIntroTitle"></strong>
             <span class="tv-song-intro-singer" id="tvSongIntroSinger"></span>
+          </div>
+          <!-- Local Host-only entertainment score after a natural YouTube ending.
+               No new Firebase data; separate from the song dedication/intro. -->
+          <div class="tv-score-outro" id="tvScoreOutro" hidden aria-live="off" aria-label="Karaoke score result">
+            <span class="tv-score-kicker">OPEN KARAOKE · SINGER SCORE</span>
+            <div class="tv-score-figure" aria-label="Score points"><strong id="tvScoreNumber">0</strong><span>POINTS</span></div>
+            <div class="tv-score-stars" aria-hidden="true">★★★★★</div>
+            <strong class="tv-score-rating" id="tvScoreRating">EXCELLENT SINGER!</strong>
+            <span class="tv-score-singer" id="tvScoreSinger"></span>
+            <span class="tv-score-voice-note">♪</span>
+            <div class="tv-score-sparkles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
           </div>
         </div>
 
@@ -370,6 +382,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module" src="./js/host.js?v=20261108-song-intro-v1"></script>
+  <script type="module" src="./js/host.js?v=20261108-scoring-v1"></script>
 </body>
 </html>

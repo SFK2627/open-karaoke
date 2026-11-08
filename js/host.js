@@ -54,6 +54,7 @@ const tvThemeSelect = document.querySelector("#tvThemeSelect");
 const tvThemeQuickSelect = document.querySelector("#tvThemeQuickSelect");
 const fullscreenBtn = document.querySelector("#fullscreenBtn");
 const fullModeBtn = document.querySelector("#fullModeBtn");
+const scoringToggleBtn = document.querySelector("#scoringToggleBtn");
 const tvFullToggleBtn = document.querySelector("#tvFullToggleBtn");
 const tvFullNowTitle = document.querySelector("#tvFullNowTitle");
 const tvFullNowSinger = document.querySelector("#tvFullNowSinger");
@@ -98,6 +99,10 @@ const tvDedicationFrom = document.querySelector("#tvDedicationFrom");
 const tvSongIntroOverlay = document.querySelector("#tvSongIntroOverlay");
 const tvSongIntroTitle = document.querySelector("#tvSongIntroTitle");
 const tvSongIntroSinger = document.querySelector("#tvSongIntroSinger");
+const tvScoreOutro = document.querySelector("#tvScoreOutro");
+const tvScoreNumber = document.querySelector("#tvScoreNumber");
+const tvScoreRating = document.querySelector("#tvScoreRating");
+const tvScoreSinger = document.querySelector("#tvScoreSinger");
 
 let db;
 let user;
@@ -135,6 +140,197 @@ let songIntroHideTimer = null;
 let songIntroRequestToken = 0;
 let pendingSongIntroId = null;
 let lastShownSongIntroId = null;
+
+// Karaoke entertainment scoring: deliberately NOT a microphone/pitch assessment.
+// It runs on the Host only; no database writes, permissions, or extra services.
+const SCORE_STORAGE_KEY = "openKaraokeHostScoringEnabled";
+const SCORE_OUTRO_DURATION_MS = 7600;
+const SCORE_COUNT_DURATION_MS = 1800;
+let scoringEnabled = (() => {
+  try { return localStorage.getItem(SCORE_STORAGE_KEY) !== "false"; }
+  catch { return true; }
+})();
+let activeScoreOutro = null;
+const scoredSongIds = new Map();
+let scoreAudioContext = null;
+
+function renderScoringToggle() {
+  if (!scoringToggleBtn) return;
+  scoringToggleBtn.setAttribute("aria-pressed", String(scoringEnabled));
+  scoringToggleBtn.dataset.enabled = String(scoringEnabled);
+  scoringToggleBtn.title = scoringEnabled
+    ? "Karaoke scoring ON — click to turn off (entertainment only)"
+    : "Karaoke scoring OFF — click to turn on (entertainment only)";
+  const state = scoringToggleBtn.querySelector(".scoring-toggle-state");
+  if (state) state.textContent = scoringEnabled ? "ON" : "OFF";
+}
+
+function pickEntertainmentScore() {
+  // Weighted toward positive results; every number is a fun random score,
+  // not a claim to have evaluated the singer's voice.
+  const roll = Math.random();
+  const [low, high] = roll < .12 ? [75, 84]
+    : roll < .38 ? [85, 89]
+    : roll < .70 ? [90, 94] : [95, 100];
+  return low + Math.floor(Math.random() * (high - low + 1));
+}
+
+function scoreFeedback(score) {
+  if (score >= 95) return {
+    label: "EXCELLENT SINGER!",
+    message: "Wow! You're an excellent singer! What an amazing performance!",
+    className: "excellent"
+  };
+  if (score >= 90) return {
+    label: "GREAT SINGER!",
+    message: "Fantastic job! You're a great singer!",
+    className: "great"
+  };
+  if (score >= 85) return {
+    label: "GOOD SINGER!",
+    message: "Nice work! You're a good singer! Keep it up!",
+    className: "good"
+  };
+  return {
+    label: "KEEP SINGING!",
+    message: "Nice performance! Keep singing and enjoy the music!",
+    className: "keep"
+  };
+}
+
+function cancelScoringOutro() {
+  const outro = activeScoreOutro;
+  if (!outro) return;
+  activeScoreOutro = null;
+  window.clearTimeout(outro.finishTimer);
+  window.clearTimeout(outro.speakTimer);
+  if (outro.countFrame) window.cancelAnimationFrame(outro.countFrame);
+  if (tvScoreOutro) {
+    tvScoreOutro.classList.remove("is-showing");
+    tvScoreOutro.hidden = true;
+  }
+  try { window.speechSynthesis?.cancel(); } catch {}
+}
+
+function playScoringJingle() {
+  try {
+    const AudioCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtor) return;
+    if (!scoreAudioContext) scoreAudioContext = new AudioCtor();
+    if (scoreAudioContext.state !== "running") {
+      scoreAudioContext.resume().catch(() => {});
+    }
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    const start = scoreAudioContext.currentTime + .035;
+    notes.forEach((frequency, index) => {
+      const noteStart = start + index * .115;
+      const oscillator = scoreAudioContext.createOscillator();
+      const gain = scoreAudioContext.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(.0001, noteStart);
+      gain.gain.exponentialRampToValueAtTime(.035, noteStart + .018);
+      gain.gain.exponentialRampToValueAtTime(.0001, noteStart + .21);
+      oscillator.connect(gain);
+      gain.connect(scoreAudioContext.destination);
+      oscillator.start(noteStart);
+      oscillator.stop(noteStart + .22);
+    });
+  } catch (error) {
+    console.debug("Karaoke score sound is not available:", error?.message || error);
+  }
+}
+
+function announceScoring(outro) {
+  if (!activeScoreOutro || activeScoreOutro !== outro || !scoringEnabled) return;
+  try {
+    const synth = window.speechSynthesis;
+    const Utterance = window.SpeechSynthesisUtterance;
+    if (!synth || !Utterance) return; // Browser may not support spoken announcements.
+    synth.cancel();
+    const safeSinger = String(outro.singer || "Singer").replace(/[\r\n]+/g, " ").slice(0, 30);
+    const speech = new Utterance(`${safeSinger}, you scored ${outro.score} points! ${outro.feedback.message}`);
+    speech.lang = "en-US";
+    speech.rate = 1.06;
+    speech.pitch = 1.06;
+    speech.volume = .95;
+    const voices = synth.getVoices?.() || [];
+    speech.voice = voices.find(voice => /^en(-|_)/i.test(voice.lang) && /natural|google|microsoft/i.test(voice.name))
+      || voices.find(voice => /^en(-|_)/i.test(voice.lang)) || null;
+    synth.speak(speech);
+  } catch (error) {
+    console.debug("Karaoke announcer voice unavailable:", error?.message || error);
+  }
+}
+
+function beginScoringOutro() {
+  if (!activeSessionId || !currentSong?.queueItemId || !scoringEnabled) return false;
+  const songId = String(currentSong.queueItemId);
+  if (activeScoreOutro) return activeScoreOutro.songId === songId;
+  // Repeated YouTube ENDED events or a replay must not regenerate a score.
+  if (scoredSongIds.has(songId)) return false;
+  const score = pickEntertainmentScore();
+  const feedback = scoreFeedback(score);
+  const singer = String(currentSong.singerName || "Singer");
+  scoredSongIds.set(songId, score);
+  const outro = {
+    songId, sessionId: activeSessionId, score, feedback, singer,
+    finishTimer: null, speakTimer: null, countFrame: null
+  };
+  activeScoreOutro = outro;
+  // The playback has ended. Keep the old currentSong until the score completes
+  // so auto-start cannot jump the queue during the result animation.
+  cancelSongIntro();
+  if (tvScoreOutro) {
+    if (tvScoreNumber) tvScoreNumber.textContent = "0";
+    if (tvScoreRating) tvScoreRating.textContent = feedback.label;
+    if (tvScoreSinger) tvScoreSinger.textContent = singer;
+    tvScoreOutro.dataset.rating = feedback.className;
+    tvScoreOutro.hidden = false;
+    tvScoreOutro.classList.remove("is-showing");
+    void tvScoreOutro.offsetWidth;
+    tvScoreOutro.classList.add("is-showing");
+  }
+  const started = performance.now();
+  const count = now => {
+    if (activeScoreOutro !== outro) return;
+    const progress = Math.min(1, (now - started) / SCORE_COUNT_DURATION_MS);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    if (tvScoreNumber) tvScoreNumber.textContent = String(Math.round(score * eased));
+    if (progress < 1) outro.countFrame = window.requestAnimationFrame(count);
+    else outro.countFrame = null;
+  };
+  outro.countFrame = window.requestAnimationFrame(count);
+  playScoringJingle();
+  outro.speakTimer = window.setTimeout(() => announceScoring(outro), SCORE_COUNT_DURATION_MS + 200);
+  outro.finishTimer = window.setTimeout(() => {
+    if (activeScoreOutro !== outro || activeSessionId !== outro.sessionId ||
+        String(currentSong?.queueItemId || "") !== songId) return;
+    cancelScoringOutro();
+    advanceToNext("completed", { expectedSongId: songId }).catch(error => {
+      console.error("Could not start the next song after scoring:", error);
+      setPlayerMessage("Score finished. Press Next to continue.", "error");
+    });
+  }, SCORE_OUTRO_DURATION_MS);
+  return true;
+}
+
+function setScoringEnabled(enabled) {
+  scoringEnabled = Boolean(enabled);
+  try { localStorage.setItem(SCORE_STORAGE_KEY, String(scoringEnabled)); } catch {}
+  renderScoringToggle();
+  // Switching off during a result immediately finishes the naturally ended
+  // song instead of leaving guests waiting for the rest of the outro.
+  if (!scoringEnabled && activeScoreOutro) {
+    const id = activeScoreOutro.songId;
+    cancelScoringOutro();
+    advanceToNext("completed", { expectedSongId: id }).catch(error => {
+      console.error(error);
+      setPlayerMessage("Press Next to continue.", "error");
+    });
+  }
+}
+
 let autoStartTimer = null;
 let autoStartInFlight = false;
 
@@ -920,7 +1116,7 @@ async function publishPlaybackSync({ state = null, clear = false } = {}) {
 function startPlaybackSyncHeartbeat() {
   if (playbackSyncTimer) return;
   playbackSyncTimer = window.setInterval(() => {
-    if (!activeSessionId || !currentSong || currentSong.playbackState !== "playing") return;
+    if (!activeSessionId || !currentSong || currentSong.playbackState !== "playing" || activeScoreOutro) return;
     publishPlaybackSync({ state: "playing" }).catch(() => {});
   }, PLAYBACK_SYNC_INTERVAL_MS);
 }
@@ -934,7 +1130,10 @@ function stopPlaybackSyncHeartbeat() {
 function renderCurrentSong(song) {
   const previousSongId = String(currentSong?.queueItemId || "");
   const incomingSongId = String(song?.queueItemId || "");
-  if (previousSongId !== incomingSongId) cancelSongIntro();
+  if (previousSongId !== incomingSongId) {
+    cancelSongIntro();
+    cancelScoringOutro();
+  }
   currentSong = song || null;
   showPlayerError("");
   renderTvQueueStrip();
@@ -1267,7 +1466,9 @@ function handlePlayerStateChange(event) {
   const state = event.data;
 
   if (state === window.YT.PlayerState.ENDED) {
-    if (Date.now() < suppressPlayerEventsUntil) return;
+    if (Date.now() < suppressPlayerEventsUntil || activeScoreOutro) return;
+    // ONLY a natural YouTube end triggers scoring, never Host/Guest Skip or Next.
+    if (beginScoringOutro()) return;
     advanceToNext("completed").catch(error => {
       console.error(error);
       setPlayerMessage("Could not start the next song.", "error");
@@ -1305,7 +1506,11 @@ async function findWaitingSongs() {
   };
 }
 
-async function advanceToNext(finalStatus = "skipped") {
+async function advanceToNext(finalStatus = "skipped", { expectedSongId = null } = {}) {
+  if (!activeSessionId || advancing) return;
+  if (expectedSongId && String(currentSong?.queueItemId || "") !== expectedSongId) return;
+  // A real Next/Skip always wins over the result; it never displays a score.
+  cancelScoringOutro();
   if (!activeSessionId || advancing) return;
   advancing = true;
   nextBtn.disabled = true;
@@ -1359,6 +1564,7 @@ async function advanceToNext(finalStatus = "skipped") {
 }
 
 async function startOrResume() {
+  cancelScoringOutro();
   showPlayerError("");
   setPlayerMessage("");
 
@@ -1383,12 +1589,14 @@ async function startOrResume() {
 }
 
 async function pauseCurrent() {
+  cancelScoringOutro();
   if (!currentSong) return;
   if (playerReady && player) player.pauseVideo();
   await updateCurrentPlaybackState("paused");
 }
 
 async function stopCurrent() {
+  cancelScoringOutro();
   if (!currentSong) return;
   suppressPlayerEventsUntil = Date.now() + 1200;
   if (playerReady && player) player.stopVideo();
@@ -1415,6 +1623,7 @@ async function moveWaitingSong(itemId, direction) {
 }
 
 async function playPrevious() {
+  cancelScoringOutro();
   if (!activeSessionId || advancing) return;
   const finished = finishedEntries();
 
@@ -1493,6 +1702,8 @@ async function showSession(sessionId) {
   sessionPanel.hidden = false;
   fullscreenBtn.hidden = false;
   if (fullModeBtn) fullModeBtn.hidden = false;
+  if (scoringToggleBtn) scoringToggleBtn.hidden = false;
+  renderScoringToggle();
   localStorage.setItem("openKaraokeHostSession", sessionId);
   watchGuests(sessionId);
   watchQueue(sessionId);
@@ -1507,11 +1718,13 @@ async function showSession(sessionId) {
 
 function showUnlock(sessionId, migration = false) {
   cancelSongIntro();
+  cancelScoringOutro();
   activeSessionId = sessionId;
   createPanel.hidden = true;
   sessionPanel.hidden = true;
   fullscreenBtn.hidden = true;
   if (fullModeBtn) fullModeBtn.hidden = true;
+  if (scoringToggleBtn) scoringToggleBtn.hidden = true;
   unlockPanel.hidden = false;
   unlockSessionCode.textContent = sessionId;
   unlockPinInput.value = "";
@@ -1680,6 +1893,7 @@ async function endSession() {
     suppressPlayerEventsUntil = Date.now() + 1200;
     try { player?.stopVideo?.(); } catch {}
     stopPlaybackSyncHeartbeat();
+    cancelScoringOutro();
     unsubscribeRoomListeners();
     await remove(ref(db, `sessions/${sessionId}`));
     localStorage.removeItem("openKaraokeHostSession");
@@ -1956,6 +2170,7 @@ fullscreenBtn.addEventListener("click", () => {
 fullModeBtn?.addEventListener("click", () => {
   toggleFullMode().catch(error => console.error(error));
 });
+scoringToggleBtn?.addEventListener("click", () => setScoringEnabled(!scoringEnabled));
 tvFullToggleBtn?.addEventListener("click", () => {
   toggleFullMode().catch(error => console.error(error));
 });
@@ -2063,5 +2278,6 @@ document.addEventListener("keydown", event => {
 setAmbilightPalette(DEFAULT_AMBILIGHT_COLORS, "idle");
 
 applyTvTheme(savedTvTheme());
+renderScoringToggle();
 
 init();
