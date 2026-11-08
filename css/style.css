@@ -7869,3 +7869,60 @@ body.tv-mode.tv-full-mode .tv-icon-btn span { color: #e8e8e8 !important; display
   body.tv-mode.tv-full-mode .tv-icon-btn span { display: none !important; }
   body.tv-mode.tv-full-mode .tv-icon-btn { min-width: 34px !important; }
 }
+
+
+/* ================================================================
+   FULL MODE SHORTCUTS + LARGER TV TITLES (2026-11-08)
+   Full Mode is for presentation: keep the YouTube iframe from taking
+   keyboard focus away from the Host's Q / V / F / Space / N / P / S
+   shortcuts. Standard TV Mode and the Host player stay interactive.
+   ================================================================ */
+body.tv-mode.tv-full-mode #youtubePlayer iframe {
+  pointer-events: none !important;
+}
+body.tv-mode:focus { outline: none; }
+
+/* Increase lettering INSIDE the original Now Playing / Reserved By
+   holders. Keep the existing outer holder geometry exactly the same:
+   its previous auto-height was text line height + 15px. */
+body.tv-mode:not(.tv-full-mode) .tv-retro-now .tv-marquee-wrap {
+  height: calc(15px + clamp(14.784px, 1.575vw, 22.512px)) !important;
+  box-sizing: border-box !important;
+}
+body.tv-mode:not(.tv-full-mode) .tv-retro-reserved .tv-marquee-wrap {
+  height: calc(15px + max(14px, clamp(11.76px, .9975vw, 14.784px))) !important;
+  box-sizing: border-box !important;
+}
+body.tv-mode:not(.tv-full-mode) .tv-retro-info .tv-marquee {
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+  padding: 1px 8px !important;
+}
+body.tv-mode:not(.tv-full-mode) .tv-retro-info .tv-marquee-text {
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+body.tv-mode:not(.tv-full-mode) #nowPlayingTitle.tv-marquee-text {
+  font-size: clamp(1.35rem, 2.25vw, 1.87rem) !important;
+  line-height: 1 !important;
+}
+body.tv-mode:not(.tv-full-mode) #nowPlayingSinger.tv-marquee-text {
+  font-size: clamp(1.05rem, 1.76vw, 1.45rem) !important;
+  line-height: 1 !important;
+}
+/* Full Mode's 46px top information holder is also unchanged. */
+body.tv-mode.tv-full-mode .tv-full-song strong {
+  font-size: clamp(.85rem, 1.32vw, 1.13rem) !important;
+}
+body.tv-mode.tv-full-mode .tv-full-song small {
+  font-size: .75rem !important;
+}
+
+/* Aurora's display font has a taller natural line box; retain its
+   existing Reserved By holder height instead of compressing it. */
+body.tv-mode:not(.tv-full-mode)[data-tv-theme="aurora"] .tv-retro-reserved .tv-marquee-wrap {
+  height: 31px !important;
+}

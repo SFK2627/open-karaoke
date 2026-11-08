@@ -1324,10 +1324,24 @@ function showUnlock(sessionId, migration = false) {
   window.setTimeout(() => unlockPinInput.focus(), 50);
 }
 
+// Keep presentation shortcuts in the Host document, not the YouTube iframe.
+// Cross-origin iframes do not forward keyboard events to the parent page.
+function focusTvShortcuts() {
+  if (!document.body.classList.contains("tv-mode")) return;
+  document.body.tabIndex = -1;
+  try { document.body.focus({ preventScroll: true }); } catch {}
+}
+
 function setQrOverlay(open) {
   if (!tvQrOverlay) return;
   tvQrOverlay.hidden = !open;
   document.body.classList.toggle("qr-overlay-open", open);
+  if (open) {
+    // The QR is a real dialog. Make Q/Escape work immediately after opening.
+    tvQrCloseBtn?.focus({ preventScroll: true });
+  } else {
+    focusTvShortcuts();
+  }
 }
 
 function toggleQrOverlay() {
@@ -1345,6 +1359,7 @@ function setFullModeEnabled(enabled) {
     if (label) label.textContent = active ? "TV View" : "Full";
   }
   scheduleTvMarqueeRefresh();
+  if (active) focusTvShortcuts();
 }
 
 async function enterTvMode({ full = false } = {}) {
@@ -1361,12 +1376,14 @@ async function enterTvMode({ full = false } = {}) {
   } catch {
     // TV and Full Mode still work through CSS if fullscreen is unavailable.
   }
+  focusTvShortcuts();
 }
 
 async function exitTvMode() {
   setQrOverlay(false);
   setFullModeEnabled(false);
   document.body.classList.remove("tv-mode");
+  document.body.removeAttribute("tabindex");
   scheduleTvMarqueeRefresh();
   fullscreenBtn.textContent = "📺 TV Mode";
   try {
@@ -1745,7 +1762,12 @@ document.addEventListener("fullscreenchange", () => {
   document.body.classList.toggle("tv-mode", fullscreen);
   if (!fullscreen) setFullModeEnabled(false);
   fullscreenBtn.textContent = fullscreen ? "⛶ Exit TV" : "📺 TV Mode";
-  if (!fullscreen && !document.body.classList.contains("tv-mode")) setQrOverlay(false);
+  if (!fullscreen && !document.body.classList.contains("tv-mode")) {
+    setQrOverlay(false);
+    document.body.removeAttribute("tabindex");
+  } else {
+    focusTvShortcuts();
+  }
   scheduleTvMarqueeRefresh();
 });
 
@@ -1758,7 +1780,11 @@ document.addEventListener("keydown", event => {
   const typing = tag === "input" || tag === "textarea" || tag === "select" || target?.isContentEditable;
   if (typing) return;
 
+  // Don't swallow browser shortcuts, and don't repeat destructive karaoke
+  // actions when a key is held down (e.g. skip several songs accidentally).
+  if (event.altKey || event.ctrlKey || event.metaKey) return;
   const key = event.key.toLowerCase();
+  if (event.repeat && ["n", "p", "s", "q", "v", "f"].includes(key)) return;
 
   if (event.key === "Escape") {
     if (tvQrOverlay && !tvQrOverlay.hidden) {
@@ -1770,6 +1796,15 @@ document.addEventListener("keydown", event => {
       return;
     }
   }
+
+  if (key === "q") {
+    event.preventDefault();
+    toggleQrOverlay();
+    return;
+  }
+
+  // While the QR is shown, the player and room remain untouched.
+  if (tvQrOverlay && !tvQrOverlay.hidden) return;
 
   if (key === " " || event.code === "Space") {
     event.preventDefault();
@@ -1802,12 +1837,6 @@ document.addEventListener("keydown", event => {
   if (key === "s") {
     event.preventDefault();
     stopCurrent().catch(error => console.error(error));
-    return;
-  }
-
-  if (key === "q") {
-    event.preventDefault();
-    toggleQrOverlay();
     return;
   }
 
