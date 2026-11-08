@@ -8599,3 +8599,108 @@ body.tv-mode:not(.tv-full-mode) #nowPlayingSinger.tv-marquee-text {
   .host-page .tv-score-rating, .host-page .tv-score-singer,
   .host-page .tv-score-sparkles i { animation: none !important; opacity: 1; }
 }
+
+
+/* ================================================================
+   EMPTY-ROOM RESERVATION QR + SCORE HEADING SPACING (TV & FULL)
+   This lives INSIDE the existing player-empty area. It does not
+   resize the YouTube player, title holder, TV bar, or video layout.
+   ================================================================ */
+.host-page .tv-score-kicker {
+  /* Move only the heading; retain the score circle and overall layout. */
+  top: clamp(-18px, -1.65vh, -8px);
+}
+
+.host-page .player-idle-qr[hidden],
+.host-page .player-idle-pending[hidden] { display: none !important; }
+
+.host-page .player-idle-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(7px, 1.1vh, 15px);
+  width: min(100%, 620px);
+  max-height: 100%;
+  padding: 0;
+  color: #fff;
+}
+.host-page .player-empty.is-reservation-idle {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(75, 35, 135, .34), transparent 58%),
+    radial-gradient(ellipse at 50% 95%, rgba(230, 149, 46, .12), transparent 58%),
+    #050817;
+}
+.host-page .player-idle-eyebrow {
+  color: #ffe0a7;
+  font-weight: 900;
+  font-size: clamp(.63rem, 1.3vmin, .95rem);
+  letter-spacing: .27em;
+  text-shadow: 0 2px 9px #000;
+}
+.host-page .player-idle-heading {
+  color: #fff9e9;
+  font-weight: 1000;
+  font-size: clamp(1.45rem, 4.6vmin, 3.35rem);
+  line-height: 1.08;
+  letter-spacing: .075em;
+  -webkit-text-stroke: .5px rgba(80, 35, 0, .6);
+  text-shadow: 0 3px 10px #000, 0 0 25px rgba(255, 189, 71, .32);
+}
+.host-page .player-idle-code-frame {
+  width: clamp(120px, min(30vh, 27vw), 270px);
+  aspect-ratio: 1;
+  padding: clamp(9px, 1.5vmin, 17px);
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid rgba(255, 236, 184, .8);
+  border-radius: clamp(10px, 2vmin, 23px);
+  box-shadow: 0 0 0 5px rgba(255, 207, 113, .10),
+    0 8px 40px rgba(0, 0, 0, .45),
+    0 0 46px rgba(255, 196, 81, .17);
+  display: grid;
+  place-items: center;
+}
+.host-page #playerIdleQrCode { width: 100%; height: 100%; display: grid; place-items: center; }
+.host-page #playerIdleQrCode img,
+.host-page #playerIdleQrCode canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  max-height: 100%;
+  object-fit: contain;
+  image-rendering: auto;
+}
+.host-page .player-idle-help {
+  color: #e6e7f3;
+  font-size: clamp(.75rem, 1.7vmin, 1.12rem);
+  font-weight: 550;
+  line-height: 1.25;
+  text-shadow: 0 2px 9px #000;
+}
+.host-page .player-idle-room {
+  color: #ffd997;
+  font-size: clamp(.75rem, 1.6vmin, 1.07rem);
+  font-weight: 850;
+  letter-spacing: .16em;
+}
+.host-page .player-idle-pending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+/* Compact stages should keep the QR within the existing video rectangle. */
+@media (max-height: 620px), (max-width: 740px) {
+  .host-page .player-idle-qr { gap: clamp(3px, .75vh, 8px); }
+  .host-page .player-empty { padding: 10px; }
+  .host-page .player-idle-code-frame { width: clamp(90px, min(27vh, 24vw), 185px); padding: 9px; }
+  .host-page .player-idle-heading { font-size: clamp(1rem, 4.4vmin, 2rem); }
+  .host-page .player-idle-help { font-size: clamp(.66rem, 1.65vmin, 1rem); }
+  .host-page .player-idle-room { font-size: .72rem; }
+  .host-page .tv-score-kicker { top: -7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .host-page .player-idle-qr { animation: none !important; }
+}

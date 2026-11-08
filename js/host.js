@@ -63,6 +63,10 @@ const copyLinkBtn = document.querySelector("#copyLinkBtn");
 const playerCard = document.querySelector(".player-card");
 const playerShell = document.querySelector(".player-shell");
 const playerEmpty = document.querySelector("#playerEmpty");
+const playerIdleQr = document.querySelector("#playerIdleQr");
+const playerIdleQrCode = document.querySelector("#playerIdleQrCode");
+const playerIdleRoom = document.querySelector("#playerIdleRoom");
+const playerIdlePending = document.querySelector("#playerIdlePending");
 const nowPlayingTitle = document.querySelector("#nowPlayingTitle");
 const nowPlayingSinger = document.querySelector("#nowPlayingSinger");
 const playbackStateEl = document.querySelector("#playbackState");
@@ -113,6 +117,8 @@ let tvThemeTransitionTimer = null;
 let reservationsLocked = false;
 let queueEntries = [];
 let currentSong = null;
+let initialQueueSnapshotReady = false;
+let initialSongSnapshotReady = false;
 let player = null;
 let playerReady = false;
 let loadedVideoId = null;
@@ -974,8 +980,20 @@ function renderTvQueueStrip() {
   scheduleFullModeRemainingCount(true);
 }
 
+// The screen invites reservations only when the queue and current song are
+// genuinely empty. A finished song remains current during the scoring outro,
+// so this never obscures the result animation before the final next/idle step.
+function renderIdleReservationScreen() {
+  if (!playerEmpty) return;
+  const showQr = Boolean(activeSessionId && initialQueueSnapshotReady && initialSongSnapshotReady && !currentSong && waitingEntries().length === 0);
+  playerEmpty.classList.toggle("is-reservation-idle", showQr);
+  if (playerIdleQr) playerIdleQr.hidden = !showQr;
+  if (playerIdlePending) playerIdlePending.hidden = showQr;
+}
+
 function renderHostQueue() {
   const waiting = waitingEntries();
+  renderIdleReservationScreen();
   hostQueueCount.textContent = String(waiting.length);
   clearQueueBtn.disabled = waiting.length === 0;
   renderTvQueueStrip();
@@ -1157,6 +1175,7 @@ function renderCurrentSong(song) {
     cancelScoringOutro();
   }
   currentSong = song || null;
+  renderIdleReservationScreen();
   showPlayerError("");
   renderTvQueueStrip();
   // The optional Full Mode has its own compact title in the top overlay;
@@ -1242,6 +1261,7 @@ function watchQueue(sessionId) {
   unsubscribeQueue?.();
   unsubscribeQueue = onValue(ref(db, `sessions/${sessionId}/queue`), snapshot => {
     queueEntries = sortQueueEntries(snapshot.val());
+    initialQueueSnapshotReady = true;
     renderHostQueue();
     renderHistory();
     scheduleAutoStart();
@@ -1261,6 +1281,7 @@ function watchCurrentSong(sessionId) {
   unsubscribeCurrentSong?.();
   unsubscribeCurrentSong = onValue(ref(db, `sessions/${sessionId}/currentSong`), snapshot => {
     const nextCurrent = snapshot.val();
+    initialSongSnapshotReady = true;
     const previousVideoId = currentSong?.youtubeVideoId || null;
     renderCurrentSong(nextCurrent);
     syncPlayerToFirebase(previousVideoId).catch(error => console.error(error));
@@ -1710,6 +1731,8 @@ async function playPrevious() {
 }
 
 async function showSession(sessionId) {
+  initialQueueSnapshotReady = false;
+  initialSongSnapshotReady = false;
   activeSessionId = sessionId;
   const guestUrl = buildGuestUrl(sessionId);
   sessionCodeEl.textContent = sessionId;
@@ -1717,11 +1740,14 @@ async function showSession(sessionId) {
   renderQrCode(document.querySelector("#qrCode"), guestUrl);
   if (tvQrCode) renderQrCode(tvQrCode, guestUrl);
   if (tvQrCornerCode) renderQrCode(tvQrCornerCode, guestUrl);
+  if (playerIdleQrCode) renderQrCode(playerIdleQrCode, guestUrl);
+  if (playerIdleRoom) playerIdleRoom.textContent = `ROOM ${sessionId.replace(/^KARAOKE-/, "")}`;
   if (tvQrCornerRoom) tvQrCornerRoom.textContent = sessionId.replace(/^KARAOKE-/, "");
   if (tvQrSessionCode) tvQrSessionCode.textContent = sessionId;
   createPanel.hidden = true;
   unlockPanel.hidden = true;
   sessionPanel.hidden = false;
+  renderIdleReservationScreen();
   fullscreenBtn.hidden = false;
   if (fullModeBtn) fullModeBtn.hidden = false;
   if (scoringToggleBtn) scoringToggleBtn.hidden = false;

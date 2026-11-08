@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
   <title>Open Karaoke - Host</title>
-  <link rel="stylesheet" href="./css/style.css?v=20261108-solid-gold-score-v2">
+  <link rel="stylesheet" href="./css/style.css?v=20261108-idle-scan-score-spacing-v1">
 </head>
 <body class="host-page">
   <header class="topbar">
@@ -166,9 +166,19 @@
           <div class="player-stage">
             <div id="youtubePlayer"></div>
             <div class="player-empty" id="playerEmpty">
-              <div class="placeholder-icon">▶</div>
-              <strong>No song playing</strong>
-              <span>The first reserved song starts automatically.</span>
+              <!-- Visible only when the active room has no current or waiting song. -->
+              <div class="player-idle-qr" id="playerIdleQr" hidden>
+                <span class="player-idle-eyebrow">OPEN KARAOKE</span>
+                <strong class="player-idle-heading">SCAN TO RESERVE</strong>
+                <div class="player-idle-code-frame"><div id="playerIdleQrCode" aria-label="QR code to join this karaoke room"></div></div>
+                <span class="player-idle-help">Scan with your phone to join and reserve a song</span>
+                <span class="player-idle-room" id="playerIdleRoom"></span>
+              </div>
+              <div class="player-idle-pending" id="playerIdlePending">
+                <div class="placeholder-icon">▶</div>
+                <strong>Starting the next song…</strong>
+                <span>Your reservation will play automatically.</span>
+              </div>
             </div>
           </div>
           <div class="tv-reaction-layer" id="tvReactionLayer" aria-hidden="true"></div>
@@ -382,6 +392,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module" src="./js/host.js?v=20261108-mp3-only-score-energy-v1"></script>
+  <script type="module" src="./js/host.js?v=20261108-idle-scan-score-spacing-v1"></script>
 </body>
 </html>
